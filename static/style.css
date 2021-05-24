@@ -1,0 +1,21 @@
+.loginbox {
+	width: 100%;
+	max-width: 330px;
+	padding: 15px;
+	margin: auto;
+}
+.border-md-right {
+	border-right: 1px solid silver;
+}
+@media (max-width: 768px) {
+	.border-md-right {
+		border-right: none;
+	}
+}
+.discord-avatar-30 {
+	height: 30px;
+	width: 30px;
+	border-radius: 15px;
+	display: inline-block;
+	vertical-align: middle;
+}
