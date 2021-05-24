@@ -1,0 +1,116 @@
+{{define "about"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="container px-4 py-5 my-5 text-center mb-3" style="max-width:650px">
+		<h3>Autorating system about page.</h3>
+		<p>Made in one week with zero effort by one and a half person, this autoranking
+		system can automatically differentiate players with the help of the <a href="https://en.wikipedia.org/wiki/Elo_rating_system" alt="Wiki">Elo Rating system</a>.</p>
+
+		<p>Every entry in the Autorating database holds unique publicly-signed hashes of
+		profiles that cannot be faked and they represent the legitimacy of the profiles.
+		The player's profile information (played games, wins, losses, total kills, total
+		scores) is purely cosmetic and only for displaying the stars near the profile
+		name. These info stats will not be used anywhere else because they can be easily
+		edited by the user that holds the profile file.</p>
+
+		<p>For the automatic results gathering, we are using an autohost instance of
+		Warzone 2100 with an additional game patch (the .wz mod that's downloaded when
+		you join the match) that allows it to automatically report finished research,
+		profiles, unique player keys (needed for displaying the stats) and other match
+		statistics. As it turned out, the single game patch isn't enough, and with the
+		help of Vaut's spectator mod we can now host matches without any trouble and
+		provide automatic win/loose detection, spectator support, additional logging and time limit.</p>
+
+		<p>If you have ideas or suggestions in how to improve the current system or you
+		found bugs in it, feel free to <a href="https://discord.com/users/343418440423309314/profile/">DM me in Discord</a> (Max#6717), join our <a href="https://warzone2100.pro">Teamspeak3
+		voice server</a> or directly write to us in <a href="https://vk.com/1dontknow2/">VK</a>.</p>
+
+		<h3>Details about win/loose state.</h3>
+		<p>The current ranking system calculates single values that represents how good a
+		player can play. We are using the stock Elo Rating system to make corrections of
+		the player's Elo within each played match. To score a victory you need to win,
+		and by *winning* we mean this: you need to get a win screen with unit statistics
+		and all the other stuff, just like in the campaign mission complete. Otherwise,
+		we cannot guarantee that you won the match. After getting the win/loose screen
+		you can safely leave the match, the results being automatically saved.</p>
+
+		<h3>Elo Rating calculations</h3>
+		<p>For every player in encounter we are calculating probability of winning in this
+		against this particular opponent by this forula (R is current Elo score of players):
+		<img src="<?php echo $config['linkroot']; ?>img/elocalc1.svg"><br>
+		After calculating both probabilities we are correcting Elo by this formula:
+		<img src="<?php echo $config['linkroot']; ?>img/elocalc2.svg"><br>
+		Where K is constant 20 and S is 0 or 1 depending on what player won.
+		For each 10 minutes of survival, defeated player rewarded with 1 extra Elo point.</p>
+		<p>You can calculate elo right now on <a href="<?php echo $config['linkroot']; ?>calc.php">elo calculator page</a>.</p>
+
+		<h3>Limitations and abuse attempts.</h3>
+		<p>Any abuse attempts will be noticed, the match result may be deleted/fixed/recalculated,
+		and most importantly: players (and potentially his IPs) attempted to fool ranking
+		system could be blacklisted across all Autohosters. If you found an abuse method,
+		contact us with detailed respective of exploit.</p>
+		<p><b>Playing with more than single player profile is an abuse attempt! Any "alt" profile
+		will be promtlessly merged into single one (most games, more familiar name or randomly)!</b><br>
+		But, since system is based on hash values of profile, you can freely change your <b>name</b>
+		by renaming .sta file. To simplify nickname change you can create multiple sta files
+		containing same hash but with different names.</p>
+		<p>To filter out spam-games or "double windowed" games Autohosters are collecting
+		and checking data you sent in-game and if it notices that it is sure spam-game
+		it will report the match and all players in it to Automaster for investigation.</p>
+		<p>To prevent afk players, Vaut introduced activity tracking. If no activity from player
+		for 3 minutes from game start detected - defeat is admitted. Actions are one of following:
+		unit production, research completion, building construction, damage dealing.</p>
+		<p>Keep in mind that Autorating does not (and will not) have strict nickname/profile
+		rules, any insulting/racist/offensive nickname (in any language) will be changed to
+		"Inappropriate nickname" once. If player will countinue play without changing it it will
+		lead to blacklisting/ban. Also, don't think you can write to chat whatever you want, you
+		can be muted or banned for intensive insulting.</p>
+		<p>By entering Autohoster room you are promtlessly
+		accepting Autorating rules.</p>
+		<!--<p>Password for game room is: "bruh". </p>-->
+		<h3>Medals info</h3>
+		<p>Because many players requested drawing medals from Autorating statistics:
+		<table border="1px">
+			<tr>
+				<td>Top star</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starBronze.gif"> elo > 1400</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starSilver.gif"> elo > 1500</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starGold.gif"> elo > 1800</td>
+			</tr>
+			<tr>
+				<td>Middle star</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starBronze.gif"> played > 10</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starSilver.gif"> played > 30</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starGold.gif"> played > 60</td>
+			</tr>
+			<tr>
+				<td>Bottom star</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starBronze.gif"> wins > 10</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starSilver.gif"> wins > 30</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/starGold.gif"> wins > 60</td>
+			</tr>
+			<tr>
+				<td>Chevron</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/medalSilver.gif"> wins >=6 and W/L>3</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/medalDouble.gif"> wins >=12 and W/L >6</td>
+				<td><img src="<?php echo $config['linkroot']; ?>img/medalGold.gif"> wins >=24 and W/L >12</td>
+			</tr>
+		</table></p>
+		<h3>Legal information</h3>
+		<p>The Autorating system collects and stores only data you freely sent into the system.
+		We are not using any of your information outside this specific system.
+		By playing a game, joining the Autohoster room, visiting or navigating the Autorating
+		website, you are automatically admitting store of data. If you want to remove
+		specific data or all the data you sent to the autorating system please write an
+		email on admin at bruh dot software with your player ID/hash and join auto-served
+		confirm room to complete removal.</p>
+		</div>
+	</body>
+</html>
+{{end}}

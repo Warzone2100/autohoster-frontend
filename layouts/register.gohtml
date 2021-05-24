@@ -1,0 +1,64 @@
+{{define "register"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 text-center">
+			{{if .RegisterErrorMsg}}
+			<div class="alert alert-danger" role="alert">
+				{{.RegisterErrorMsg}}
+			</div>
+			{{end}}
+			{{if .SuccessRegister}}
+			<div class="alert alert-success" role="alert">
+				Successfully registered, log in to access your profile.
+			</div>
+			{{end}}
+			{{if .WarningUnsafe}}
+			<div class="alert alert-danger" role="alert">
+				<p>Warning!</p>
+				<p>You are connected without encryption!</p>
+				<p>Consider using <a href="https://tacticalpepe.me/register">HTTPS</a></p>
+			</div>
+			{{end}}
+			<h2>Register</h2>
+			<form action="/register" method="post" class="loginbox">
+				<div class="mb-3">
+					<label for="fname" class="form-label">First Name</label>
+					<input type="text" class="form-control" name="fname" id="fname">
+				</div>
+				<div class="mb-3">
+					<label for="lname" class="form-label">Last Name</label>
+					<input type="text" class="form-control" name="lname" id="lname">
+				</div>
+				<div class="mb-3">
+					<label for="username" class="form-label">Username</label>
+					<input type="text" class="form-control" name="username" id="username">
+				</div>
+				<div class="mb-3">
+					<label for="email" class="form-label">Email</label>
+					<input type="email" class="form-control" name="email" id="email">
+				</div>
+				<div class="mb-3">
+					<label for="password" class="form-label">Password</label>
+					<input type="password" class="form-control" name="password" id="password">
+				</div>
+				<div class="mb-3">
+					<label for="confirm-password" class="form-label">Confirm password</label>
+					<input type="password" class="form-control" name="confirm-password" id="confirm-password">
+				</div>
+				<p>Setting email address will allow you you reset password.</p>
+				<p>Proceeding registration you are accepting
+				<a href="/about">Autorating rules</a>, our
+				<a href="/legal">Terms of service</a> and 
+				<a href="/legal">Privacy Policy</a>.</p>
+				<button type="submit" class="btn btn-primary">Register</button>
+			</form>
+		</div>
+	</body>
+</html>
+{{end}}
