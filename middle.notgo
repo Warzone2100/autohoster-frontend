@@ -1,0 +1,63 @@
+package other
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+)
+
+type middleware func(http.HandlerFunc) http.HandlerFunc
+
+func logging() middleware {
+	return func(f http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			ip := r.Header.Get("CF-Connecting-IP")
+			geo := r.Header.Get("CF-IPCountry")
+			ua := r.Header.Get("user-agent")
+			defer func() { log.Println("["+geo+" "+ip+"]", r.Method, r.URL.Path, time.Since(start), "["+ua+"]") }()
+			f(w, r)
+		}
+	}
+}
+func tplCheck(t string) middleware {
+	return func(f http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if layouts.Lookup(t) == nil {
+				fmt.Fprintf(w, "Can not find template [%s]", t)
+				return
+			}
+			f(w, r)
+		}
+	}
+}
+func method(m string) middleware {
+	return func(f http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != m {
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+			f(w, r)
+		}
+	}
+}
+func methods(m []string) middleware {
+	return func(f http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			for i := 0; i < len(m); i++ {
+				if r.Method == m[i] {
+					f(w, r)
+					return
+				}
+			}
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		}
+	}
+}
+func chain(f http.HandlerFunc, middlewares ...middleware) http.HandlerFunc {
+	for _, m := range middlewares {
+		f = m(f)
+	}
+	return f
+}
