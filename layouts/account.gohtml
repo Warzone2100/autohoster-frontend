@@ -16,12 +16,12 @@
 					</div>
 					<div class="card-body">
 						<div class="row">
-							<div class="col-sm-3"><h6 class="mb-0">Full Name</h6></div>
-							<div class="col-sm-9">{{ .User.Fname }} {{ .User.Lname }}</div>
+							<div class="col-sm-4"><h6 class="mb-0">Full Name</h6></div>
+							<div class="col-sm-8">{{ .User.Fname }} {{ .User.Lname }}</div>
 						</div><hr>
 						<div class="row">
-							<div class="col-sm-3"><h6 class="mb-0">Email</h6></div>
-							<div class="col-sm-9">
+							<div class="col-sm-4"><h6 class="mb-0">Email</h6></div>
+							<div class="col-sm-8">
 								{{ .User.Email }}
 								{{if .User.Econf}}
 									(confirmed)
@@ -29,19 +29,47 @@
 							</div>
 						</div><hr>
 						<div class="row">
-							<div class="col-sm-3"><h6 class="mb-0">Username</h6></div>
-							<div class="col-sm-9">{{ .User.Username }}</div>
+							<div class="col-sm-4"><h6 class="mb-0">Username</h6></div>
+							<div class="col-sm-8">{{ .User.Username }}</div>
 						</div><hr>
 						<div class="row">
-							<div class="col-sm-3"><h6 class="mb-0">Discord</h6></div>
-							<div class="col-sm-9">
+							<div class="col-sm-4"><h6 class="mb-0">Discord</h6></div>
+							<div class="col-sm-8">
 								{{if .User.Discord.Token}}
 									<img class="discord-avatar-30" src="https://cdn.discordapp.com/avatars/{{.User.Discord.Data.id}}/{{.User.Discord.Data.avatar}}.png">
 									{{.User.Discord.Data.username}}#{{.User.Discord.Data.discriminator}}
 								{{else}}
 									<a href="{{.User.Discord.AuthUrl}}">Link</a>
 								{{end}}
-								<pre>{{.User.Discord.Data}}</pre>
+							</div>
+						</div><hr>{{/*
+						<div class="row">
+							<div class="col-sm-4"><h6 class="mb-0">VK</h6></div>
+							<div class="col-sm-8">
+								{{if .User.VK.Token}}
+									<img class="discord-avatar-30" src="{{.User.VK.Data.Photo}}">
+									{{.User.VK.Data.FirstName}} {{.User.VK.Data.LastName}}
+								{{else}}
+									<a href="{{.User.VK.AuthUrl}}">Link</a>
+								{{end}}
+							</div>
+						</div><hr>*/}}
+						<div class="row">
+							<div class="col-sm-4"><h6 class="mb-0">Warzone profile</h6><small>(pre 4.0)</small></div>
+							<div class="col-sm-8" style="align: center">
+								{{with .User.WzProfile}}
+									{{template "wzprofile" .}}
+								{{end}}
+							</div>
+						</div><hr>
+						<div class="row">
+							<div class="col-sm-4"><h6 class="mb-0">Warzone profile</h6><small>(post 4.0)</small></div>
+							<div class="col-sm-8">
+								{{with .User.WzProfile2}}
+									{{template "wzprofile" .}}
+								{{else}}
+									<a href="/wzlink">Link</a>
+								{{end}}
 							</div>
 						</div>
 					</div>
@@ -54,5 +82,6 @@
 			{{end}}
 		</div>
 	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </html>
 {{end}}

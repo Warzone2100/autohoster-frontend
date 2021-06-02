@@ -1,9 +1,16 @@
 {{define "NavPanel"}}
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="PageTop">
 	<div class="container-fluid">
-		<a class="navbar-brand" href="/">Tactical Pepe</a>
+		<a class="navbar-brand" href="/">
+			<img src="/static/favicon.ico" alt="" width="24" height="24" style="border-radius: 15px;">
+			Tactical Pepe
+		</a>
 		<div class="navbar-nav me-auto">
 			<a class="nav-link {{ if eq .NavWhere "index" }} active {{ end }}" href="/">Home</a>
+			{{if .UserAuthorized}}
+				<a class="nav-link {{ if eq .NavWhere "hoster" }} active {{ end }}" href="/hoster">Multihoster</a>
+				<a class="btn btn-primary {{ if eq .NavWhere "request" }} active {{ end }}" href="/request">Room request</a>
+			{{end}}
 		</div>
 		<ul class="navbar-nav">
 			{{if .UserAuthorized}}
@@ -25,5 +32,6 @@
 			{{end}}
 		</ul>
 	</div>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </nav>
 {{end}}

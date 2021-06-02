@@ -1,0 +1,278 @@
+{{define "multihoster"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 text-center">
+			<pre>{{.MultihosterStatus}}</pre>
+		</div>
+	</body>
+</html>
+{{end}}
+{{define "multihoster-templates"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		<script src="/static/fuzzysort.js"></script>
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		{{template "NavPanel" . }}
+		<div class="container" style="margin-bottom:180px">
+			<p><noscript><div style="margin-top: 11px" class="alert alert-danger" role="alert">Please enable script execution in order to map search to function properly.</div></noscript></p>
+			<h2 class="mt-5">Request hosting</h2>
+			<form action="/hoster" method="POST" id="SettingsForm" target="_self">
+			<table><tr>
+				<td style="padding:18px">
+					<p>Selected map: <text id="FinalHash-mapname"></text></p>
+					<p><img id="FinalHash-preveiw" src=""></p>
+					<p><input class="form-control" id="FinalHash" name="maphash" type="text" maxlength="64" size="64" placeholder="" onkeypress="KeypressMapHash(event);"></p>
+				</td>
+				<td style="padding:18px">
+					<p>
+					<label>
+						<text class="label-radio">Alliances:</text>
+						<input id="alliance-0-radio" type="radio" class="hostsettings-radio" name="alliances" value="0">
+						<img class="icons icons-alliance0">
+					</label>
+					<label>
+						<input id="alliance-1-radio" type="radio" class="hostsettings-radio" name="alliances" value="2">
+						<img class="icons icons-alliance1">
+					</label>
+					<label>
+						<input id="alliance-2-radio" type="radio" class="hostsettings-radio" name="alliances" value="1" checked required>
+						<img class="icons icons-alliance2">
+					</label>
+					</p>
+					<p>
+					<label>
+						<text class="label-radio">Base:</text>
+						<input id="base-0-radio" type="radio" class="hostsettings-radio" name="base" value="1">
+						<img class="icons icons-base0">
+					</label>
+					<label>
+						<input id="base-1-radio" type="radio" class="hostsettings-radio" name="base" value="2" checked required>
+						<img class="icons icons-base1">
+					</label>
+					<label>
+						<input id="base-2-radio" type="radio" class="hostsettings-radio" name="base" value="3">
+						<img class="icons icons-base2">
+					</label>
+					</p>
+					<p>
+					<label>
+						<text class="label-radio">Scavangers:</text>
+						<input id="scav-0-radio" type="radio" class="hostsettings-radio" name="scav" value="0" checked required>
+						<img class="icons icons-scav0">
+					</label>
+					<label>
+						<input id="scav-1-radio" type="radio" class="hostsettings-radio" name="scav" value="1">
+						<img class="icons icons-scav1">
+					</label>
+					</p>
+					<p><input class="btn btn-primary" type="submit" value="Request hosting!" id="SubmitButton"></p>
+				</td>
+			</tr></table>
+			</form>
+			<p><label>Map name: <input class="form-control" id="FuzzySearchField" type="text"></label></p>
+			<!-- <p><button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#CRes" aria-expanded="true" aria-controls="CRes">Show/hide maps</button></p>
+			<div class="collapse show" id="CRes"> -->
+				<!-- class="overflow-auto" style="height: 400px;resize: vertical;border: 1px solid" -->
+				<div id="MapSearchResult">
+				</div>
+			<!-- </div> -->
+			</p>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+	<script>
+var presets = [
+	{{range $i, $j := .Presets}}
+		{
+			"name": {{$j.MapName}},
+			"hash": {{$j.MapHash}},
+			"base":{{$j.LevelBase}},
+			"alliance":{{$j.LevelAlliances}},
+			"scav":{{$j.LevelScav}},
+			"players": {{$j.Playercount}}
+		},
+	{{end}}
+]
+	window.onload = function() {
+		presets.forEach(t => t.PresetPrepared = fuzzysort.prepare(t.name))
+		document.getElementById("FuzzySearchField").addEventListener('keyup', function(evt) {
+			if (evt.which === 13) {
+		        evt.preventDefault();
+		        evt.stopPropagation();
+		        return false;
+		    }
+			DoSearch();
+		});
+		document.getElementById("MapSearchResult").innerHTML = GetHtmlPresets();
+		
+	}
+	function DoSearch() {
+		const options = {
+			limit: 100,
+			allowTypo: true,
+			key: "name"
+		}
+		if(document.getElementById("FuzzySearchField").value != "") {
+			let result = fuzzysort.go(document.getElementById("FuzzySearchField").value, presets, options)
+			console.log(result)
+			result.sort(function (a, b) {
+				return b.score - a.score;
+			});
+			document.getElementById("MapSearchResult").innerHTML = GetHtmlResults(result);
+		} else {
+			document.getElementById("MapSearchResult").innerHTML = GetHtmlPresets();
+			
+		}
+	}
+	function GetHtmlResults(results) {
+		var html = "<table class=\"table\"> <thead><td>Preview<td>Payers<td>Name<td>Actions</thead>"
+		for (var i = 0; i < results.length; i++) {
+			const result = results[i]
+			html += "<tr><td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+result.obj.hash+".png\"></td>"
+			html += "<td>"+result.obj.players+"</td>"
+			html += "<td>"+fuzzysort.highlight(result)+"</td>"
+			//data-bs-toggle=\"collapse\" data-bs-target=\"#CRes\" aria-expanded=\"true\" aria-controls=\"CRes\" 
+			html += "<td><p><a class=\"btn btn-primary\" onClick=\"SelectMap('"+result.obj.hash+"', '"+result.obj.name+"')\" href=\"#PageTop\">Select</a></p></td></tr>"
+		}
+		html += '</table>'
+		return html
+	}
+	function GetHtmlPresets() {
+		var html = "<table class=\"table\"> <thead><td>Preview<td>Payers<td>Name<td>Actions</thead>"
+		for (var i = 0; i < presets.length; i++) {
+			const preset = presets[i]
+			html += "<tr><td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+preset.hash+".png\"></td>"
+			html += "<td>"+preset.players+"</td>"
+			html += "<td>"+preset.name+"</td>"
+			// data-bs-toggle=\"collapse\" data-bs-target=\"#CRes\" aria-expanded=\"true\" aria-controls=\"CRes\" 
+			html += "<td><p><a class=\"btn btn-primary\" onClick=\"SelectMap('"+preset.hash+"', '"+preset.name+"')\" href=\"#PageTop\">Select</a></p></td></tr>"
+		}
+		html += '</table>'
+		return html
+	}
+	// base 0-0 1-1 2-2 3-01 4-12 5-02 6-012
+	function SelectMap(hash, name) {
+
+		document.getElementById("FinalHash").value = hash;
+		document.getElementById("FinalHash-mapname").innerHTML = name;
+		document.getElementById("FinalHash-preveiw").src = "https://wz2100.euphobos.ru/maps/preview/"+hash+".png";
+		let attr = presets.find(e => e.hash == hash)
+		
+		document.getElementById("scav-0-radio").disabled = attr['scav'] != 0;
+		document.getElementById("scav-1-radio").disabled = attr['scav'] != 1;
+		document.getElementById("scav-0-radio").checked = 1;
+		
+		document.getElementById("base-0-radio").disabled = attr['base'] < 3 || attr['base'] == 4;
+		document.getElementById("base-1-radio").disabled = attr['base'] < 3 || attr['base'] == 5;
+		document.getElementById("base-2-radio").disabled = attr['base'] < 3 || attr['base'] == 3;
+		document.getElementById("base-2-radio").checked = 1;
+		
+		document.getElementById("alliance-0-radio").disabled = attr['alliance'] < 3 || attr['alliance'] == 4;
+		document.getElementById("alliance-1-radio").disabled = attr['alliance'] < 3 || attr['alliance'] == 5;
+		document.getElementById("alliance-2-radio").disabled = attr['alliance'] < 3 || attr['alliance'] == 3;
+		document.getElementById("alliance-2-radio").checked = 1;
+		
+	}
+	</script>
+</html>
+{{end}}
+{{define "autohoster-controll"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="container" style="margin-top: 80px">
+			<h3>Autohoster chat commands & controls</h3>
+			<p>Current Autohoster can accept various commands and keywords for
+				service, informational, security and control purposes.
+				Most of them are avaliable only for Room Administrator but some
+				can be executed without any priveleges.</p>
+			<ul>
+				<li><code>!help</code> - This command will show some basic chat operations. Purely informational.</li>
+				<li><code>!admin</code> - Outputs full Room Administrator hash.</li>
+				<li><code>!me</code> - Outputs full caller hash, name, position and debug information. Please provide output with bug reports.</li>
+				<li><code>!swap &ltslot-from&gt &ltslot-to&gt</code> - [Room Administrator] Swaps players or slots. <font color="red">Counts from 0. </font><small><small class="text-muted">please don't swap autohoster around</small></small></li>
+				<li><code>!kick &ltslot&gt</code> - [Room Administrator] Kick player on selected position. <font color="red">Counts from 0. </font><small><small class="text-muted">please don't kick autohoster</small></small></li>
+			</ul>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
+{{define "wzprofile"}}
+<div align="left" style="height:45px;margin-left:auto;margin-right:auto;">
+	<table cellspacing="0" cellpadding="0" style="margin: 0 auto">
+		<tbody>
+			<tr>
+				<td class="rank-star">
+					{{if gt .Played 4}}
+						{{if gt .Elo 1800}}
+						<object class="rank rank-starGold"></object>
+						{{else if gt .Elo 1550}}
+						<object class="rank rank-starSilver"></object>
+						{{else if gt .Elo 1400}}
+						<object class="rank rank-starBronze"></object>
+						{{end}}
+					{{end}}
+				</td>
+				<!-- medal -->
+				<td rowspan="3" class="rank-medal">
+					{{if le .Played 4}}
+					<object class="rank rank-pacifier"></object>
+					{{else if eq .Losses 0}}
+					{{else if (ge .Wins 24) and gt (div .Wins .Losses) 12}}
+					<object class="rank rank-medalGold"></object>
+					{{else if (ge .Wins 12) and gt (div .Wins .Losses) 6}}
+					<object class="rank rank-medalDouble"></object>
+					{{else if (ge .Wins 6) and gt (div .Wins .Losses) 3}}
+					<object class="rank rank-medalSilver"></object>
+					{{end}}
+				</td>
+				<!-- name -->
+				<td rowspan="3" class="rank-link">
+					<a href="/wz-profile?id={{.Id}}">{{.Name}}</a>
+				</td>
+			</tr><tr>
+				<!-- middle star -->
+				<td class="rank-star">
+					{{if gt .Played 60}}
+					<object class="rank rank-starGold"></object>
+					{{else if gt .Played 30}}
+					<object class="rank rank-starSilver"></object>
+					{{else if gt .Played 10}}
+					<object class="rank rank-starBronze"></object>
+					{{end}}
+				</td>
+			</tr><tr>
+				<!-- bottom star -->
+				<td class="rank-star">
+					{{if gt .Played 4}}
+						{{if gt .Wins 60}}
+						<object class="rank rank-starGold"></object>
+						{{else if gt .Wins 30}}
+						<object class="rank rank-starSilver"></object>
+						{{else if gt .Wins 10}}
+						<object class="rank rank-starBronze"></object>
+						{{end}}
+					{{end}}
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+{{end}}

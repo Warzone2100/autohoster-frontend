@@ -7,7 +7,7 @@
 	<body>
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
-		<div class="container px-4 py-5 my-5 text-center mb-3" style="max-width:650px">
+		<div class="container px-4 py-5 my-5 mb-3" style="max-width:720px">
 		<h3>Autorating system about page.</h3>
 		<p>Made in one week with zero effort by one and a half person, this autoranking
 		system can automatically differentiate players with the help of the <a href="https://en.wikipedia.org/wiki/Elo_rating_system" alt="Wiki">Elo Rating system</a>.</p>
@@ -43,12 +43,12 @@
 		<h3>Elo Rating calculations</h3>
 		<p>For every player in encounter we are calculating probability of winning in this
 		against this particular opponent by this forula (R is current Elo score of players):
-		<img src="<?php echo $config['linkroot']; ?>img/elocalc1.svg"><br>
+		<img src=""><br>
 		After calculating both probabilities we are correcting Elo by this formula:
-		<img src="<?php echo $config['linkroot']; ?>img/elocalc2.svg"><br>
+		<img src=""><br>
 		Where K is constant 20 and S is 0 or 1 depending on what player won.
 		For each 10 minutes of survival, defeated player rewarded with 1 extra Elo point.</p>
-		<p>You can calculate elo right now on <a href="<?php echo $config['linkroot']; ?>calc.php">elo calculator page</a>.</p>
+		<!-- <p>You can calculate elo right now on <a href="">elo calculator page</a>.</p> -->
 
 		<h3>Limitations and abuse attempts.</h3>
 		<p>Any abuse attempts will be noticed, the match result may be deleted/fixed/recalculated,
@@ -75,42 +75,47 @@
 		accepting Autorating rules.</p>
 		<!--<p>Password for game room is: "bruh". </p>-->
 		<h3>Medals info</h3>
-		<p>Because many players requested drawing medals from Autorating statistics:
-		<table border="1px">
+		<p>Because many players requested drawing medals from Autorating statistics:</p>
+		<small>
+		<table class="table table-bordered">
 			<tr>
 				<td>Top star</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starBronze.gif"> elo > 1400</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starSilver.gif"> elo > 1500</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starGold.gif"> elo > 1800</td>
+				<td><img class="rank rank-starBronze"> elo > 1400</td>
+				<td><img class="rank rank-starSilver"> elo > 1500</td>
+				<td><img class="rank rank-starGold"> elo > 1800</td>
 			</tr>
 			<tr>
 				<td>Middle star</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starBronze.gif"> played > 10</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starSilver.gif"> played > 30</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starGold.gif"> played > 60</td>
+				<td><img class="rank rank-starBronze"> played > 10</td>
+				<td><img class="rank rank-starSilver"> played > 30</td>
+				<td><img class="rank rank-starGold"> played > 60</td>
 			</tr>
 			<tr>
 				<td>Bottom star</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starBronze.gif"> wins > 10</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starSilver.gif"> wins > 30</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/starGold.gif"> wins > 60</td>
+				<td><img class="rank rank-starBronze"> wins > 10</td>
+				<td><img class="rank rank-starSilver"> wins > 30</td>
+				<td><img class="rank rank-starGold"> wins > 60</td>
 			</tr>
 			<tr>
 				<td>Chevron</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/medalSilver.gif"> wins >=6 and W/L>3</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/medalDouble.gif"> wins >=12 and W/L >6</td>
-				<td><img src="<?php echo $config['linkroot']; ?>img/medalGold.gif"> wins >=24 and W/L >12</td>
+				<td><img class="rank rank-medalSilver"> wins >=6 and W/L>3</td>
+				<td><img class="rank rank-medalDouble"> wins >=12 and W/L >6</td>
+				<td><img class="rank rank-medalGold"> wins >=24 and W/L >12</td>
 			</tr>
-		</table></p>
+		</table></small>
 		<h3>Legal information</h3>
 		<p>The Autorating system collects and stores only data you freely sent into the system.
 		We are not using any of your information outside this specific system.
 		By playing a game, joining the Autohoster room, visiting or navigating the Autorating
 		website, you are automatically admitting store of data. If you want to remove
 		specific data or all the data you sent to the autorating system please write an
-		email on admin at bruh dot software with your player ID/hash and join auto-served
-		confirm room to complete removal.</p>
+		email on pepe@tacticalpepe.me with scanned copies of the documents verifying your identity
+		(this is necessary to confirm that you act in good faith and do not pursue dishonest
+		goals, for example, by sending a request to delete information about a competitor 
+		or other information that does not violate your personal rights), information
+		you want to erase and join auto-served confirm room to complete removal.</p>
 		</div>
 	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </html>
 {{end}}
