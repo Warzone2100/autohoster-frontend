@@ -169,9 +169,23 @@ var presets = [
 		document.getElementById("FinalHash-preveiw").src = "https://wz2100.euphobos.ru/maps/preview/"+hash+".png";
 		let attr = presets.find(e => e.hash == hash)
 		
-		document.getElementById("scav-0-radio").disabled = attr['scav'] != 0;
-		document.getElementById("scav-1-radio").disabled = attr['scav'] != 1;
-		document.getElementById("scav-0-radio").checked = 1;
+		console.log(attr)
+		if(attr["scav"] == "0") {
+			document.getElementById("scav-0-radio").disabled = false;
+			document.getElementById("scav-1-radio").disabled = true;
+			document.getElementById("scav-0-radio").checked = true;
+			document.getElementById("scav-1-radio").checked = false;
+		} else if(attr["scav"] == "1") {
+			document.getElementById("scav-0-radio").disabled = true;
+			document.getElementById("scav-1-radio").disabled = false;
+			document.getElementById("scav-0-radio").checked = false;
+			document.getElementById("scav-1-radio").checked = true;
+		} else if(attr["scav"] == "2") {
+			document.getElementById("scav-0-radio").disabled = false;
+			document.getElementById("scav-1-radio").disabled = false;
+			document.getElementById("scav-0-radio").checked = true;
+			document.getElementById("scav-1-radio").checked = false;
+		}
 		
 		document.getElementById("base-0-radio").disabled = attr['base'] < 3 || attr['base'] == 4;
 		document.getElementById("base-1-radio").disabled = attr['base'] < 3 || attr['base'] == 5;
