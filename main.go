@@ -102,17 +102,10 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	var sesswzprofile int
 	var sesswzprofile2 int
 	var sessdisc map[string]interface{}
-	// var sessvktoken string
-	// var sessvkrefresh string
-	// var sessvkrefreshwhenepoch int
-	// var sessvkstate string
-	// var sessvkurl string
-	//
-	//
-	// coalesce(extract(epoch from vk_refresh_date), 0)::int
-	// coalesce(vk_token, ''),
-	// coalesce(vk_refresh, ''),
-	// var sessvk map[string]interface{}
+	var sessvktoken string
+	var sessvkurl string
+	var sessvkuid int
+	var sessvk map[string]interface{}
 
 	if sessionManager.Exists(r.Context(), "User.Username") {
 		sessuname = sessionManager.GetString(r.Context(), "User.Username")
@@ -122,12 +115,13 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 			coalesce(discord_token, ''),
 			coalesce(discord_refresh, ''),
 			coalesce(extract(epoch from discord_refresh_date), 0)::int,
-			coalesce(wzprofile, -1), coalesce(wzprofile2, -1)
+			coalesce(wzprofile, -1), coalesce(wzprofile2, -1),
+			coalesce(vk_token, ''), coalesce(vk_uid, -1)
 			FROM users WHERE username = $1`, sessuname).
 			Scan(&sessid, &sessemail, &sessfname, &sesslname, &sesseconf,
 				&sessdisctoken, &sessdiscrefreshtoken, &sessdiscrefreshwhenepoch,
-				&sesswzprofile, &sesswzprofile2)
-			// &sessvktoken, &sessvkrefresh, &sessvkrefreshwhenepoch)
+				&sesswzprofile, &sesswzprofile2,
+				&sessvktoken, &sessvkuid)
 		if derr != nil {
 			log.Println("sessionAppendUser: " + derr.Error())
 		}
@@ -156,6 +150,13 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 				sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
 			}
 			sessdisctoken = token.AccessToken
+		}
+		if sessvktoken == "" {
+			sessvkstate := generateRandomString(32)
+			sessionManager.Put(r.Context(), "User.VK.State", sessvkstate)
+			sessvkurl = VKGetUrl(sessvkstate)
+		} else {
+			sessvk = VKGetUInfo(sessvktoken)
 		}
 		// sessvkrefreshwhen := time.Unix(int64(sessvkrefreshwhenepoch), 0)
 		// if sessvktoken == "" {
@@ -199,6 +200,11 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 			"Token":   sessdisctoken,
 			"AuthUrl": sessdiscurl,
 			"Data":    sessdisc,
+		},
+		"VK": map[string]interface{}{
+			"Token":   sessvktoken,
+			"AuthUrl": sessvkurl,
+			"Data":    sessvk,
 		},
 	}
 	mergo.Merge(a, map[string]interface{}{
@@ -281,7 +287,6 @@ func main() {
 		port = "3000"
 	}
 	DiscordVerifyEnv()
-	VKVerifyEnv()
 
 	log.Println("Loading layouts")
 	layouts, err = template.New("main").Funcs(layoutFuncs).ParseGlob("layouts/*.gohtml")

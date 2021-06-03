@@ -42,18 +42,21 @@
 									<a href="{{.User.Discord.AuthUrl}}">Link</a>
 								{{end}}
 							</div>
-						</div><hr>{{/*
+						</div><hr>
 						<div class="row">
 							<div class="col-sm-4"><h6 class="mb-0">VK</h6></div>
 							<div class="col-sm-8">
 								{{if .User.VK.Token}}
+									<pre>{{.User.VK.Data}}</pre>
+									{{/*
 									<img class="discord-avatar-30" src="{{.User.VK.Data.Photo}}">
 									{{.User.VK.Data.FirstName}} {{.User.VK.Data.LastName}}
+									*/}}
 								{{else}}
 									<a href="{{.User.VK.AuthUrl}}">Link</a>
 								{{end}}
 							</div>
-						</div><hr>*/}}
+						</div><hr>
 						<div class="row">
 							<div class="col-sm-4"><h6 class="mb-0">Warzone profile</h6><small>(pre 4.0)</small></div>
 							<div class="col-sm-8" style="align: center">
