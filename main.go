@@ -158,33 +158,6 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 		} else {
 			sessvk = VKGetUInfo(sessvktoken)
 		}
-		// sessvkrefreshwhen := time.Unix(int64(sessvkrefreshwhenepoch), 0)
-		// if sessvktoken == "" {
-		// 	sessvkstate = generateRandomString(32)
-		// 	sessvkurl = VKGetUrl(sessvkstate)
-		// 	sessionManager.Put(r.Context(), "User.VK.State", sessvkstate)
-		// } else {
-		// 	token := oauth2.Token{AccessToken: sessvktoken, RefreshToken: sessvkrefresh, Expiry: sessvkrefreshwhen}
-		// 	log.Print("Refresh: " + sessvkrefresh)
-		// 	tokenold := token
-		// 	sessvk = VKGetUInfo(&token)
-		// 	if token.AccessToken != tokenold.AccessToken || token.RefreshToken != tokenold.RefreshToken || token.Expiry != tokenold.Expiry {
-		// 		log.Println("VK token refreshed")
-		// 		tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET vk_token = $1, vk_refresh = $2, vk_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
-		// 		if derr != nil {
-		// 			log.Println("Database call error: " + derr.Error())
-		// 		}
-		// 		if tag.RowsAffected() != 1 {
-		// 			log.Println("Database update error, rows affected " + string(tag))
-		// 		}
-		// 	}
-		// 	if token.AccessToken == "" {
-		// 		sessvkstate = generateRandomString(32)
-		// 		sessvkurl = VKGetUrl(sessvkstate)
-		// 		sessionManager.Put(r.Context(), "User.VK.State", sessvkstate)
-		// 	}
-		// 	sessvktoken = token.AccessToken
-		// }
 	}
 	var usermap map[string]interface{}
 	usermap = map[string]interface{}{
@@ -369,6 +342,7 @@ func main() {
 	router.HandleFunc("/autohoster", autohosterControllHandler)
 
 	router.HandleFunc("/rating", ratingHandler)
+	router.HandleFunc("/lobby", lobbyHandler)
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
 	router2 := handlers.CompressHandler(router1)

@@ -1,0 +1,41 @@
+{{define "lobby"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 text-center">
+			<div class="container">
+				<h3>Warzone 2100 Lobby</h3>
+				<table class="table">
+					<tr>
+						<th>GID</th>
+						<th>Game name</th>
+						<th>Map name</th>
+						<th>Host name</th>
+						<th>Version</th>
+						<th>Extra</th>
+					</tr>
+				{{range $k, $el := .Rooms}}
+					<tr>
+						<td>{{$el.GameID}}</td>
+						<td>{{$el.GameName}}</td>
+						<td>{{$el.MapName}}</td>
+						<td>{{$el.HostName}}</td>
+						<td>{{$el.Version}}</td>
+						<td>{{if $el.Pure}}Map-mod{{else}}{{end}}</td>
+					</tr>
+				{{else}}
+					<tr><td colspan="99">No rooms in lobby</td></tr>
+				{{end}}
+				</table>
+				<pre>{{.Motd}}</pre>
+			</div>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
