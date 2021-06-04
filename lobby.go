@@ -35,13 +35,15 @@ type LobbyRoom struct {
 }
 
 type LobbyRoomPretty struct {
-	GameID   uint32
-	GameName string
-	MapName  string
-	HostName string
-	Version  string
-	Private  bool
-	Pure     bool
+	GameID         uint32
+	GameName       string
+	MapName        string
+	HostName       string
+	Version        string
+	Private        bool
+	Pure           bool
+	MaxPlayers     uint32
+	CurrentPlayers uint32
 }
 
 func btoi(a uint32) bool {
@@ -83,6 +85,8 @@ func LobbyLookup() map[string]interface{} {
 			string(room.Version[:bytes.IndexByte(room.Version[:], 0)]),
 			btoi(room.Private),
 			btoi(room.Pure),
+			room.MaxPlayers,
+			room.CurrentPlayers,
 		}
 		rooms = append(rooms, roomp)
 	}

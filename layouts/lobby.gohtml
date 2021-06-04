@@ -22,6 +22,7 @@
 				{{range $k, $el := .Rooms}}
 					<tr>
 						<td>{{$el.GameID}}</td>
+						<td>{{$el.CurrentPlayers}}/{{$el.MaxPlayers}}</td>
 						<td>{{$el.GameName}}</td>
 						<td>{{$el.MapName}}</td>
 						<td>{{$el.HostName}}</td>
