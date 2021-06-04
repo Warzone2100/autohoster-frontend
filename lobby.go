@@ -74,7 +74,7 @@ func LobbyLookup() map[string]interface{} {
 			fmt.Println(err.Error())
 			return map[string]interface{}{}
 		}
-		log.Println(string(room.GameName[:]), string(room.HostName[:]))
+		// log.Println(string(room.GameName[:]), string(room.HostName[:]))
 		roomp := LobbyRoomPretty{
 			room.GameID,
 			string(room.GameName[:bytes.IndexByte(room.GameName[:], 0)]),
