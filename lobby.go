@@ -67,7 +67,7 @@ func LobbyLookup() map[string]interface{} {
 		fmt.Println(err.Error())
 		return map[string]interface{}{}
 	}
-	log.Println(count)
+	// log.Println(count)
 	var rooms []LobbyRoomPretty
 	for i := uint32(0); i < count; i++ {
 		var room LobbyRoom
