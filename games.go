@@ -9,10 +9,10 @@ import (
 )
 
 func gamesHandler(w http.ResponseWriter, r *http.Request) {
-	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
-		return
-	}
+	// if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
+	// 	basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+	// 	return
+	// }
 	rows, derr := dbpool.Query(context.Background(), `select id, to_char(time_finished, 'YYYY-MM-DD HH24:MI'), game from jgames where cast(game as text) != 'null' order by time_finished desc limit 10;`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {

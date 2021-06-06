@@ -15,8 +15,7 @@
 					<td>date</td>
 					<td></td>
 					<td>Map</td>
-					<td>game</td>
-					<td>json</td>
+					<td>players</td>
 				</tr>
 				{{range $i, $e := .Games}}
 				{{if ne $e.Json "null"}}
@@ -28,7 +27,22 @@
 						<img class="icons icons-alliance{{allianceToClass $e.Map.game.alliancesType}}">
 					</td>
 					<td>{{$e.Map.game.mapName}}</td>
-					<td><pre {{/* style="white-space: pre-wrap;" */}}>{{$e.Json}}</pre></td>
+					<td>
+						<table class="table">
+						<pre {{/* style="white-space: pre-wrap;" */}}>{{/*$e.Map.playerData*/}}</pre>
+							{{range $k, $player := $e.Map.playerData}}
+							{{if ne $player.name "null"}}
+							{{if ne $player.usertype "spectator"}}
+								<tr>
+									<td>{{$player.name}}</td>
+									<td>{{$player.usertype}}</td>
+									<td>{{$player.kills}}</td>
+								</tr>
+								{{end}}
+								{{end}}
+							{{end}}
+				  	</table>
+					</td>
 				</tr>
 				{{end}}
 				{{end}}
