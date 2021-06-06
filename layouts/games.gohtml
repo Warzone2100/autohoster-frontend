@@ -31,7 +31,7 @@
 						<table class="table">
 						<pre {{/* style="white-space: pre-wrap;" */}}>{{/*$e.Map.playerData*/}}</pre>
 							{{range $k, $player := $e.Map.playerData}}
-							{{if ne $player.name "null"}}
+							{{if ne $player.name ""}}
 							{{if ne $player.usertype "spectator"}}
 								<tr>
 									<td>{{$player.name}}</td>
