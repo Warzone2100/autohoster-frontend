@@ -11,11 +11,11 @@
 			<h3>Recent games</h3>
 			<table class="table">
 				<tr>
-					<td>id</td>
-					<td>date</td>
-					<td></td>
-					<td>Map</td>
-					<td>players</td>
+					<th>id</th>
+					<th>date</th>
+					<th></th>
+					<th>Map</th>
+					<th>players</th>
 				</tr>
 				{{range $i, $e := .Games}}
 				{{if ne $e.Json "null"}}
@@ -29,7 +29,12 @@
 					<td>{{$e.Map.game.mapName}}</td>
 					<td>
 						<table class="table">
-						<pre {{/* style="white-space: pre-wrap;" */}}>{{/*$e.Map.playerData*/}}</pre>
+						{{/*<pre>{{$e.Map.playerData}}</pre>*/}}
+						<tr>
+							<th>Name</th>
+							<th>State</th>
+							<th>Kills</th>
+						</tr>
 							{{range $k, $player := $e.Map.playerData}}
 							{{if ne $player.name ""}}
 							{{if ne $player.usertype "spectator"}}
