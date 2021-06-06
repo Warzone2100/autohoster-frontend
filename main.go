@@ -53,6 +53,13 @@ var layoutFuncs = template.FuncMap{
 	"mult": func(a int, b int) int {
 		return a * b
 	},
+	"allianceToClass": func(a float64) float64 {
+		if a == 3 {
+			return 1
+		} else {
+			return a
+		}
+	},
 }
 
 func getWzProfile(id int, table string) map[string]interface{} {
@@ -343,6 +350,7 @@ func main() {
 
 	router.HandleFunc("/rating", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
+	router.HandleFunc("/games", gamesHandler)
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
 	router2 := handlers.CompressHandler(router1)
