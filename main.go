@@ -338,6 +338,7 @@ func main() {
 	router.HandleFunc("/logout", logoutHandler)
 	router.HandleFunc("/register", registerHandler)
 	router.HandleFunc("/account", accountHandler)
+	router.HandleFunc("/users", usersHandler)
 	router.HandleFunc("/activate", emailconfHandler)
 	router.HandleFunc("/oauth/discord", DiscordCallbackHandler)
 	router.HandleFunc("/oauth/vk", VKCallbackHandler)
