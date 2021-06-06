@@ -115,16 +115,24 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			alliancen++
 		}
 		basen, err := strconv.Atoi(r.PostFormValue("base"))
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true,
-			"msg": RequestHost(r.PostFormValue("maphash"),
-				mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
-				r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, "Autohoster"),
-		})
+		s, reqres := RequestHost(r.PostFormValue("maphash"),
+			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
+			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, "Autohoster")
+		if s {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": reqres})
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
+		}
 		w.Header().Set("Refresh", "10; /created-rooms")
 	} else {
-		basicLayoutLookupRespond("multihoster", w, r, map[string]interface{}{
-			"MultihosterStatus": template.HTML(RequestStatus()),
-		})
+		s, reqres := RequestStatus()
+		if s {
+			basicLayoutLookupRespond("multihoster", w, r, map[string]interface{}{
+				"MultihosterStatus": template.HTML(reqres),
+			})
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
+		}
 	}
 }
 
@@ -228,6 +236,10 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
 		return
 	}
+	s, mhstatus := RequestStatus()
+	if !s {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Multihoster unavaliable"})
+	}
 	var allow_any bool
 	var allow_presets bool
 	derr := dbpool.QueryRow(context.Background(),
@@ -283,7 +295,7 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 		IID++
 	}
 	basicLayoutLookupRespond("multihoster-templates", w, r, map[string]interface{}{
-		"MultihosterStatus": template.HTML(RequestStatus()),
+		"MultihosterStatus": template.HTML(mhstatus),
 		"Presets":           pres,
 		"RandomSelection":   rand.Intn(len(pres)),
 	})
@@ -294,15 +306,19 @@ func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
 		return
 	}
-	basicLayoutLookupRespond("multihoster", w, r, map[string]interface{}{
-		"MultihosterStatus": RequestHosters(),
-	})
+	s, reqres := RequestHosters()
+	if s {
+		basicLayoutLookupRespond("multihoster", w, r, map[string]interface{}{"MultihosterStatus": reqres})
+	} else {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
+	}
 }
 
-func RequestHosters() string {
+func RequestHosters() (bool, string) {
 	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"hosters-online", nil)
 	if err != nil {
 		log.Print(err)
+		return false, "Error creating request"
 	}
 	var netClient = &http.Client{
 		Timeout: time.Second * 2,
@@ -310,21 +326,22 @@ func RequestHosters() string {
 	resp, err := netClient.Do(req)
 	if err != nil {
 		log.Print(err)
-		return err.Error()
+		return false, "Error executing request"
 	}
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
-		return err.Error()
+		return false, "Error reading response"
 	}
 	bodyString := string(bodyBytes)
-	return bodyString
+	return true, bodyString
 }
 
-func RequestStatus() string {
+func RequestStatus() (bool, string) {
 	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"status", nil)
 	if err != nil {
 		log.Print(err)
+		return false, "Error creating request"
 	}
 	var netClient = &http.Client{
 		Timeout: time.Second * 2,
@@ -332,21 +349,22 @@ func RequestStatus() string {
 	resp, err := netClient.Do(req)
 	if err != nil {
 		log.Print(err)
-		return err.Error()
+		return false, "Error executing request"
 	}
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
-		return err.Error()
+		return false, "Error reading response"
 	}
 	bodyString := string(bodyBytes)
-	return bodyString
+	return true, bodyString
 }
 
-func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name string) string {
+func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name string) (bool, string) {
 	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"request-room", nil)
 	if err != nil {
 		log.Print(err)
+		return false, "Error creating request"
 	}
 	q := req.URL.Query()
 	q.Add("maphash", maphash)
@@ -364,13 +382,13 @@ func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name s
 	resp, err := netClient.Do(req)
 	if err != nil {
 		log.Print(err)
-		return err.Error()
+		return false, "Error executing request"
 	}
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
-		return err.Error()
+		return false, "Error reading response"
 	}
 	bodyString := string(bodyBytes)
-	return bodyString
+	return true, bodyString
 }
