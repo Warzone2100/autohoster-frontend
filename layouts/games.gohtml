@@ -61,3 +61,74 @@
 	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </html>
 {{end}}
+
+
+{{define "game"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 container">
+			{{if ne .Game.Json "null"}}
+			<div class="row">
+				<div class="col-sm">
+			<h4>Game {{.Game.Id}}</h4>
+					<p>Map: {{.Game.Map.game.mapName}}</p>
+					<p>When: {{.Game.Date}} ({{.Game.Gametime}})</p>
+					<p>Settings:
+						<img class="icons icons-base{{.Game.Map.game.baseType}}">
+						<img class="icons icons-alliance{{allianceToClass .Game.Map.game.alliancesType}}">
+					</p>
+				</div>
+				<div class="col-sm"></div>
+			</div>
+			<p>Players:
+			<div class="container">
+				<div class="row">
+					<div class="col-sm">Name</div>
+					<div class="col-sm">Kills</div>
+					<div class="col-sm">Power</div>
+					<div class="col-sm">Units built</div>
+					<div class="col-sm">Name</div>
+					<div class="col-sm">Kills</div>
+					<div class="col-sm">Power</div>
+					<div class="col-sm">Units built</div>
+				</div>
+			<div class="row">
+				<div class="col-sm">
+					{{range $k, $player := .Game.Map.playerData}}
+					{{if eq $player.usertype "winner"}}
+					<div class="row">
+						<div class="col-sm games-winner-name">{{$player.name}}</div>
+						<div class="col-sm">{{$player.kills}}</div>
+						<div class="col-sm">{{$player.power}}</div>
+						<div class="col-sm">{{$player.droidBuilt}}</div>
+					</div>
+					{{end}}
+					{{end}}
+				</div>
+				<div class="col-sm">
+					{{range $k, $player := .Game.Map.playerData}}
+					{{if eq $player.usertype "loser"}}
+					<div class="row">
+						<div class="col-sm games-loser-name">{{$player.name}}</div>
+						<div class="col-sm">{{$player.kills}}</div>
+						<div class="col-sm">{{$player.power}}</div>
+						<div class="col-sm">{{$player.droidBuilt}}</div>
+					</div>
+					{{end}}
+					{{end}}
+				</div>
+			</div>
+			{{else}}
+			<div class="alert alert-danger" role="alert">Game not found</div>
+			{{end}}
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}

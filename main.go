@@ -351,7 +351,8 @@ func main() {
 
 	router.HandleFunc("/rating", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
-	router.HandleFunc("/games", gamesHandler)
+	router.HandleFunc("/games", listGamesHandler)
+	router.HandleFunc("/games/{id:[0-9]+}", gameViewHandler)
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
 	router2 := handlers.CompressHandler(router1)
