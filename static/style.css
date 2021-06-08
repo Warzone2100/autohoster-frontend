@@ -81,7 +81,12 @@
   height: 45px;
 }
 
-
+.games-winner-name {
+  color: green;
+}
+.games-loser-name {
+  color: red;
+}
 
 .icons {
     background-image: url(/static/icons.png);

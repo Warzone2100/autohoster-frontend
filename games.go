@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -13,7 +14,15 @@ func gamesHandler(w http.ResponseWriter, r *http.Request) {
 	// 	basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
 	// 	return
 	// }
-	rows, derr := dbpool.Query(context.Background(), `select id, to_char(time_finished, 'YYYY-MM-DD HH24:MI'), game from jgames where cast(game as text) != 'null' order by time_finished desc limit 10;`)
+	rows, derr := dbpool.Query(context.Background(), `
+	SELECT
+		id,
+		to_char(time_finished, 'YYYY-MM-DD HH24:MI'),
+		game
+	FROM jgames
+	WHERE cast(game as text) != 'null' AND (game->>'gameTime')::int/1000 > 60
+	ORDER BY time_finished DESC
+	LIMIT 10;`) //
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
@@ -24,10 +33,11 @@ func gamesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	type GamePrototype struct {
-		Id   int
-		Date string
-		Map  map[string]interface{}
-		Json string
+		Id       int
+		Date     string
+		Gametime string
+		Map      map[string]interface{}
+		Json     string
 	}
 	var games []GamePrototype
 	for rows.Next() {
@@ -44,7 +54,14 @@ func gamesHandler(w http.ResponseWriter, r *http.Request) {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
 			return
 		}
-		n := GamePrototype{id, date, m, jsonf}
+		gtstr := "?"
+		if m != nil {
+			gt, ex := m["gameTime"]
+			if ex {
+				gtstr = (time.Duration(int(gt.(float64)/1000)) * time.Second).String()
+			}
+		}
+		n := GamePrototype{id, date, gtstr, m, jsonf}
 		games = append(games, n)
 	}
 	basicLayoutLookupRespond("games", w, r, map[string]interface{}{

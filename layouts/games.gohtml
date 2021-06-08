@@ -11,42 +11,46 @@
 			<h3>Recent games</h3>
 			<table class="table">
 				<tr>
-					<th>id</th>
-					<th>date</th>
-					<th></th>
-					<th>Map</th>
+					<th>ID</th>
+					<th>Time</th>
+					<th>Map,<br>Settings</th>
 					<th>players</th>
 				</tr>
 				{{range $i, $e := .Games}}
 				{{if ne $e.Json "null"}}
 				<tr>
 					<td>{{$e.Id}}</td>
-					<td>{{$e.Date}}</td>
+					<td>{{$e.Date}}<br>({{$e.Gametime}}) {{/*$e.Map.gameTime*/}}</td>
 					<td>
+						{{$e.Map.game.mapName}}<br>
 						<img class="icons icons-base{{$e.Map.game.baseType}}">
 						<img class="icons icons-alliance{{allianceToClass $e.Map.game.alliancesType}}">
 					</td>
-					<td>{{$e.Map.game.mapName}}</td>
 					<td>
-						<table class="table">
-						{{/*<pre>{{$e.Map.playerData}}</pre>*/}}
-						<tr>
-							<th>Name</th>
-							<th>State</th>
-							<th>Kills</th>
-						</tr>
-							{{range $k, $player := $e.Map.playerData}}
-							{{if ne $player.name ""}}
-							{{if ne $player.usertype "spectator"}}
-								<tr>
-									<td>{{$player.name}}</td>
-									<td>{{$player.usertype}}</td>
-									<td>{{$player.kills}}</td>
-								</tr>
+						<div class="container">
+						<div class="row">
+							<div class="col-sm">
+								{{range $k, $player := $e.Map.playerData}}
+								{{if eq $player.usertype "winner"}}
+								<div class="row">
+									<div class="col-sm games-winner-name">{{$player.name}}</div>
+									<div class="col-sm">{{$player.kills}}</div>
+								</div>
 								{{end}}
 								{{end}}
-							{{end}}
-				  	</table>
+							</div>
+							<div class="col-sm">
+								{{range $k, $player := $e.Map.playerData}}
+								{{if eq $player.usertype "loser"}}
+								<div class="row">
+									<div class="col-sm games-loser-name">{{$player.name}}</div>
+									<div class="col-sm">{{$player.kills}}</div>
+								</div>
+								{{end}}
+								{{end}}
+							</div>
+						</div>
+						</div>
 					</td>
 				</tr>
 				{{end}}
