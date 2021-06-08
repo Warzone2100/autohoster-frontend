@@ -59,15 +59,17 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		var numplayers int
 		var laststr string
 		var adminhash string
+		var allow_preset_request bool
 
 		derr := dbpool.QueryRow(context.Background(), `
 		SELECT mapname, alliances, levelbase, scav, players, 
 			(SELECT coalesce(extract(epoch from last_host_request), 0) FROM users WHERE username = $2)::text as last_host_request,
+			(SELECT allow_preset_request FROM users WHERE username = $2) as allow_preset_request,
 			coalesce((SELECT hash FROM players WHERE id = (SELECT coalesce(wzprofile2, 0) FROM users WHERE username = $2)), '') as adminhash
 		FROM presets
 		WHERE maphash = $1 AND NOT ((SELECT id FROM users WHERE username = $2) = ANY(coalesce(disallowed_users, array[]::int[])))
 		LIMIT 1`, r.PostFormValue("maphash"), sessionManager.GetString(r.Context(), "User.Username")).Scan(
-			&mapname, &allowedalliances, &allowedbase, &allowedscav, &numplayers, &laststr, &adminhash)
+			&mapname, &allowedalliances, &allowedbase, &allowedscav, &numplayers, &laststr, &allow_preset_request, &adminhash)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
 				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Selected map is not allowed."})
@@ -78,6 +80,11 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if allow_preset_request {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Sorry, you are not allowed to request games."})
+			return
+		}
+
 		lastfloat, cerr := strconv.ParseFloat(laststr, 64)
 		if cerr != nil {
 			log.Println(cerr.Error())
@@ -85,7 +92,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		lastint := int64(lastfloat)
-		if lastint-10800+30 > time.Now().Unix() {
+		if lastint-10800+300 > time.Now().Unix() {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true,
 				"msg": "Please wait before requesting another room. " + strconv.FormatInt(300-(time.Now().Unix()-(lastint-10800)), 10) + " seconds left."})
 			return
@@ -245,6 +252,10 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 	derr := dbpool.QueryRow(context.Background(),
 		`SELECT allow_host_request, allow_preset_request FROM users WHERE username = $1`,
 		sessionManager.GetString(r.Context(), "User.Username")).Scan(&allow_any, &allow_presets)
+	if !(allow_any || allow_presets) {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Sorry, you are not allowed to request games."})
+		return
+	}
 	rows, derr := dbpool.Query(context.Background(), `
 	SELECT
 		id,
