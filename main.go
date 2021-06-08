@@ -202,6 +202,7 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 		}
 		m["NavWhere"] = page
 		sessionAppendUser(r, &m)
+		w.Header().Set("Server", "TacticalPepe webserver "+CommitHash)
 		err := in.Execute(w, m)
 		if err != nil {
 			log.Println(err)
