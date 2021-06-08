@@ -52,6 +52,7 @@
 						</div>
 						</div>
 					</td>
+					<td><a href="/gamedetails/{{$e.Id}}" class="btn btn-primary">More</a>
 				</tr>
 				{{end}}
 				{{end}}
@@ -63,7 +64,7 @@
 {{end}}
 
 
-{{define "game"}}
+{{define "gamedetails"}}
 <!doctype html>
 <html lang="en">
 	<head>
@@ -98,30 +99,39 @@
 					<div class="col-sm">Power</div>
 					<div class="col-sm">Units built</div>
 				</div>
-			<div class="row">
-				<div class="col-sm">
-					{{range $k, $player := .Game.Map.playerData}}
-					{{if eq $player.usertype "winner"}}
-					<div class="row">
-						<div class="col-sm games-winner-name">{{$player.name}}</div>
-						<div class="col-sm">{{$player.kills}}</div>
-						<div class="col-sm">{{$player.power}}</div>
-						<div class="col-sm">{{$player.droidBuilt}}</div>
+				<div class="row">
+					<div class="col-sm">
+						{{range $k, $player := .Game.Map.playerData}}
+						{{if eq $player.usertype "winner"}}
+						<div class="row">
+							<div class="col-sm games-winner-name">{{$player.name}}</div>
+							<div class="col-sm">{{$player.kills}}</div>
+							<div class="col-sm">{{$player.power}}</div>
+							<div class="col-sm">{{$player.droidBuilt}}</div>
+						</div>
+						{{end}}
+						{{end}}
 					</div>
-					{{end}}
-					{{end}}
+					<div class="col-sm">
+						{{range $k, $player := .Game.Map.playerData}}
+						{{if eq $player.usertype "loser"}}
+						<div class="row">
+							<div class="col-sm games-loser-name">{{$player.name}}</div>
+							<div class="col-sm">{{$player.kills}}</div>
+							<div class="col-sm">{{$player.power}}</div>
+							<div class="col-sm">{{$player.droidBuilt}}</div>
+						</div>
+						{{end}}
+						{{end}}
+					</div>
 				</div>
-				<div class="col-sm">
-					{{range $k, $player := .Game.Map.playerData}}
-					{{if eq $player.usertype "loser"}}
-					<div class="row">
-						<div class="col-sm games-loser-name">{{$player.name}}</div>
-						<div class="col-sm">{{$player.kills}}</div>
-						<div class="col-sm">{{$player.power}}</div>
-						<div class="col-sm">{{$player.droidBuilt}}</div>
-					</div>
-					{{end}}
-					{{end}}
+			</div></p>
+			<p>Research:
+			<div class="container">
+				<div class="row">
+					<div class="col-sm">Name</div>
+					<div class="col-sm">Player</div>
+					<div class="col-sm">Time</div>
 				</div>
 			</div>
 			{{else}}

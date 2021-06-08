@@ -111,7 +111,7 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	game := GamePrototype{gid, ddate, gtstr, m, djson}
-	basicLayoutLookupRespond("game", w, r, map[string]interface{}{
+	basicLayoutLookupRespond("gamedetails", w, r, map[string]interface{}{
 		"Game": game,
 	})
 }

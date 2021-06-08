@@ -376,10 +376,10 @@ func main() {
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/autohoster", autohosterControllHandler)
 
-	router.HandleFunc("/rating", ratingHandler)
+	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
 	router.HandleFunc("/games", listGamesHandler)
-	router.HandleFunc("/games/{id:[0-9]+}", gameViewHandler)
+	router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
 	router2 := handlers.CompressHandler(router1)
