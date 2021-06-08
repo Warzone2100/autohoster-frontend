@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -230,7 +231,32 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./static/favicon.ico")
 }
 func ratingHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/favicon.ico")
+	params := mux.Vars(r)
+	hash := params["hash"]
+	isautohoster := false
+	if hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
+		isautohoster = true
+	}
+	elo := ""
+	if isautohoster {
+		elo = "Trusted autohoster"
+	}
+	type Ra struct {
+		Dummy      bool   `json:"dummy"`
+		Autohoster bool   `json:"autohoster"`
+		Star       [3]int `json:"star"`
+		Medal      int    `json:"medal"`
+		Level      int    `json:"level"`
+		Elo        string `json:"elo"`
+	}
+	m := Ra{false, isautohoster, [3]int{0, 0, 0}, 0, -1, elo}
+	j, err := json.Marshal(m)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, string(j))
 }
 
 type statusRespWr struct {
