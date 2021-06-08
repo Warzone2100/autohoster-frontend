@@ -7,9 +7,10 @@
 		</a>
 		<div class="navbar-nav me-auto">
 			<a class="nav-link {{ if eq .NavWhere "index" }} active {{ end }}" href="/">Home</a>
+			<a class="nav-link {{ if eq .NavWhere "games" }} active {{ end }}" href="/games">Recent games</a>
+			<a class="nav-link {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/lobby">Lobby</a>
 			{{if .UserAuthorized}}
 				<a class="nav-link {{ if eq .NavWhere "hoster" }} active {{ end }}" href="/hoster">Multihoster</a>
-				<a class="nav-link {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/lobby">Lobby</a>
 				<a class="btn btn-primary {{ if eq .NavWhere "request" }} active {{ end }}" href="/request">Room request</a>
 			{{end}}
 		</div>
