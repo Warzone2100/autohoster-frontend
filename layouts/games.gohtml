@@ -36,7 +36,7 @@
 								{{range $k, $player := $e.Map.playerData}}
 								{{if eq $player.usertype "winner"}}
 								<div class="row">
-									<div class="col-sm games-winner-name">{{$player.name}}</div>
+									<div class="col-sm games-winner-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
 									<div class="col-sm">{{$player.kills}}</div>
 								</div>
 								{{end}}
@@ -46,7 +46,7 @@
 								{{range $k, $player := $e.Map.playerData}}
 								{{if eq $player.usertype "loser"}}
 								<div class="row">
-									<div class="col-sm games-loser-name">{{$player.name}}</div>
+									<div class="col-sm games-loser-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
 									<div class="col-sm">{{$player.kills}}</div>
 								</div>
 								{{end}}
