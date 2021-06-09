@@ -91,7 +91,9 @@
 						<img class="icons icons-alliance{{allianceToClass .Game.Map.game.alliancesType}}">
 					</p>
 				</div>
-				<div class="col-sm"></div>
+				<div class="col-sm">
+				
+				</div>
 			</div>
 			<p>Players:
 			<div class="container">
@@ -110,7 +112,7 @@
 						{{range $k, $player := .Game.Map.playerData}}
 						{{if eq $player.usertype "winner"}}
 						<div class="row">
-							<div class="col-sm games-winner-name">{{$player.name}}</div>
+							<div class="col-sm games-winner-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
 							<div class="col-sm">{{$player.kills}}</div>
 							<div class="col-sm">{{$player.power}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
@@ -122,7 +124,7 @@
 						{{range $k, $player := .Game.Map.playerData}}
 						{{if eq $player.usertype "loser"}}
 						<div class="row">
-							<div class="col-sm games-loser-name">{{$player.name}}</div>
+							<div class="col-sm games-loser-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
 							<div class="col-sm">{{$player.kills}}</div>
 							<div class="col-sm">{{$player.power}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
