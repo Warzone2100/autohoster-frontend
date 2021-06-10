@@ -92,7 +92,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		lastint := int64(lastfloat)
-		if lastint-10800+300 > time.Now().Unix() {
+		if lastint-10800+300 > time.Now().Unix() && sessionManager.GetString(r.Context(), "User.Username") != "Flex seal" {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true,
 				"msg": "Please wait before requesting another room. " + strconv.FormatInt(300-(time.Now().Unix()-(lastint-10800)), 10) + " seconds left."})
 			return
