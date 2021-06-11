@@ -101,6 +101,7 @@
 var presets = [
 	{{range $i, $j := .Presets}}
 		{
+			"id": {{$j.ID}},
 			"name": {{$j.MapName}},
 			"hash": {{$j.MapHash}},
 			"base":{{$j.LevelBase}},
@@ -142,10 +143,11 @@ var presets = [
 		}
 	}
 	function GetHtmlResults(results) {
-		var html = "<table class=\"table\"> <thead><td>Preview<td>Payers<td>Name<td>Actions</thead>"
+		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Payers<td>Name<td>Actions</thead>"
 		for (var i = 0; i < results.length; i++) {
 			const result = results[i]
-			html += "<tr><td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+result.obj.hash+".png\"></td>"
+			html += "<tr><td>"+result.obj.id+"</td>"
+			html += "<td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+result.obj.hash+".png\"></td>"
 			html += "<td>"+result.obj.players+"</td>"
 			html += "<td>"+fuzzysort.highlight(result)+"</td>"
 			//data-bs-toggle=\"collapse\" data-bs-target=\"#CRes\" aria-expanded=\"true\" aria-controls=\"CRes\" 
@@ -155,10 +157,11 @@ var presets = [
 		return html
 	}
 	function GetHtmlPresets() {
-		var html = "<table class=\"table\"> <thead><td>Preview<td>Payers<td>Name<td>Actions</thead>"
+		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Payers<td>Name<td>Actions</thead>"
 		for (var i = 0; i < presets.length; i++) {
 			const preset = presets[i]
-			html += "<tr><td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+preset.hash+".png\"></td>"
+			html += "<tr><td>"+preset.id+"</td>"
+			html += "<td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+preset.hash+".png\"></td>"
 			html += "<td>"+preset.players+"</td>"
 			html += "<td>"+preset.name+"</td>"
 			// data-bs-toggle=\"collapse\" data-bs-target=\"#CRes\" aria-expanded=\"true\" aria-controls=\"CRes\" 
