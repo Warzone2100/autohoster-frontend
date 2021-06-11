@@ -28,6 +28,7 @@
 						{{$e.Map.game.mapName}}<br>
 						<img class="icons icons-base{{$e.Map.game.baseType}}">
 						<img class="icons icons-alliance{{allianceToClass $e.Map.game.alliancesType}}">
+						<img class="icons icons-scav{{boolto10 $e.Map.game.scavengers}}">
 					</td>
 					<td>
 						<div class="container">
@@ -84,11 +85,12 @@
 			<div class="row">
 				<div class="col-sm">
 			<h4>Game {{.Game.Id}}</h4>
-					<p>Map: {{.Game.Map.game.mapName}}</p>
+					<p>Map: {{.Game.Map.game.mapName}} ({{.Game.Map.game.mapHash}})</p>
 					<p>When: {{.Game.Date}} ({{.Game.Gametime}})</p>
 					<p>Settings:
 						<img class="icons icons-base{{.Game.Map.game.baseType}}">
 						<img class="icons icons-alliance{{allianceToClass .Game.Map.game.alliancesType}}">
+						<img class="icons icons-scav{{boolto10 .Game.Map.game.scavengers}}">
 					</p>
 				</div>
 				<div class="col-sm">

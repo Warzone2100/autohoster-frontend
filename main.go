@@ -61,6 +61,13 @@ var layoutFuncs = template.FuncMap{
 			return a
 		}
 	},
+	"boolto10": func(a bool) int {
+		if a == false {
+			return 0
+		} else {
+			return 1
+		}
+	},
 }
 
 func getWzProfile(id int, table string) map[string]interface{} {
