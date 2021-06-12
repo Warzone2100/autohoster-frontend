@@ -84,9 +84,51 @@
 .games-winner-name {
   color: green;
 }
+.games-winner-name {
+  color: green;
+}
 .games-loser-name {
   color: red;
 }
+.games-loser-name {
+  color: red;
+}
+.wz-color-background-0 { background-color: rgba(16, 112, 16, 0.15);}
+.wz-color-background-1 { background-color: rgba(255, 176, 53, 0.15);}
+.wz-color-background-2 { background-color: rgba(144, 144, 144, 0.15);}
+.wz-color-background-3 { background-color: rgba(32, 32, 32, 0.15);}
+.wz-color-background-4 { background-color: rgba(155, 15, 15, 0.15);}
+.wz-color-background-5 { background-color: rgba(39, 49, 185, 0.15);}
+.wz-color-background-6 { background-color: rgba(208, 16, 176, 0.15);}
+.wz-color-background-7 { background-color: rgba(32, 208, 208, 0.15);}
+.wz-color-background-8 { background-color: rgba(240, 232, 16, 0.15);}
+.wz-color-background-9 { background-color: rgba(112, 0, 116, 0.15);}
+.wz-color-background-10 { background-color: rgba(224, 224, 224, 0.15);}
+.wz-color-background-11 { background-color: rgba(32, 32, 255, 0.15);}
+.wz-color-background-12 { background-color: rgba(0, 160, 0, 0.15);}
+.wz-color-background-13 { background-color: rgba(64, 0, 0, 0.15);}
+.wz-color-background-14 { background-color: rgba(16, 0, 64, 0.15);}
+.wz-color-background-15 { background-color: rgba(64, 96, 0, 0.15);}
+
+.wz-color-0 { background-color: rgba(16, 112, 16, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-1 { background-color: rgba(255, 176, 53, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-2 { background-color: rgba(144, 144, 144, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-3 { background-color: rgba(32, 32, 32, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-4 { background-color: rgba(155, 15, 15, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-5 { background-color: rgba(39, 49, 185, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-6 { background-color: rgba(208, 16, 176, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-7 { background-color: rgba(32, 208, 208, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-8 { background-color: rgba(240, 232, 16, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-9 { background-color: rgba(112, 0, 116, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-10 { background-color: rgba(224, 224, 224, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-11 { background-color: rgba(32, 32, 255, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-12 { background-color: rgba(0, 160, 0, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-13 { background-color: rgba(64, 0, 0, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-14 { background-color: rgba(16, 0, 64, 1);    width: 12px;     height: 12px; display: inline-block; }
+.wz-color-15 { background-color: rgba(64, 96, 0, 1);    width: 12px;     height: 12px; display: inline-block; }
+
+
+
 
 .icons {
   background-image: url(/static/icons.png);

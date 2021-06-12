@@ -97,10 +97,9 @@
 					<img src="https://wz2100.euphobos.ru/maps/preveiw/{{.Game.Map.game.mapHash}}.png">
 				</div>
 			</div>
-			<p>Players:
 			<div class="container">
 				<div class="row">
-					<div class="col-sm">Name</div>
+					<div class="col-sm">Players</div>
 					<div class="col-sm">Kills</div>
 					<div class="col-sm">Droid lost</div>
 					<div class="col-sm">Units built</div>
@@ -108,12 +107,13 @@
 					<div class="col-sm">Structure lost</div>
 					<div class="col-sm">Power</div>
 				</div>
-				<div class="row">
-					<div class="col-sm">
 						{{range $k, $player := .Game.Map.playerData}}
 						{{if eq $player.usertype "winner"}}
-						<div class="row">
-							<div class="col-sm" title="Hash: {{$player.hash}}">{{$player.name}}</div>
+						<div class="row wz-color-background-{{$player.colour}}">
+							<div class="col-sm" title="Hash: {{$player.hash}}">
+							<span class="wz-color-{{$player.colour}}"></span>
+								{{$player.name}}
+							</div>
 							<div class="col-sm">{{$player.kills}}</div>
 							<div class="col-sm">{{$player.droidLost}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
@@ -126,8 +126,11 @@
 
 						{{range $k, $player := .Game.Map.playerData}}
 						{{if eq $player.usertype "loser"}}
-						<div class="row">
-							<div class="col-sm" title="Hash: {{$player.hash}}">{{$player.name}}</div>
+						<div class="row  wz-color-background-{{$player.colour}}">
+							<div class="col-sm" title="Hash: {{$player.hash}}">
+								<span class="wz-color-{{$player.colour}}"></span>
+								{{$player.name}}
+							</div>
 							<div class="col-sm">{{$player.kills}}</div>
 							<div class="col-sm">{{$player.droidLost}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
@@ -137,9 +140,6 @@
 						</div>
 						{{end}}
 						{{end}}
-
-					</div>
-				</div>
 			</div></p>
 			<p>Research:
 			<div class="container">
