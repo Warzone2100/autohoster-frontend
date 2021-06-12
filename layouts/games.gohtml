@@ -102,37 +102,42 @@
 				<div class="row">
 					<div class="col-sm">Name</div>
 					<div class="col-sm">Kills</div>
-					<div class="col-sm">Power</div>
+					<div class="col-sm">Droid lost</div>
 					<div class="col-sm">Units built</div>
-					<div class="col-sm">Name</div>
-					<div class="col-sm">Kills</div>
+					<div class="col-sm">Struct built</div>
+					<div class="col-sm">Structure lost</div>
 					<div class="col-sm">Power</div>
-					<div class="col-sm">Units built</div>
 				</div>
 				<div class="row">
 					<div class="col-sm">
 						{{range $k, $player := .Game.Map.playerData}}
 						{{if eq $player.usertype "winner"}}
 						<div class="row">
-							<div class="col-sm games-winner-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
+							<div class="col-sm" title="Hash: {{$player.hash}}">{{$player.name}}</div>
 							<div class="col-sm">{{$player.kills}}</div>
-							<div class="col-sm">{{$player.power}}</div>
+							<div class="col-sm">{{$player.droidLost}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
+							<div class="col-sm">{{$player.structBuilt}}</div>
+							<div class="col-sm">{{$player.structureLost}}</div>
+							<div class="col-sm">{{$player.power}}</div>
 						</div>
 						{{end}}
 						{{end}}
-					</div>
-					<div class="col-sm">
+
 						{{range $k, $player := .Game.Map.playerData}}
 						{{if eq $player.usertype "loser"}}
 						<div class="row">
-							<div class="col-sm games-loser-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
+							<div class="col-sm" title="Hash: {{$player.hash}}">{{$player.name}}</div>
 							<div class="col-sm">{{$player.kills}}</div>
-							<div class="col-sm">{{$player.power}}</div>
+							<div class="col-sm">{{$player.droidLost}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
+							<div class="col-sm">{{$player.structBuilt}}</div>
+							<div class="col-sm">{{$player.structureLost}}</div>
+							<div class="col-sm">{{$player.power}}</div>
 						</div>
 						{{end}}
 						{{end}}
+
 					</div>
 				</div>
 			</div></p>
@@ -144,11 +149,12 @@
 					<div class="col-sm">Time</div>
 				</div>
 			</div>
+		</p>
 			{{else}}
 			<div class="alert alert-danger" role="alert">Game not found</div>
 			{{end}}
 		</div>
 	</body>
-	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+	<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </html>
 {{end}}
