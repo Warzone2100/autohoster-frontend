@@ -246,6 +246,7 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 	s, mhstatus := RequestStatus()
 	if !s {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Multihoster unavaliable"})
+		return
 	}
 	var allow_any bool
 	var allow_presets bool
