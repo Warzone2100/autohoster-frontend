@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -73,13 +74,6 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 	// }
 	params := mux.Vars(r)
 	gid := params["id"]
-	type GamePrototype struct {
-		Id       string
-		Date     string
-		Gametime string
-		Map      map[string]interface{}
-		Json     string
-	}
 	var ddate string
 	var djson string
 	derr := dbpool.QueryRow(context.Background(), `
@@ -110,8 +104,66 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 			gtstr = (time.Duration(int(gt.(float64)/1000)) * time.Second).String()
 		}
 	}
-	game := GamePrototype{gid, ddate, gtstr, m, djson}
+	/*
+		extendedPlayerData: [
+			{
+				researchComplite: [
+					{...}
+				]
+			},
+			{
+				researchComplite: [
+					{...}
+				]
+			}
+		]
+
+
+
+		researchTimes: [
+			{
+				name: R-Cyborg-Armor-Heat01
+				tiems: [
+					4m48s, 	4m54s, 	4m54s, 	4m54s, 	4m48s, 	4m48s
+				]
+			},
+		]
+	*/
+	// WARNING SHITCODE AHEAD
+	res := map[string][11]string{}
+	for _, bbb := range m["extendedPlayerData"].([]interface{}) {
+		rrr := bbb.(map[string]interface{})["researchComplite"]
+		for _, bb := range rrr.([]interface{}) {
+			rr := bb.(map[string]interface{})
+			var b [11]string
+			b = res[rr["name"].(string)]
+			// bindex, _ := strconv.Atoi(rr["player"].(float64))
+			// b[int(rr["player"].(float64))] = rr["time"].(float64)
+			b[int(rr["player"].(float64))] = (time.Duration(int(rr["time"].(float64)/1000)) * time.Second).String()
+			res[rr["name"].(string)] = b
+		}
+	}
+	// (time.Duration(int(rr["time"].(float64)/1000)) * time.Second).String()
+	reskeys := make([]string, len(res))
+	keysi := 0
+	for k := range res {
+		reskeys[keysi] = k
+		keysi++
+	}
+	sort.Strings(reskeys)
+	resSorted := map[string][11]string{}
+	for _, resval := range reskeys {
+		if res[resval][0] != "0s" {
+			resSorted[resval] = res[resval]
+		}
+	}
 	basicLayoutLookupRespond("gamedetails", w, r, map[string]interface{}{
-		"Game": game,
+		"ID":        gid,
+		"Date":      ddate,
+		"JMap":      m,
+		"Gametime":  gtstr,
+		"Res":       res,
+		"ResSorted": resSorted,
+		"IsNull":    djson,
 	})
 }

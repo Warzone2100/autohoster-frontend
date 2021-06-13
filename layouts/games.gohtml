@@ -74,32 +74,33 @@
 	<head>
 		{{template "head"}}
 		<meta content="Autohosted game {{.Game.Id}}" property="og:title">
-		<meta content="Map: {{.Game.Map.game.mapName}} Game time: {{.Game.Gametime}}" property="og:description">
-		<meta content="https://tacticalpepe.me/gamedetails/{{.Game.Id}}" property="og:url">
+		<meta content="Map: {{.JMap.game.mapName}} Game time: {{.Gametime}}" property="og:description">
+		<meta content="https://tacticalpepe.me/gamedetails/{{.Id}}" property="og:url">
 	</head>
 	<body>
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 container">
-			{{if ne .Game.Json "null"}}
+			{{if ne .IsNull "null"}}
 			<div class="row">
 				<div class="col-sm">
-			<h4>Game {{.Game.Id}}</h4>
-					<p>Map: {{.Game.Map.game.mapName}} ({{.Game.Map.game.mapHash}})</p>
-					<p>When: {{.Game.Date}} ({{.Game.Gametime}})</p>
+			<h4>Game {{.Id}}</h4>
+					<p>Map: {{.JMap.game.mapName}} ({{.JMap.game.mapHash}})</p>
+					<p>When: {{.Date}} ({{.Gametime}})</p>
 					<p>Settings:
-						<img class="icons icons-base{{.Game.Map.game.baseType}}">
-						<img class="icons icons-alliance{{allianceToClass .Game.Map.game.alliancesType}}">
-						<img class="icons icons-scav{{boolto10 .Game.Map.game.scavengers}}">
+						<img class="icons icons-base{{.JMap.game.baseType}}">
+						<img class="icons icons-alliance{{allianceToClass .JMap.game.alliancesType}}">
+						<img class="icons icons-scav{{boolto10 .JMap.game.scavengers}}">
 					</p>
 				</div>
 				<div class="col-sm">
-					<img src="https://wz2100.euphobos.ru/maps/preveiw/{{.Game.Map.game.mapHash}}.png">
+					<img src="https://wz2100.euphobos.ru/maps/preview/{{.JMap.game.mapHash}}.png">
 				</div>
 			</div>
 			<div class="container">
 				<div class="row">
 					<div class="col-sm">Players</div>
+					<div class="col-sm">Position</div>
 					<div class="col-sm">Kills</div>
 					<div class="col-sm">Droid lost</div>
 					<div class="col-sm">Units built</div>
@@ -107,13 +108,14 @@
 					<div class="col-sm">Structure lost</div>
 					<div class="col-sm">Power</div>
 				</div>
-						{{range $k, $player := .Game.Map.playerData}}
+						{{range $k, $player := .JMap.playerData}}
 						{{if eq $player.usertype "winner"}}
 						<div class="row wz-color-background-{{$player.colour}}">
 							<div class="col-sm" title="Hash: {{$player.hash}}">
 							<span class="wz-color-{{$player.colour}}"></span>
 								{{$player.name}}
 							</div>
+							<div class="col-sm">{{$player.position}}</div>
 							<div class="col-sm">{{$player.kills}}</div>
 							<div class="col-sm">{{$player.droidLost}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
@@ -124,13 +126,14 @@
 						{{end}}
 						{{end}}
 
-						{{range $k, $player := .Game.Map.playerData}}
+						{{range $k, $player := .JMap.playerData}}
 						{{if eq $player.usertype "loser"}}
 						<div class="row  wz-color-background-{{$player.colour}}">
 							<div class="col-sm" title="Hash: {{$player.hash}}">
 								<span class="wz-color-{{$player.colour}}"></span>
 								{{$player.name}}
 							</div>
+							<div class="col-sm">{{$player.position}}</div>
 							<div class="col-sm">{{$player.kills}}</div>
 							<div class="col-sm">{{$player.droidLost}}</div>
 							<div class="col-sm">{{$player.droidBuilt}}</div>
@@ -140,16 +143,48 @@
 						</div>
 						{{end}}
 						{{end}}
-			</div></p>
-			<p>Research:
-			<div class="container">
-				<div class="row">
-					<div class="col-sm">Name</div>
-					<div class="col-sm">Player</div>
-					<div class="col-sm">Time</div>
-				</div>
 			</div>
-		</p>
+			<div class="container">
+				<table class="table">
+					<thead>
+						<tr>
+							<th>Research</th>
+							{{range $k, $player := .JMap.playerData}}
+							{{if ne $k 0}}
+							<th>{{$player.name}} ({{$player.playnum}})({{$k}})({{$player.position}})</th>
+							{{end}}
+							{{end}}
+						</tr>
+					</thead>
+					<tbody>
+						{{range $n, $p := .ResSorted}}
+						<tr>
+							<td>{{$n}}</td>
+							{{range $nn, $rr := $p}}
+							{{if ne $nn 0}}
+							<td>{{$rr}}</td>
+							{{end}}
+							{{end}}
+						</tr>
+						{{end}}
+					</tbody>
+					{{/*
+							<th>time</th>
+						{{range $k, $player := .JMap.playerData}}
+							<th class="wz-color-background-{{$player.colour}}">
+							{{$player.name}}
+							</th>
+						{{end}}
+						</tr>
+					</thead>
+					<tbtbody>
+					{{range $r, $research := (index .Game.Map.extendedPlayerData 1).researchComplite}}
+						<th>{{$r}}</th>
+						<th>{{$research}}</th>
+					{{end}}
+					</tbtbody>*/}}
+				</table>
+			</div>
 			{{else}}
 			<div class="alert alert-danger" role="alert">Game not found</div>
 			{{end}}
