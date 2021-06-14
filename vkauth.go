@@ -133,7 +133,7 @@ func VKCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Wrong data recieved from vk."})
 		return
 	}
-	if refresh_date != "0" {
+	if refresh_date != 0 {
 		log.Println("offline scope is not offline")
 		log.Printf("%T [%s]", refresh_date, refresh_date)
 	}
