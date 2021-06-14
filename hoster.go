@@ -117,6 +117,10 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 			return
 		}
+		roomname := r.PostFormValue("roomname")
+		if roomname == "" {
+			roomname = "Autohoster"
+		}
 		alliancen, err := strconv.Atoi(r.PostFormValue("alliances"))
 		if alliancen > 0 {
 			alliancen++
@@ -124,7 +128,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		basen, err := strconv.Atoi(r.PostFormValue("base"))
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
 			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
-			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, "Autohoster")
+			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname)
 		if s {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": reqres})
 		} else {
