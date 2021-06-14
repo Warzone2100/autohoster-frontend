@@ -66,24 +66,32 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Error reading form: %v\n", err)
 			return
 		}
+		type LastAttemptS struct {
+			Fname string
+			Lname string
+			Username string
+			Password string
+			Email string
+		}
+		la := LastAttemptS{r.PostFormValue("fname"), r.PostFormValue("lname"), r.PostFormValue("username"), r.PostFormValue("password"), r.PostFormValue("email")}
 		if !validateUsername(r.PostFormValue("username")) {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Username length must be between 3 and 25"})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Username length must be between 3 and 25", "LastAttempt": la})
 			return
 		}
 		if !validatePassword(r.PostFormValue("password")) {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Password length must be between 6 and 25"})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Password length must be between 6 and 25", "LastAttempt": la})
 			return
 		}
 		if !validateName(r.PostFormValue("fname")) || !validateName(r.PostFormValue("lname")) {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Name length must be between 3 and 25 and can only contain a-z, A-Z characters and space"})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Name length must be between 3 and 25 and can only contain a-z, A-Z characters and space", "LastAttempt": la})
 			return
 		}
 		if r.PostFormValue("password") != r.PostFormValue("confirm-password") {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Passwords are not matching"})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Passwords are not matching", "LastAttempt": la})
 			return
 		}
 		if !validateEmail(r.PostFormValue("email")) {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Email is not valid"})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Email is not valid", "LastAttempt": la})
 			return
 		}
 		requname := r.PostFormValue("username")
@@ -96,7 +104,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Register attempt: [%s] [%s] [%s]", requname, reqemail)
 
 		dberr := func(e error) {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database call error: " + e.Error()})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database call error: " + e.Error(), "LastAttempt": la})
 		}
 
 		numUsername := 0
@@ -106,7 +114,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if numUsername != 0 {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Username is already taken!"})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Username is already taken!", "LastAttempt": la})
 			return
 		}
 
@@ -117,22 +125,22 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if numEmail != 0 {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Email is already taken!"})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Email is already taken!", "LastAttempt": la})
 			return
 		}
 
 		if sendgridConfirmcode(reqemail, reqemailcode) == false {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Can't verify email. Contact administrator."})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Can't verify email. Contact administrator.", "LastAttempt": la})
 			return
 		}
 
 		tag, derr := dbpool.Exec(context.Background(), "INSERT INTO users (username, password, fname, lname, email, emailconfirmcode) VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING", requname, requpass, reqfname, reqlname, reqemail, reqemailcode)
 		if derr != nil {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database call error: " + derr.Error()})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database call error: " + derr.Error(), "LastAttempt": la})
 			return
 		}
 		if tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database insert error, rows affected " + string(tag)})
+			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database insert error, rows affected " + string(tag), "LastAttempt": la})
 			return
 		}
 		basicLayoutLookupRespond("register", w, r, map[string]interface{}{"SuccessRegister": true})

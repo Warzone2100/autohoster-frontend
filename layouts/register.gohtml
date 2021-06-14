@@ -32,23 +32,23 @@
 			<form action="/register" method="post" class="loginbox">
 				<div class="mb-3">
 					<label for="fname" class="form-label">First Name</label>
-					<input type="text" class="form-control" name="fname" id="fname">
+					<input type="text" class="form-control" name="fname" id="fname" value="{{.LastAttempt.Fname}}">
 				</div>
 				<div class="mb-3">
 					<label for="lname" class="form-label">Last Name</label>
-					<input type="text" class="form-control" name="lname" id="lname">
+					<input type="text" class="form-control" name="lname" id="lname" value="{{.LastAttempt.Lname}}">
 				</div>
 				<div class="mb-3">
 					<label for="username" class="form-label">Username</label>
-					<input type="text" class="form-control" name="username" id="username">
+					<input type="text" class="form-control" name="username" id="username" value="{{.LastAttempt.Username}}">
 				</div>
 				<div class="mb-3">
 					<label for="email" class="form-label">Email</label>
-					<input type="email" class="form-control" name="email" id="email">
+					<input type="email" class="form-control" name="email" id="email" value="{{.LastAttempt.Email}}">
 				</div>
 				<div class="mb-3">
 					<label for="password" class="form-label">Password</label>
-					<input type="password" class="form-control" name="password" id="password">
+					<input type="password" class="form-control" name="password" id="password" value="{{.LastAttempt.Password}}">
 				</div>
 				<div class="mb-3">
 					<label for="confirm-password" class="form-label">Confirm password</label>
