@@ -43,16 +43,12 @@ func DiscordGetUrl(state string) string {
 
 func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
 	res, err := discordOauthConfig.Client(context.Background(), token).Get("https://discordapp.com/api/users/@me")
-	if err != nil || res.StatusCode != 200 {
-		if res.StatusCode == 401 {
-			log.Println("Unauthorized, resetting discord")
-			token.AccessToken = ""
-			token.RefreshToken = ""
-			token.Expiry = time.Now()
-		} else {
-			log.Println(res.StatusCode)
-		}
-		return map[string]interface{}{"DiscordError": res.Status}
+	if err != nil {
+		log.Println("Unauthorized, resetting discord")
+		token.AccessToken = ""
+		token.RefreshToken = ""
+		token.Expiry = time.Now()
+		return map[string]interface{}{"DiscordError": "Error"}
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)

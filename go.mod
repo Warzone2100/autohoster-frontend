@@ -22,6 +22,7 @@ require (
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/jgautheron/goconst v1.4.0 // indirect
 	github.com/joho/godotenv v1.3.0
+	github.com/kr/pretty v0.1.0
 	github.com/mdempsky/maligned v0.0.0-20210215075342-f0178ee82032 // indirect
 	github.com/mdempsky/unconvert v0.0.0-20200228143138-95ecdbfc0b5f // indirect
 	github.com/mibk/dupl v1.0.0 // indirect

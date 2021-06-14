@@ -14,7 +14,7 @@ import (
 var VKRedirectUrl = "https://tacticalpepe.me/oauth/vk"
 
 func VKGetUrl(state string) string {
-	return "https://oauth.vk.com/authorize?client_id=" + os.Getenv("VKCLIENTID") + "&display=popup&redirect_uri=" + VKRedirectUrl + "&scope=friends,offline&response_type=code&v=5.131&state=" + state
+	return "https://oauth.vk.com/authorize?client_id=" + os.Getenv("VKCLIENTID") + "&display=popup&redirect_uri=" + VKRedirectUrl + "&scope=offline&response_type=code&v=5.131&state=" + state
 }
 
 func VKGetUInfo(token string) map[string]interface{} {
@@ -27,6 +27,7 @@ func VKGetUInfo(token string) map[string]interface{} {
 	q := req.URL.Query()
 	q.Add("fields", "photo_400_orig,city")
 	q.Add("access_token", token)
+	q.Add("v", "5.131")
 	req.URL.RawQuery = q.Encode()
 	client.Do(req)
 	resp, err := client.Do(req)
@@ -45,7 +46,30 @@ func VKGetUInfo(token string) map[string]interface{} {
 		log.Print(err)
 		return map[string]interface{}{}
 	}
-	return u
+	d := make(map[string]interface{})
+	dd, p1 := u["response"] //.([]interface{})[0].(map[string]interface{})
+	if !p1 {
+		log.Print("No response found")
+		return map[string]interface{}{}
+	}
+	d2, p2 := dd.([]interface{})
+	if !p2 {
+		log.Print("Response is not []interface{}")
+		return map[string]interface{}{}
+	}
+	if len(d2) < 1 {
+		log.Print("Response is empty")
+		return map[string]interface{}{}
+	}
+	d3, p3 := d2[0].(map[string]interface{})
+	if !p3 {
+		log.Print("Response body is not map[string]interface{}")
+		return map[string]interface{}{}
+	}
+	d["Photo"] = d3["photo_400_orig"]
+	d["Fname"] = d3["first_name"]
+	d["Lname"] = d3["last_name"]
+	return d
 }
 
 func VKCallbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,14 +93,14 @@ func VKCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Error creating request."})
 		return
 	}
+	time.Sleep(2 * time.Second)
 	q := req.URL.Query()
 	q.Add("client_id", os.Getenv("VKCLIENTID"))
 	q.Add("client_secret", os.Getenv("VKCLIENTSECRET"))
-	q.Add("redirect_uri", "https://tacticalpepe.me/oauth/vk")
 	q.Add("code", r.FormValue("code"))
+	q.Add("redirect_uri", VKRedirectUrl)
 	req.URL.RawQuery = q.Encode()
 	log.Println(req.URL.RawQuery)
-	client.Do(req)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Print(err)
@@ -111,8 +135,9 @@ func VKCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if refresh_date != "0" {
 		log.Println("offline scope is not offline")
+		log.Printf("%T [%s]", refresh_date, refresh_date)
 	}
-	tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET vk_token = $1, vk_uid = $2 WHERE username = $4", token, uid, sessionManager.Get(r.Context(), "User.Username"))
+	tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET vk_token = $1, vk_uid = $2 WHERE username = $3", token, uid, sessionManager.Get(r.Context(), "User.Username"))
 	if derr != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
 		return

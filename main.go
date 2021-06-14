@@ -141,7 +141,7 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 			log.Println("sessionAppendUser: " + derr.Error())
 		}
 		sessdiscrefreshwhen := time.Unix(int64(sessdiscrefreshwhenepoch), 0)
-		if sessdisctoken == "" {
+		if sessdisctoken == "" || sessdiscrefreshtoken == "" {
 			sessdiscstate = generateRandomString(32)
 			sessdiscurl = DiscordGetUrl(sessdiscstate)
 			sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
