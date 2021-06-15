@@ -78,8 +78,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
 			return
 		}
-
-		if allow_preset_request {
+		if !allow_preset_request {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Sorry, you are not allowed to request games."})
 			return
 		}
