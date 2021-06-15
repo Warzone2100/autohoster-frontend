@@ -31,7 +31,6 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "POST" {
 		err := r.ParseForm()
-
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Form parse error: " + err.Error()})
 			return
@@ -121,6 +120,13 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		if roomname == "" {
 			roomname = "Autohoster"
 		}
+		mixmod := ""
+		if r.PostFormValue("AddSpecs") == "on" {
+			mixmod = "spec"
+		}
+		if r.PostFormValue("AddBalance") == "on" {
+			mixmod += "bal"
+		}
 		alliancen, err := strconv.Atoi(r.PostFormValue("alliances"))
 		if alliancen > 0 {
 			alliancen++
@@ -128,7 +134,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		basen, err := strconv.Atoi(r.PostFormValue("base"))
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
 			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
-			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname)
+			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod)
 		if s {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": reqres})
 		} else {
@@ -376,7 +382,7 @@ func RequestStatus() (bool, string) {
 	return true, bodyString
 }
 
-func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name string) (bool, string) {
+func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, mods string) (bool, string) {
 	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"request-room", nil)
 	if err != nil {
 		log.Print(err)
@@ -391,6 +397,7 @@ func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name s
 	q.Add("maxplayers", players)
 	q.Add("adminhash", admin)
 	q.Add("roomname", name)
+	q.Add("mod", mods)
 	req.URL.RawQuery = q.Encode()
 	var netClient = &http.Client{
 		Timeout: time.Second * 2,

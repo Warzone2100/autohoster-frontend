@@ -248,6 +248,9 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	if isautohoster {
 		elo = "Trusted autohoster"
 	}
+	if hash == "aa8519279495c1e8e6f1603aa31c01796d4eeae46e4a81e666404aea0064371d" {
+		elo = "Admin (⌐■_■)"
+	}
 	type Ra struct {
 		Dummy      bool   `json:"dummy"`
 		Autohoster bool   `json:"autohoster"`
