@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"reflect"
 	_ "strconv"
 	"time"
 
@@ -67,6 +68,21 @@ var layoutFuncs = template.FuncMap{
 		} else {
 			return 1
 		}
+	},
+	"avail": func(name string, data interface{}) bool {
+		v := reflect.ValueOf(data)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		m, ok := data.(map[string]interface{})
+		if ok {
+			_, ok := m[name]
+			return ok
+		}
+		if v.Kind() != reflect.Struct {
+			return false
+		}
+		return v.FieldByName(name).IsValid()
 	},
 }
 
