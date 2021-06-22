@@ -11,10 +11,14 @@
 			<h3>Users</h3>
 			<table class="table">
 				<tr>
-					<td>id</td>
-					<td>username</td>
-					<td>flname</td>
-					<td>email</td>
+					<td>Id</td>
+					<td>Username</td>
+					<td>Name</td>
+					<td>Email</td>
+					<td>Preset</td>
+					<td>Any</td>
+					<td>Reason</td>
+					<td>Last Request</td>
 				</tr>
 				{{range $i, $e := .Users}}
 				<tr>
@@ -22,6 +26,29 @@
 					<td>{{$e.username}}</td>
 					<td>{{$e.fname}} {{$e.lname}}</td>
 					<td>{{$e.email}}</td>
+					<td><div class="{{if $e.allow_preset_request}}text-success{{else}}text-danger{{end}} d-inline-flex">
+						{{if $e.allow_preset_request}}Yes{{else}}No{{end}}
+						<form style="padding-left: 4px;" method="POST" action="/users" target="_self">
+							<input type="hidden" name="name" value="{{$e.username}}">
+							<input type="hidden" name="param" value="allow_preset_request">
+							<input type="hidden" name="val" value="{{if $e.allow_preset_request}}false{{else}}true{{end}}">
+							<input type="submit" value="S">
+						</form></div></td>
+					<td><div class="{{if $e.allow_host_request}}text-success{{else}}text-danger{{end}} d-inline-flex">
+						{{if $e.allow_host_request}}Yes{{else}}No{{end}}
+						<form style="padding-left: 4px;" method="POST" action="/users" target="_self">
+							<input type="hidden" name="name" value="{{$e.username}}">
+							<input type="hidden" name="param" value="allow_host_request">
+							<input type="hidden" name="val" value="{{if $e.allow_host_request}}false{{else}}true{{end}}">
+							<input type="submit" value="S">
+						</form></div></td>
+					<td><div class="form-inline"><form method="POST" action="/users" target="_self">
+							<input type="hidden" name="name" value="{{$e.username}}">
+							<input type="hidden" name="param" value="norequest_reason">
+							<input type="text" name="val" value="{{$e.norequest_reason}}">
+							<input type="submit" value="S">
+						</form></div></td>
+					<td>{{$e.last_host_request}}</td>
 				</tr>
 				{{end}}
 			</table>
