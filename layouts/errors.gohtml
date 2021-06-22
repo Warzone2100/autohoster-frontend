@@ -18,3 +18,62 @@
 	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </html>
 {{end}}
+{{define "error403"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+		<meta content="403" property="og:title">
+		<meta content="hey hey hey where are you going, stop right there" property="og:description">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 text-center">
+			<div class="alert alert-danger" role="alert">
+				<h2>403 Forbidden</h2>
+				{{.ForbiddenReason}}
+			</div>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
+{{define "errornorequest"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{template "head"}}
+		<script type="text/javascript" src="https://vk.com/js/api/openapi.js?169"></script>
+		{{/*<meta content="403" property="og:title">
+		<meta content="hey hey hey where are you going, stop right there" property="og:description">*/}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5">
+			<div class="alert alert-danger text-center" role="alert">
+				{{if eq .ForbiddenReason "0"}}
+				Sorry, Autohoster access must be approved first. Contact Administrator.
+				{{else}}
+				<h4>Access denied.</h4>
+				<h5>We detected Autohoster activity that is not welcome in Warzone 2100 community and restricted
+					your access to room requesting.</h5>
+				<b>Reason: {{.ForbiddenReason}}</b>
+				{{end}}
+			</div>
+			<div class="container">
+				<div>Discord: MaX#6717 (<a href="https://discord.gg/qBWAaRQ9gU">Official server</a> or 
+					<a href="https://discord.gg/YfKf6tF">Russian server</a>)<div></li>
+				<div class="d-inline-flex">VK: <div style="padding-left: 4px;" id="vk_contact_us"></div></div>
+				<script type="text/javascript">
+					VK.Widgets.ContactUs("vk_contact_us", {text: "Autohoster Admin", height: 24}, 446551012);
+				</script>
+				<div>Email: <a href="mailto:pepe@tacticalpepe.me">pepe@tacticalpepe.me</a></div>
+				<div>Voice chat: <a href="https://warzone2100.pro">TeamSpeak 3</a></div>
+			</div>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
