@@ -94,9 +94,16 @@ func getWzProfile(id int, table string) map[string]interface{} {
 	var losses int
 	var elo int
 	var pl map[string]interface{}
-	req := "SELECT name, hash, autoplayed, autowon, autolost, elo FROM " + table + " WHERE id = $1 AND hidden = false AND deleted = false"
-	derr := dbpool.QueryRow(context.Background(), req, id).
-		Scan(&name, &hash, &played, &wins, &losses, &elo)
+	var derr error
+	if table == "players" {
+		req := "SELECT name, hash FROM " + table + " WHERE id = $1"
+		derr = dbpool.QueryRow(context.Background(), req, id).
+			Scan(&name, &hash)
+	} else {
+		req := "SELECT name, hash, autoplayed, autowon, autolost, elo FROM " + table + " WHERE id = $1 AND hidden = false AND deleted = false"
+		derr = dbpool.QueryRow(context.Background(), req, id).
+			Scan(&name, &hash, &played, &wins, &losses, &elo)
+	}
 	if derr != nil {
 		if derr != pgx.ErrNoRows {
 			log.Println("getWzProfile: " + derr.Error())
@@ -104,13 +111,15 @@ func getWzProfile(id int, table string) map[string]interface{} {
 		return pl
 	}
 	pl = map[string]interface{}{
-		"Id":     id,
-		"Name":   name,
-		"Hash":   hash,
-		"Played": played,
-		"Wins":   wins,
-		"Losses": losses,
-		"Elo":    elo,
+		"Id":   id,
+		"Name": name,
+		"Hash": hash,
+	}
+	if table != "players" {
+		pl["Played"] = played
+		pl["Wins"] = wins
+		pl["Losses"] = losses
+		pl["Elo"] = elo
 	}
 	return pl
 }
