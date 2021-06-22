@@ -69,7 +69,7 @@
 							<div class="col-sm-4"><h6 class="mb-0">Warzone profile</h6><small>(post 4.0)</small></div>
 							<div class="col-sm-8">
 								{{with .User.WzProfile2}}
-									{{template "wzprofile" .}}
+									<div title="{{.Hash}}">{{.Name}}</div>
 								{{else}}
 									<a href="/wzlink">Link</a>
 								{{end}}
