@@ -259,11 +259,12 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var allow_any bool
 	var allow_presets bool
+	var norequest_reason string
 	derr := dbpool.QueryRow(context.Background(),
-		`SELECT allow_host_request, allow_preset_request FROM users WHERE username = $1`,
-		sessionManager.GetString(r.Context(), "User.Username")).Scan(&allow_any, &allow_presets)
+		`SELECT allow_host_request, allow_preset_request, norequest_reason FROM users WHERE username = $1`,
+		sessionManager.GetString(r.Context(), "User.Username")).Scan(&allow_any, &allow_presets, &norequest_reason)
 	if !(allow_any || allow_presets) {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Sorry, you are not allowed to request games."})
+		basicLayoutLookupRespond("errornorequest", w, r, map[string]interface{}{"ForbiddenReason": norequest_reason})
 		return
 	}
 	rows, derr := dbpool.Query(context.Background(), `
