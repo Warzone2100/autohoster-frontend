@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -113,6 +114,28 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if tag.RowsAffected() != 1 {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+			return
+		}
+		gamever := r.PostFormValue("gamever")
+		k, versraw := RequestVersions()
+		vers := map[string]interface{}{}
+		if k {
+			if err := json.Unmarshal([]byte(versraw), &vers); err != nil {
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
+				return
+			}
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": versraw})
+		}
+		vershave := false
+		for _, nextver := range vers["versions"].([]string) {
+			if nextver == gamever {
+				vershave = true
+				break
+			}
+		}
+		if !vershave {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Game version is not present"})
 			return
 		}
 		roomname := r.PostFormValue("roomname")
@@ -316,9 +339,20 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 		pres = append(pres, n)
 		IID++
 	}
+	k, versraw := RequestVersions()
+	vers := map[string]interface{}{}
+	if k {
+		if err := json.Unmarshal([]byte(versraw), &vers); err != nil {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
+			return
+		}
+	} else {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": versraw})
+	}
 	basicLayoutLookupRespond("multihoster-templates", w, r, map[string]interface{}{
 		"MultihosterStatus": template.HTML(mhstatus),
 		"Presets":           pres,
+		"Versions":          vers,
 		"RandomSelection":   rand.Intn(len(pres)),
 	})
 }
@@ -338,6 +372,29 @@ func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
 
 func RequestHosters() (bool, string) {
 	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"hosters-online", nil)
+	if err != nil {
+		log.Print(err)
+		return false, "Error creating request"
+	}
+	var netClient = &http.Client{
+		Timeout: time.Second * 2,
+	}
+	resp, err := netClient.Do(req)
+	if err != nil {
+		log.Print(err)
+		return false, "Error executing request"
+	}
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Print(err)
+		return false, "Error reading response"
+	}
+	bodyString := string(bodyBytes)
+	return true, bodyString
+}
+
+func RequestVersions() (bool, string) {
+	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"wzversions", nil)
 	if err != nil {
 		log.Print(err)
 		return false, "Error creating request"
