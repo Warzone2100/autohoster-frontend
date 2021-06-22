@@ -128,8 +128,9 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": versraw})
 		}
 		vershave := false
-		for _, nextver := range vers["versions"].([]string) {
-			if nextver == gamever {
+		for _, nextver := range vers["versions"].([]interface{}) {
+			nextvers := nextver.(string)
+			if nextvers == gamever {
 				vershave = true
 				break
 			}
