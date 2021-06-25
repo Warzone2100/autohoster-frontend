@@ -67,6 +67,66 @@ func listGamesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type PlayerView struct {
+	Name          string
+	Hash          string
+	Position      int
+	Team          int
+	PlayNum       int
+	Colour        int
+	Usertype      string
+	Droid         int
+	DroidLoss     int
+	DroidLost     int
+	DroidBuilt    int
+	Kills         int
+	Power         int
+	Struct        int
+	StructBuilt   int
+	StructLost    int
+	ResearchCount int
+}
+type ResearchView struct {
+	Name    string
+	Player  int
+	Time    int
+	TimeStr string
+}
+type GameView struct {
+	MapName   string
+	MapHash   string
+	GameTime  float64
+	Alliances float64
+	Base      float64
+	Power     float64
+	Scav      bool
+	Version   string
+}
+
+func GameTimeToString(t float64) string {
+	return (time.Duration(int(t/1000)) * time.Second).String()
+}
+func GameTimeInterToString(t interface{}) string {
+	tt, k := t.(float64)
+	if k {
+		return (time.Duration(int(tt/1000)) * time.Second).String()
+	} else {
+		return "invalid"
+	}
+}
+
+func SecondsToString(t float64) string {
+	return (time.Duration(int(t)) * time.Second).String()
+}
+func SecondsInterToString(t interface{}) string {
+	tt, k := t.(float64)
+	if k {
+		return (time.Duration(int(tt)) * time.Second).String()
+	} else {
+		return "invalid"
+	}
+}
+
 func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 	// if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 	// 	basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
@@ -92,9 +152,18 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if djson == "nil" {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json is nil"})
+		return
+	}
 	m := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(djson), &m); err != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
+		return
+	}
+	_, ok := m["JSONversion"].(float64)
+	if !ok {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json version is incorrect"})
 		return
 	}
 	gtstr := "?"
@@ -104,45 +173,25 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 			gtstr = (time.Duration(int(gt.(float64)/1000)) * time.Second).String()
 		}
 	}
-	/*
-		extendedPlayerData: [
-			{
-				researchComplite: [
-					{...}
-				]
-			},
-			{
-				researchComplite: [
-					{...}
-				]
-			}
-		]
-
-
-
-		researchTimes: [
-			{
-				name: R-Cyborg-Armor-Heat01
-				tiems: [
-					4m48s, 	4m54s, 	4m54s, 	4m54s, 	4m48s, 	4m48s
-				]
-			},
-		]
-	*/
+	_ = gtstr
 	// WARNING SHITCODE AHEAD
 	res := map[string][11]string{}
-	for _, bbb := range m["extendedPlayerData"].([]interface{}) {
-		rrr := bbb.(map[string]interface{})["researchComplite"]
-		for _, bb := range rrr.([]interface{}) {
-			rr := bb.(map[string]interface{})
-			var b [11]string
-			b = res[rr["name"].(string)]
-			// bindex, _ := strconv.Atoi(rr["player"].(float64))
-			// b[int(rr["player"].(float64))] = rr["time"].(float64)
-			b[int(rr["player"].(float64))] = (time.Duration(int(rr["time"].(float64)/1000)) * time.Second).String()
-			res[rr["name"].(string)] = b
-		}
+	// for _, bbb := range m["extendedPlayerData"].([]interface{}) {
+	// rrr := m["researchComplite"].(map[string]interface{})
+	for _, bb := range m["researchComplete"].([]interface{}) {
+		rr := bb.(map[string]interface{})
+		var b [11]string
+		b = res[rr["name"].(string)]
+		// bindex, _ := strconv.Atoi(rr["player"].(float64))
+		// b[int(rr["player"].(float64))] = rr["time"].(float64)
+		// app := ""
+		// if rr["ideal"].(float64) > 0 {
+		// app := "(" + SecondsInterToString(rr["ideal"]) + ")(" + strconv.Itoa(int(rr["ideal"].(float64)))+")"
+		// }
+		b[int(rr["player"].(float64))] = (time.Duration(int(rr["time"].(float64)/1000)) * time.Second).String() // + app
+		res[rr["name"].(string)] = b
 	}
+	// }
 	// (time.Duration(int(rr["time"].(float64)/1000)) * time.Second).String()
 	reskeys := make([]string, len(res))
 	keysi := 0
@@ -153,17 +202,21 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(reskeys)
 	resSorted := map[string][11]string{}
 	for _, resval := range reskeys {
-		if res[resval][0] != "0s" {
-			resSorted[resval] = res[resval]
-		}
+		// if res[resval][0] != "0s" {
+		resSorted[resval] = res[resval]
+		// }
 	}
+	// w.WriteHeader(http.StatusNotImplemented)
+	// basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Not implemented."})
+	// return
 	basicLayoutLookupRespond("gamedetails", w, r, map[string]interface{}{
-		"ID":        gid,
-		"Date":      ddate,
-		"JMap":      m,
-		"Gametime":  gtstr,
-		"Res":       res,
-		"ResSorted": resSorted,
-		"IsNull":    djson,
+		"ID":   gid,
+		"Date": ddate,
+		"JMap": m,
+		"Game": m["game"].(map[string]interface{}),
+		// "Game":        MSItoGameViewV1(m["game"].(map[string]interface{})),
+		"GameTimeStr": gtstr,
+		"IsNull":      djson,
+		"ResSorted":   resSorted,
 	})
 }

@@ -17,7 +17,7 @@
 					<th>ID</th>
 					<th>Time</th>
 					<th>Map,<br>Settings</th>
-					<th>players</th>
+					<th>Players</th>
 				</tr>
 				{{range $i, $e := .Games}}
 				{{if ne $e.Json "null"}}
@@ -26,15 +26,20 @@
 					<td>{{$e.Date}}<br>({{$e.Gametime}}) {{/*$e.Map.gameTime*/}}</td>
 					<td>
 						{{$e.Map.game.mapName}}<br>
+						{{if $e.Map.game.baseType}}
 						<img class="icons icons-base{{$e.Map.game.baseType}}">
+						{{end}}{{if $e.Map.game.alliancesType}}
 						<img class="icons icons-alliance{{allianceToClass $e.Map.game.alliancesType}}">
+						{{end}}{{if avail "scavengers" $e.Map.game}}
 						<img class="icons icons-scav{{boolto10 $e.Map.game.scavengers}}">
+						{{end}}
 					</td>
 					<td>
 						<div class="container">
 						<div class="row">
 							<div class="col-sm">
 								{{range $k, $player := $e.Map.playerData}}
+								{{if eq $player.hash ""}}{{else}}
 								{{if eq $player.usertype "winner"}}
 								<div class="row">
 									<div class="col-sm games-winner-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
@@ -42,14 +47,17 @@
 								</div>
 								{{end}}
 								{{end}}
+								{{end}}
 							</div>
 							<div class="col-sm">
 								{{range $k, $player := $e.Map.playerData}}
+								{{if eq $player.hash ""}}{{else}}
 								{{if eq $player.usertype "loser"}}
 								<div class="row">
 									<div class="col-sm games-loser-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
 									<div class="col-sm">{{$player.kills}}</div>
 								</div>
+								{{end}}
 								{{end}}
 								{{end}}
 							</div>
@@ -70,32 +78,40 @@
 
 {{define "gamedetails"}}
 <!doctype html>
-<html lang="en">
+<html translate="no">
 	<head>
 		{{template "head"}}
-		<meta content="Autohosted game {{.Game.Id}}" property="og:title">
-		<meta content="Map: {{.JMap.game.mapName}} Game time: {{.Gametime}}" property="og:description">
-		<meta content="https://tacticalpepe.me/gamedetails/{{.Id}}" property="og:url">
+		<meta content="Autohosted game {{.ID}}" property="og:title">
+		<meta content="Map: {{.JMap.game.mapName}} At: {{.Date}} Game time: {{.GameTimeStr}}" property="og:description">
+		<meta content="https://tacticalpepe.me/gamedetails/{{.ID}}" property="og:url">
 	</head>
 	<body>
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 container">
-			{{if ne .IsNull "null"}}
 			<div class="row">
 				<div class="col-sm">
-					<h4>Game {{.Id}}</h4>
+					{{/*<pre>{{.}}</pre>*/}}
+					<h4>Game {{.ID}}</h4>
 					<p>Map: {{.JMap.game.mapName}} ({{.JMap.game.mapHash}})</p>
-					<p>When: {{.Date}} ({{.Gametime}})</p>
+					<p>When: {{.Date}} ({{.GameTimeStr}})</p>
 					<p>Settings:
-						<img class="icons icons-base{{.JMap.game.baseType}}">
-						<img class="icons icons-alliance{{allianceToClass .JMap.game.alliancesType}}">
-						<img class="icons icons-scav{{boolto10 .JMap.game.scavengers}}">
+						<img class="icons icons-base{{.Game.baseType}}">
+						<img class="icons icons-alliance{{allianceToClass .Game.alliancesType}}">
+						<img class="icons icons-scav{{boolto10 .Game.scavengers}}">
 					</p>
 				</div>
 				<div class="col-sm">
 					<img src="https://wz2100.euphobos.ru/maps/preview/{{.JMap.game.mapHash}}.png">
 				</div>
+			</div>
+			<div class="container">
+				<p>Spectators:
+				{{range $k, $player := .JMap.playerData}}
+				{{if eq $player.usertype "spectator"}}
+				{{$player.name}}
+				{{end}}
+				{{end}}</p>
 			</div>
 			<div class="container">
 				<div class="row">
@@ -108,7 +124,9 @@
 					<div class="col-sm">Structure lost</div>
 					<div class="col-sm">Power</div>
 				</div>
+						<div class="row">Winners</div>
 						{{range $k, $player := .JMap.playerData}}
+						{{if eq $player.hash ""}}{{else}}
 						{{if eq $player.usertype "winner"}}
 						<div class="row wz-color-background-{{$player.colour}}">
 							<div class="col-sm" title="Hash: {{$player.hash}}">
@@ -125,8 +143,11 @@
 						</div>
 						{{end}}
 						{{end}}
+						{{end}}
 
+						<div class="row">Loosers</div>
 						{{range $k, $player := .JMap.playerData}}
+						{{if eq $player.hash ""}}{{else}}
 						{{if eq $player.usertype "loser"}}
 						<div class="row  wz-color-background-{{$player.colour}}">
 							<div class="col-sm" title="Hash: {{$player.hash}}">
@@ -141,6 +162,7 @@
 							<div class="col-sm">{{$player.structureLost}}</div>
 							<div class="col-sm">{{$player.power}}</div>
 						</div>
+						{{end}}
 						{{end}}
 						{{end}}
 			</div>
@@ -185,9 +207,6 @@
 					</tbtbody>*/}}
 				</table>
 			</div>
-			{{else}}
-			<div class="alert alert-danger" role="alert">Game not found</div>
-			{{end}}
 		</div>
 	</body>
 	<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
