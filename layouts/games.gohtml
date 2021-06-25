@@ -114,54 +114,56 @@
 				{{end}}</p>
 			</div>
 			<div class="container">
-				<div class="row">
-					<div class="col-sm">Players</div>
-					<div class="col-sm">Position</div>
-					<div class="col-sm">Kills</div>
-					<div class="col-sm">Droid lost</div>
-					<div class="col-sm">Units built</div>
-					<div class="col-sm">Struct built</div>
-					<div class="col-sm">Structure lost</div>
-					<div class="col-sm">Power</div>
-				</div>
-						<div class="row">Winners</div>
+				<table class="table text-nowrap">
+					<thead>
+						<th>Players</th>
+						<th>Position</th>
+						<th>Kills</th>
+						<th>Droid lost</th>
+						<th>Units built</th>
+						<th>Struct built</th>
+						<th>Structure lost</th>
+						<th>Power</th>
+					</thead>
+					<tbody>
+						<tr><td>Winners</td></tr>
 						{{range $k, $player := .JMap.playerData}}
 						{{if eq $player.hash ""}}{{else}}
 						{{if eq $player.usertype "winner"}}
-						<div class="row wz-color-background-{{$player.colour}}">
-							<div class="col-sm" title="Hash: {{$player.hash}}">
+						<tr class="wz-color-background-{{$player.colour}}">
+							<td title="Hash: {{$player.hash}}">
 							<span class="wz-color-{{$player.colour}}"></span>
 								{{$player.name}}
-							</div>
-							<div class="col-sm">{{$player.position}}</div>
-							<div class="col-sm">{{$player.kills}}</div>
-							<div class="col-sm">{{$player.droidLost}}</div>
-							<div class="col-sm">{{$player.droidBuilt}}</div>
-							<div class="col-sm">{{$player.structBuilt}}</div>
-							<div class="col-sm">{{$player.structureLost}}</div>
-							<div class="col-sm">{{$player.power}}</div>
-						</div>
+							</td>
+							<td>{{$player.position}}</td>
+							<td>{{$player.kills}}</td>
+							<td>{{$player.droidLost}}</td>
+							<td>{{$player.droidBuilt}}</td>
+							<td>{{$player.structBuilt}}</td>
+							<td>{{$player.structureLost}}</td>
+							<td>{{$player.power}}</td>
+						</tr>
 						{{end}}
 						{{end}}
 						{{end}}
 
-						<div class="row">Loosers</div>
+						<tr><td>Loosers</td></tr>
 						{{range $k, $player := .JMap.playerData}}
 						{{if eq $player.hash ""}}{{else}}
 						{{if eq $player.usertype "loser"}}
-						<div class="row  wz-color-background-{{$player.colour}}">
-							<div class="col-sm" title="Hash: {{$player.hash}}">
+						<tr class="wz-color-background-{{$player.colour}}">
+							<td title="Hash: {{$player.hash}}">
 								<span class="wz-color-{{$player.colour}}"></span>
 								{{$player.name}}
-							</div>
-							<div class="col-sm">{{$player.position}}</div>
-							<div class="col-sm">{{$player.kills}}</div>
-							<div class="col-sm">{{$player.droidLost}}</div>
-							<div class="col-sm">{{$player.droidBuilt}}</div>
-							<div class="col-sm">{{$player.structBuilt}}</div>
-							<div class="col-sm">{{$player.structureLost}}</div>
-							<div class="col-sm">{{$player.power}}</div>
-						</div>
+							</td>
+							<td>{{$player.position}}</td>
+							<td>{{$player.kills}}</td>
+							<td>{{$player.droidLost}}</td>
+							<td>{{$player.droidBuilt}}</td>
+							<td>{{$player.structBuilt}}</td>
+							<td>{{$player.structureLost}}</td>
+							<td>{{$player.power}}</td>
+						</tr>
 						{{end}}
 						{{end}}
 						{{end}}
