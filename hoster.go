@@ -158,6 +158,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
 			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
 			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever)
+		log.Printf("Host request: [%s] [%s]", sessionManager.Get(r.Context(), "User.Username"), mapname)
 		if s {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": reqres})
 		} else {

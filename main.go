@@ -149,6 +149,7 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 
 	if sessionManager.Exists(r.Context(), "User.Username") {
 		sessuname = sessionManager.GetString(r.Context(), "User.Username")
+		log.Printf("User: [%s]", sessuname)
 		derr := dbpool.QueryRow(context.Background(), `
 			SELECT id, email, fname, lname,
 			coalesce(extract(epoch from email_confirmed), 0)::text,
