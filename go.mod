@@ -11,8 +11,10 @@ require (
 	github.com/alexedwards/scs/pgxstore v0.0.0-20210407073823-f445396108a4
 	github.com/alexedwards/scs/v2 v2.4.0
 	github.com/alexkohler/nakedret v1.0.0 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-vk-api/vk v0.0.0-20200129183856-014d9b8adc96
+	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f
 	github.com/gordonklaus/ineffassign v0.0.0-20210522101830-0589229737b2 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.7.3
@@ -22,7 +24,7 @@ require (
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/jgautheron/goconst v1.4.0 // indirect
 	github.com/joho/godotenv v1.3.0
-	github.com/kr/pretty v0.1.0
+	github.com/kr/pretty v0.2.0
 	github.com/mdempsky/maligned v0.0.0-20210215075342-f0178ee82032 // indirect
 	github.com/mdempsky/unconvert v0.0.0-20200228143138-95ecdbfc0b5f // indirect
 	github.com/mibk/dupl v1.0.0 // indirect

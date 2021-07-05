@@ -416,6 +416,10 @@ func main() {
 	router.HandleFunc("/lobby", lobbyHandler)
 	router.HandleFunc("/games", listGamesHandler)
 	router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
+
+	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
+	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
+	router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
 	router2 := handlers.CompressHandler(router1)
