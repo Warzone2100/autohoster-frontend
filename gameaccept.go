@@ -107,6 +107,7 @@ type JSONgamePlayer struct {
 	Struct      float64 `json:"struct"`
 	StructBuilt float64 `json:"structBuilt"`
 	StructLost  float64 `json:"structureLost"`
+	Usertype    string  `json:"usertype"`
 }
 
 type JSONgameCore struct {
@@ -320,6 +321,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	tbdstructbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdrescount := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	var tbdusertype [11]string
 	for _, p := range h.PlayerData {
 		if p.Name == "Autohoster" && p.Hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
 			continue
@@ -339,10 +341,11 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbdstructbuilt[int(p.Position)] = int(p.StructBuilt)
 		tbdstructlost[int(p.Position)] = int(p.StructLost)
 		tbdrescount[int(p.Position)] = int(p.Rescount)
+		tbdusertype[int(p.Position)] = p.Usertype
 	}
 	tag, derr := dbpool.Exec(context.Background(), `
-	UPDATE games SET timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, droid = $5, unitloss = $6, unitslost = $7, unitbuilt = $8, struct = $9, structbuilt = $10, structlost = $11, rescount = $12
-	WHERE id = $13`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, gid)
+	UPDATE games SET timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitloss = $6, unitslost = $7, unitbuilt = $8, structs = $9, structbuilt = $10, structurelost = $11, rescount = $12, usertype = $13
+	WHERE id = $14`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, gid)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")
