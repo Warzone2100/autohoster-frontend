@@ -220,3 +220,128 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 		"ResSorted":   resSorted,
 	})
 }
+
+func gameViewHandler2(w http.ResponseWriter, r *http.Request) {
+	// if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
+	// 	basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+	// 	return
+	// }
+	params := mux.Vars(r)
+	gid := params["id"]
+	var dtimestarted string
+	var dtimeended string
+	var dgametime int
+	var dplayers []int
+	var dplname []string
+	var dplhash []string
+	var dpltype []string
+	var dteams []int
+	var dcolour []int
+	var delodiff []int
+	var dmapname string
+	var dmaphash string
+	var dbase int
+	var dpower int
+	var dscav bool
+	var dalliances int
+	var dsscore []int
+	var dskills []int
+	var dspower []int
+	var dsdroid []int
+	var dsdroidloss []int
+	var dsdroidlost []int
+	var dsdroidbuilt []int
+	var dsstruct []int
+	var dsstructbuilt []int
+	var dsstructlost []int
+	var dsrescount []int
+	derr := dbpool.QueryRow(context.Background(), `
+	SELECT
+		to_char(timestarted, 'YYYY-MM-DD HH24:MI') as ga, coalesce(to_char(timeended, 'YYYY-MM-DD HH24:MI'), 'Wha?') as gb, gametime as gc,
+		mapname as gd, maphash as ge,
+		players as gf, teams as gg, colour as gh, coalesce(elodiff, '{}') as gi, array_agg(players.name), array_agg(players.hash), coalesce(usertype, '{}') as gy
+		baselevel as gj, powerlevel as gk, alliancetype as gl, scavs as gm,
+		score as gn, kills as go, power as gp, units as gq, unitloss as gr, unitslost as gs, unitbuilt as gt,
+		structs as gu, structbuilt as gv, structurelost as gw, rescount as gx
+	FROM games
+	JOIN players on coalesce(players.id = any(players), 'No')
+	WHERE games.id = $1
+	GROUP BY ga, gb, gc, gd, ge, gf, gg, gh, gi, gj, gk, gl, gm, gn, go, gp, gq, gr, gs, gt, gu, gv, gw, gx, gy
+		`, gid).Scan(&dtimestarted, &dtimeended, &dgametime, &dmapname, &dmaphash, &dpltype,
+		&dplayers, &dteams, &dcolour, &delodiff, &dplname, &dplhash,
+		&dbase, &dpower, &dalliances, &dscav,
+		&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Game not found"})
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+		}
+		return
+	}
+	gtstr := GameTimeToString(float64(dgametime))
+	// WARNING SHITCODE AHEAD
+	// res := map[string][11]string{}
+	// // for _, bbb := range m["extendedPlayerData"].([]interface{}) {
+	// // rrr := m["researchComplite"].(map[string]interface{})
+	// for _, bb := range m["researchComplete"].([]interface{}) {
+	// 	rr := bb.(map[string]interface{})
+	// 	var b [11]string
+	// 	b = res[rr["name"].(string)]
+	// 	// bindex, _ := strconv.Atoi(rr["player"].(float64))
+	// 	// b[int(rr["player"].(float64))] = rr["time"].(float64)
+	// 	// app := ""
+	// 	// if rr["ideal"].(float64) > 0 {
+	// 	// app := "(" + SecondsInterToString(rr["ideal"]) + ")(" + strconv.Itoa(int(rr["ideal"].(float64)))+")"
+	// 	// }
+	// 	b[int(rr["player"].(float64))] = (time.Duration(int(rr["time"].(float64)/1000)) * time.Second).String() // + app
+	// 	res[rr["name"].(string)] = b
+	// }
+	// // }
+	// // (time.Duration(int(rr["time"].(float64)/1000)) * time.Second).String()
+	// reskeys := make([]string, len(res))
+	// keysi := 0
+	// for k := range res {
+	// 	reskeys[keysi] = k
+	// 	keysi++
+	// }
+	// sort.Strings(reskeys)
+	// resSorted := map[string][11]string{}
+	// for _, resval := range reskeys {
+	// 	// if res[resval][0] != "0s" {
+	// 	resSorted[resval] = res[resval]
+	// 	// }
+	// }
+	// w.WriteHeader(http.StatusNotImplemented)
+	// basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Not implemented."})
+	// return
+	basicLayoutLookupRespond("gamedetails2", w, r, map[string]interface{}{
+		"ID":             gid,
+		"DateStarted":    dtimestarted,
+		"DateEnded":      dtimeended,
+		"GameTimeStr":    gtstr,
+		"Players":        dplayers,
+		"PName":          dplname,
+		"PHash":          dplhash,
+		"PType":          dpltype,
+		"Teams":          dteams,
+		"Colours":        dcolour,
+		"MapName":        dmapname,
+		"MapHash":        dmaphash,
+		"LevelBase":      dbase,
+		"LevelPower":     dpower,
+		"LevelAlliances": dalliances,
+		"LevelScav":      dscav,
+		"StaScore":       dsscore,
+		"StaKills":       dskills,
+		"StaPower":       dspower,
+		"StaDroid":       dsdroid,
+		"StaDroidLoss":   dsdroidloss,
+		"StaDroidLost":   dsdroidlost,
+		"StaDroidBuilt":  dsdroidbuilt,
+		"StaStruct":      dsstruct,
+		"StaStructBuilt": dsstructbuilt,
+		"StaStructLost":  dsstructlost,
+		"StaResCount":    dsrescount,
+	})
+}

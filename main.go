@@ -62,6 +62,13 @@ var layoutFuncs = template.FuncMap{
 			return a
 		}
 	},
+	"allianceToClassI": func(a int) int {
+		if a == 3 {
+			return 1
+		} else {
+			return a
+		}
+	},
 	"boolto10": func(a bool) int {
 		if a == false {
 			return 0
@@ -416,10 +423,14 @@ func main() {
 	router.HandleFunc("/lobby", lobbyHandler)
 	router.HandleFunc("/games", listGamesHandler)
 	router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
+	router.HandleFunc("/gamedetails2/{id:[0-9]+}", gameViewHandler2)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
 	router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
+
+	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
+
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
 	router2 := handlers.CompressHandler(router1)
