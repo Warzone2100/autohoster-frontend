@@ -109,6 +109,42 @@ func LobbyLookup() map[string]interface{} {
 		return map[string]interface{}{}
 	}
 	var r map[string]interface{}
+
+	var lobbyFlags uint32
+	err = binary.Read(conn, binary.BigEndian, &lobbyFlags)
+	if err != nil {
+
+	} else {
+		if (lobbyFlags & 1) == 1 {
+			rooms = []LobbyRoomPretty{}
+		}
+		err := binary.Read(conn, binary.BigEndian, &count)
+		if err != nil {
+			fmt.Println(err.Error())
+			return map[string]interface{}{}
+		}
+		for i := uint32(0); i < count; i++ {
+			var room LobbyRoom
+			err := binary.Read(conn, binary.BigEndian, &room)
+			if err != nil {
+				fmt.Println(err.Error())
+				return map[string]interface{}{}
+			}
+			// log.Println(string(room.GameName[:]), string(room.HostName[:]))
+			roomp := LobbyRoomPretty{
+				room.GameID,
+				string(room.GameName[:bytes.IndexByte(room.GameName[:], 0)]),
+				string(room.MapName[:bytes.IndexByte(room.MapName[:], 0)]),
+				string(room.HostName[:bytes.IndexByte(room.HostName[:], 0)]),
+				string(room.Version[:bytes.IndexByte(room.Version[:], 0)]),
+				btoi(room.Private),
+				btoi(room.Pure),
+				room.MaxPlayers,
+				room.CurrentPlayers,
+			}
+			rooms = append(rooms, roomp)
+		}
+	}
 	r = map[string]interface{}{
 		"Rooms": rooms,
 		"Motd":  string(motd[:]),
