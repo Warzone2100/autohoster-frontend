@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func usersHandler(w http.ResponseWriter, r *http.Request) {
+func PresetEditorHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
 		return
@@ -50,17 +50,17 @@ func usersHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": "Success"})
 		w.Header().Set("Refresh", "1; /users")
 	} else {
-		rows, derr := dbpool.Query(context.Background(), `select to_json(users) from users order by id asc;`)
+		rows, derr := dbpool.Query(context.Background(), `select to_json(presets) from presets order by id asc;`)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No presets found"})
 			} else {
 				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
 			}
 			return
 		}
 		defer rows.Close()
-		var users []map[string]interface{}
+		var presets []map[string]interface{}
 		for rows.Next() {
 			var j string
 			err := rows.Scan(&j)
@@ -73,10 +73,10 @@ func usersHandler(w http.ResponseWriter, r *http.Request) {
 				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
 				return
 			}
-			users = append(users, m)
+			presets = append(presets, m)
 		}
-		basicLayoutLookupRespond("users", w, r, map[string]interface{}{
-			"Users": users,
+		basicLayoutLookupRespond("presetedit", w, r, map[string]interface{}{
+			"Presets": presets,
 		})
 	}
 }

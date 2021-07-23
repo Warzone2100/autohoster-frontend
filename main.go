@@ -91,6 +91,18 @@ var layoutFuncs = template.FuncMap{
 		}
 		return v.FieldByName(name).IsValid()
 	},
+	"GameTimeToString":  GameTimeToString,
+	"GameTimeToStringI": GameTimeToStringI,
+	"strcut": func(str string, num int) string { // https://play.golang.org/p/EzvhWMljku
+		bnoden := str
+		if len(str) > num {
+			if num > 3 {
+				num -= 3
+			}
+			bnoden = str[0:num] + "..."
+		}
+		return bnoden
+	},
 }
 
 func getWzProfile(id int, table string) map[string]interface{} {
@@ -279,10 +291,12 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	elo := ""
 	if isautohoster {
-		elo = "Trusted autohoster"
+		elo = "Visit https://tacticalpepe.me"
 	}
 	if hash == "aa8519279495c1e8e6f1603aa31c01796d4eeae46e4a81e666404aea0064371d" {
 		elo = "Admin (⌐■_■)"
+	} else if hash == "7bade06ad15023640093ced192db5082641b625f74a72193142453a9ad742d93" {
+		elo = "Dirty manque cheater"
 	}
 	type Ra struct {
 		Dummy      bool   `json:"dummy"`
@@ -421,15 +435,17 @@ func main() {
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
-	router.HandleFunc("/games", listGamesHandler)
-	router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
-	router.HandleFunc("/gamedetails2/{id:[0-9]+}", gameViewHandler2)
+	// router.HandleFunc("/games", listGamesHandler)
+	router.HandleFunc("/games", listDbGamesHandler)
+	// router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
+	router.HandleFunc("/gamedetails/{id:[0-9]+}", DbGameDetailsHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
 	router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
 
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
+	// router.HandleFunc("/api/watch", APIwsWatch)
 
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)

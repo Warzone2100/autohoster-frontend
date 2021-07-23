@@ -5,11 +5,238 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
+
+type DbGamePlayerPreview struct {
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Hash          string `json:"hash"`
+	Team          int
+	Colour        int
+	Usertype      string
+	Position      int
+	Score         int
+	Droid         int
+	DroidLoss     int
+	DroidLost     int
+	DroidBuilt    int
+	Kills         int
+	Power         int
+	Struct        int
+	StructBuilt   int
+	StructLost    int
+	ResearchCount int
+}
+type DbGamePreview struct {
+	ID          int
+	Finished    bool
+	TimeStarted string
+	TimeEnded   string
+	GameTime    int
+	MapName     string
+	MapHash     string
+	Players     [11]DbGamePlayerPreview
+	BaseLevel   int
+	PowerLevel  int
+	Scavengers  bool
+	Alliances   int
+}
+
+func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	var g DbGamePreview
+	params := mux.Vars(r)
+	gid := params["id"]
+	gidn, _ := strconv.Atoi(gid)
+	rows, derr := dbpool.Query(context.Background(), `
+	SELECT
+		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
+		players, teams, colour, usertype,
+		mapname, maphash,
+		baselevel, powerlevel, scavs, alliancetype,
+		array_agg(row_to_json(p))::text[] as pnames,
+		score, kills, power, units, unitloss, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount
+	FROM games
+	JOIN players as p ON p.id = any(games.players)
+	WHERE deleted = false AND hidden = false AND games.id = $1
+	GROUP BY gid`, gidn)
+	if derr != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + derr.Error()})
+		return
+		// return g, derr
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var plid []int
+		var plteam []int
+		var plcolour []int
+		var plusertype []string
+		var plsj []string
+		var dsscore []int
+		var dskills []int
+		var dspower []int
+		var dsdroid []int
+		var dsdroidloss []int
+		var dsdroidlost []int
+		var dsdroidbuilt []int
+		var dsstruct []int
+		var dsstructbuilt []int
+		var dsstructlost []int
+		var dsrescount []int
+		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+			&plid, &plteam, &plcolour, &plusertype,
+			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
+			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount)
+		if err != nil {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
+			return
+			// return g, derr
+		}
+		var np [11]DbGamePlayerPreview
+		for pi, pv := range plsj {
+			err := json.Unmarshal([]byte(pv), &np[pi])
+			if err != nil {
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json error: " + err.Error()})
+				return
+				// return g, err
+			}
+		}
+		for slot, nid := range plid {
+			gpi := -1
+			for pi, pv := range np {
+				if pv.ID == nid {
+					gpi = pi
+					break
+				}
+			}
+			if gpi == -1 {
+				// log.Print("Failed to find player " + strconv.Itoa(slot) + " for game " + strconv.Itoa(g.Id))
+				continue
+			}
+			g.Players[slot] = np[gpi]
+			g.Players[slot].Team = plteam[slot]
+			g.Players[slot].Colour = plcolour[slot]
+			g.Players[slot].Position = slot
+			if g.Finished {
+				g.Players[slot].Usertype = plusertype[slot]
+				g.Players[slot].Kills = dskills[slot]
+				g.Players[slot].Score = dsscore[slot]
+				g.Players[slot].Droid = dsdroid[slot]
+				g.Players[slot].DroidLoss = dsdroidloss[slot]
+				g.Players[slot].DroidLost = dsdroidlost[slot]
+				g.Players[slot].DroidBuilt = dsdroidbuilt[slot]
+				g.Players[slot].Kills = dskills[slot]
+				g.Players[slot].Power = dspower[slot]
+				g.Players[slot].Struct = dsstruct[slot]
+				g.Players[slot].StructBuilt = dsstructbuilt[slot]
+				g.Players[slot].StructLost = dsstructlost[slot]
+				g.Players[slot].ResearchCount = dsrescount[slot]
+			} else {
+				g.Players[slot].Usertype = "fighter"
+			}
+		}
+	}
+	// return g, nil
+	basicLayoutLookupRespond("gamedetails2", w, r, map[string]interface{}{"Game": g})
+}
+
+func DDDbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	// params := mux.Vars(r)
+	// gid := params["id"]
+	// gidn, err := strconv.Atoi(gid)
+	// if err != nil {
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error: " + err.Error()})
+	// 	return
+	// }
+	// g, err := GetGameFromDatabase(gidn)
+	// if err != nil {
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error: " + err.Error()})
+	// } else {
+	// 	basicLayoutLookupRespond("gamedetails2", w, r, map[string]interface{}{"Game": g})
+	// }
+}
+
+func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
+	rows, derr := dbpool.Query(context.Background(), `
+	SELECT
+		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
+		players, teams, colour, usertype,
+		mapname, maphash,
+		baselevel, powerlevel, scavs, alliancetype,
+		array_agg(row_to_json(p))::text[] as pnames, kills
+	FROM games
+	JOIN players as p ON p.id = any(games.players)
+	WHERE deleted = false AND hidden = false
+	GROUP BY gid
+	ORDER BY timestarted DESC
+	LIMIT 100;`)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+		}
+		return
+	}
+	defer rows.Close()
+	var gms []DbGamePreview
+	for rows.Next() {
+		var g DbGamePreview
+		var plid []int
+		var plteam []int
+		var plcolour []int
+		var plusertype []string
+		var plsj []string
+		var dskills []int
+		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+			&plid, &plteam, &plcolour, &plusertype,
+			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
+			&dskills)
+		if err != nil {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
+			return
+		}
+		var np [11]DbGamePlayerPreview
+		for pi, pv := range plsj {
+			err := json.Unmarshal([]byte(pv), &np[pi])
+			if err != nil {
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json unpack error: " + err.Error()})
+				return
+			}
+		}
+		for slot, nid := range plid {
+			gpi := -1
+			for pi, pv := range np {
+				if pv.ID == nid {
+					gpi = pi
+					break
+				}
+			}
+			if gpi == -1 {
+				// log.Print("Failed to find player " + strconv.Itoa(slot) + " for game " + strconv.Itoa(g.Id))
+				continue
+			}
+			g.Players[slot] = np[gpi]
+			g.Players[slot].Team = plteam[slot]
+			g.Players[slot].Colour = plcolour[slot]
+			g.Players[slot].Position = slot
+			if g.Finished {
+				g.Players[slot].Usertype = plusertype[slot]
+				g.Players[slot].Kills = dskills[slot]
+			} else {
+				g.Players[slot].Usertype = "fighter"
+				g.Players[slot].Kills = 0
+			}
+		}
+		// spew.Dump(g)
+		gms = append(gms, g)
+	}
+	basicLayoutLookupRespond("games2", w, r, map[string]interface{}{"Games": gms})
+}
 
 func listGamesHandler(w http.ResponseWriter, r *http.Request) {
 	rows, derr := dbpool.Query(context.Background(), `
@@ -20,7 +247,7 @@ func listGamesHandler(w http.ResponseWriter, r *http.Request) {
 	FROM jgames
 	WHERE cast(game as text) != 'null' AND (game->>'gameTime')::int/1000 > 60
 	ORDER BY time_finished DESC
-	LIMIT 10;`) //
+	LIMIT 100;`) //
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
@@ -106,6 +333,10 @@ type GameView struct {
 func GameTimeToString(t float64) string {
 	return (time.Duration(int(t/1000)) * time.Second).String()
 }
+func GameTimeToStringI(t int) string {
+	return (time.Duration(t/1000) * time.Second).String()
+}
+
 func GameTimeInterToString(t interface{}) string {
 	tt, k := t.(float64)
 	if k {
@@ -143,7 +374,7 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 	FROM jgames
 	WHERE id = $1
 	ORDER BY time_finished DESC
-	LIMIT 10;`, gid).Scan(&ddate, &djson)
+	LIMIT 100;`, gid).Scan(&ddate, &djson)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Game not found"})
@@ -221,7 +452,7 @@ func gameViewHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func gameViewHandler2(w http.ResponseWriter, r *http.Request) {
+func DbGameViewHandler(w http.ResponseWriter, r *http.Request) {
 	// if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 	// 	basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
 	// 	return
@@ -259,7 +490,7 @@ func gameViewHandler2(w http.ResponseWriter, r *http.Request) {
 	SELECT
 		to_char(timestarted, 'YYYY-MM-DD HH24:MI') as ga, coalesce(to_char(timeended, 'YYYY-MM-DD HH24:MI'), 'Wha?') as gb, gametime as gc,
 		mapname as gd, maphash as ge,
-		players as gf, teams as gg, colour as gh, coalesce(elodiff, '{}') as gi, array_agg(players.name), array_agg(players.hash), coalesce(usertype, '{}') as gy
+		players as gf, teams as gg, colour as gh, coalesce(elodiff, '{}') as gi, array_agg(players.name), array_agg(players.hash), coalesce(usertype, '{}') as gy,
 		baselevel as gj, powerlevel as gk, alliancetype as gl, scavs as gm,
 		score as gn, kills as go, power as gp, units as gq, unitloss as gr, unitslost as gs, unitbuilt as gt,
 		structs as gu, structbuilt as gv, structurelost as gw, rescount as gx
@@ -267,8 +498,8 @@ func gameViewHandler2(w http.ResponseWriter, r *http.Request) {
 	JOIN players on coalesce(players.id = any(players), 'No')
 	WHERE games.id = $1
 	GROUP BY ga, gb, gc, gd, ge, gf, gg, gh, gi, gj, gk, gl, gm, gn, go, gp, gq, gr, gs, gt, gu, gv, gw, gx, gy
-		`, gid).Scan(&dtimestarted, &dtimeended, &dgametime, &dmapname, &dmaphash, &dpltype,
-		&dplayers, &dteams, &dcolour, &delodiff, &dplname, &dplhash,
+		`, gid).Scan(&dtimestarted, &dtimeended, &dgametime, &dmapname, &dmaphash,
+		&dplayers, &dteams, &dcolour, &delodiff, &dplname, &dplhash, &dpltype,
 		&dbase, &dpower, &dalliances, &dscav,
 		&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount)
 	if derr != nil {

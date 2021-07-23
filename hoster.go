@@ -155,6 +155,10 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			alliancen++
 		}
 		basen, err := strconv.Atoi(r.PostFormValue("base"))
+		if err != nil {
+			basicLayoutLookupRespond("error400", w, r, map[string]interface{}{})
+			return;
+		}
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
 			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
 			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever)

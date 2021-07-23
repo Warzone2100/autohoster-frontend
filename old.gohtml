@@ -1,0 +1,217 @@
+{{define "games"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="Latest hosted games" property="og:title">
+		<meta content="Multihoster powered game autohosting solution" property="og:description">
+		<meta content="https://tacticalpepe.me/games" property="og:url">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 container">
+			<h3>Recent games</h3>
+			<table class="table">
+				<tr>
+					<th>ID</th>
+					<th>Time</th>
+					<th>Map,<br>Settings</th>
+					<th>Players</th>
+				</tr>
+				{{range $i, $e := .Games}}
+				{{if ne $e.Json "null"}}
+				<tr>
+					<td>{{$e.Id}}</td>
+					<td>{{$e.Date}}<br>({{$e.Gametime}}) {{/*$e.Map.gameTime*/}}</td>
+					<td>
+						{{$e.Map.game.mapName}}<br>
+						{{if $e.Map.game.baseType}}
+						<img class="icons icons-base{{$e.Map.game.baseType}}">
+						{{end}}{{if $e.Map.game.alliancesType}}
+						<img class="icons icons-alliance{{allianceToClass $e.Map.game.alliancesType}}">
+						{{end}}{{if avail "scavengers" $e.Map.game}}
+						<img class="icons icons-scav{{boolto10 $e.Map.game.scavengers}}">
+						{{end}}
+					</td>
+					<td>
+						<div class="container">
+						<div class="row">
+							<div class="col-sm">
+								{{range $k, $player := $e.Map.playerData}}
+								{{if eq $player.hash ""}}{{else}}
+								{{if eq $player.usertype "winner"}}
+								<div class="row">
+									<div class="col-sm games-winner-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
+									<div class="col-sm">{{$player.kills}}</div>
+								</div>
+								{{end}}
+								{{end}}
+								{{end}}
+							</div>
+							<div class="col-sm">
+								{{range $k, $player := $e.Map.playerData}}
+								{{if eq $player.hash ""}}{{else}}
+								{{if eq $player.usertype "loser"}}
+								<div class="row">
+									<div class="col-sm games-loser-name" title="Hash: {{$player.hash}}">{{$player.name}}</div>
+									<div class="col-sm">{{$player.kills}}</div>
+								</div>
+								{{end}}
+								{{end}}
+								{{end}}
+							</div>
+						</div>
+						</div>
+					</td>
+					<td><a href="/gamedetails/{{$e.Id}}" class="btn btn-primary">More</a>
+				</tr>
+				{{end}}
+				{{end}}
+			</table>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
+
+{{define "gamedetails"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="Autohosted game {{.ID}}" property="og:title">
+		<meta content="Map: {{.JMap.game.mapName}} At: {{.Date}} Game time: {{.GameTimeStr}}" property="og:description">
+		<meta content="https://tacticalpepe.me/gamedetails/{{.ID}}" property="og:url">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 container">
+			<div class="row">
+				<div class="col-sm">
+					{{/*<pre>{{.}}</pre>*/}}
+					<h4>Game {{.ID}}</h4>
+					<p>Map: {{.JMap.game.mapName}} ({{.JMap.game.mapHash}})</p>
+					<p>When: {{.Date}} ({{.GameTimeStr}})</p>
+					<p>Settings:
+						<img class="icons icons-base{{.Game.baseType}}">
+						<img class="icons icons-alliance{{allianceToClass .Game.alliancesType}}">
+						<img class="icons icons-scav{{boolto10 .Game.scavengers}}">
+					</p>
+				</div>
+				<div class="col-sm">
+					<img src="https://wz2100.euphobos.ru/maps/preview/{{.JMap.game.mapHash}}.png">
+				</div>
+			</div>
+			<div class="container">
+				<p>Spectators:
+				{{range $k, $player := .JMap.playerData}}
+				{{if eq $player.usertype "spectator"}}
+				{{$player.name}}
+				{{end}}
+				{{end}}</p>
+			</div>
+			<div class="container">
+				<table class="table text-nowrap">
+					<thead>
+						<th>Players</th>
+						<th>Position</th>
+						<th>Kills</th>
+						<th>Droid lost</th>
+						<th>Units built</th>
+						<th>Struct built</th>
+						<th>Structure lost</th>
+						<th>Power</th>
+					</thead>
+					<tbody>
+						<tr><td>Winners</td></tr>
+						{{range $k, $player := .JMap.playerData}}
+						{{if eq $player.hash ""}}{{else}}
+						{{if eq $player.usertype "winner"}}
+						<tr class="wz-color-background-{{$player.colour}}">
+							<td title="Hash: {{$player.hash}}">
+							<span class="wz-color-{{$player.colour}}"></span>
+								{{$player.name}}
+							</td>
+							<td>{{$player.position}}</td>
+							<td>{{$player.kills}}</td>
+							<td>{{$player.droidLost}}</td>
+							<td>{{$player.droidBuilt}}</td>
+							<td>{{$player.structBuilt}}</td>
+							<td>{{$player.structureLost}}</td>
+							<td>{{$player.power}}</td>
+						</tr>
+						{{end}}
+						{{end}}
+						{{end}}
+
+						<tr><td>Losers</td></tr>
+						{{range $k, $player := .JMap.playerData}}
+							{{if eq $player.hash ""}}
+							{{else}}
+								{{if eq $player.usertype "loser"}}
+								<tr class="wz-color-background-{{$player.colour}}">
+									<td title="Hash: {{$player.hash}}">
+										<span class="wz-color-{{$player.colour}}"></span>
+										{{$player.name}}
+									</td>
+									<td>{{$player.position}}</td>
+									<td>{{$player.kills}}</td>
+									<td>{{$player.droidLost}}</td>
+									<td>{{$player.droidBuilt}}</td>
+									<td>{{$player.structBuilt}}</td>
+									<td>{{$player.structureLost}}</td>
+									<td>{{$player.power}}</td>
+								</tr>
+								{{end}}
+							{{end}}
+						{{end}}
+			</div>
+			<div class="container">
+				<table class="table">
+					<thead>
+						<tr>
+							<th>Research</th>
+							{{range $k, $player := .JMap.playerData}}
+							{{if ne $k 0}}
+							<th>{{$player.name}} ({{$player.playnum}})({{$k}})({{$player.position}})</th>
+							{{end}}
+							{{end}}
+						</tr>
+					</thead>
+					<tbody>
+						{{range $n, $p := .ResSorted}}
+						<tr>
+							<td>{{$n}}</td>
+							{{range $nn, $rr := $p}}
+							{{if ne $nn 0}}
+							<td>{{$rr}}</td>
+							{{end}}
+							{{end}}
+						</tr>
+						{{end}}
+					</tbody>
+					{{/*
+							<th>time</th>
+						{{range $k, $player := .JMap.playerData}}
+							<th class="wz-color-background-{{$player.colour}}">
+							{{$player.name}}
+							</th>
+						{{end}}
+						</tr>
+					</thead>
+					<tbtbody>
+					{{range $r, $research := (index .Game.Map.extendedPlayerData 1).researchComplite}}
+						<th>{{$r}}</th>
+						<th>{{$research}}</th>
+					{{end}}
+					</tbtbody>*/}}
+				</table>
+			</div>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
+

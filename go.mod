@@ -18,6 +18,7 @@ require (
 	github.com/gordonklaus/ineffassign v0.0.0-20210522101830-0589229737b2 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.7.3
+	github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c
 	github.com/imdario/mergo v0.3.12
 	github.com/jackc/pgtype v1.7.0
 	github.com/jackc/pgx v3.6.2+incompatible

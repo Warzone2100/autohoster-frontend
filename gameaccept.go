@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/golang/gddo/httputil/header"
 	"github.com/gorilla/mux"
 )
@@ -31,6 +30,7 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
+			log.Print("Content type: " + r.Header.Get("Content-Type"))
 			msg := "Content-Type header is not application/json"
 			return &malformedRequest{status: http.StatusUnsupportedMediaType, msg: msg}
 		}
@@ -133,6 +133,14 @@ type JSONgame struct {
 	Game        JSONgameCore     `json:"game"`
 }
 
+type JSONgameWithRes struct {
+	JSONversion      float64
+	GameTime         float64          `json:"gameTime"`
+	PlayerData       []JSONgamePlayer `json:"playerData"`
+	Game             JSONgameCore     `json:"game"`
+	ResearchComplete []interface{}    `json:"researchComplete"`
+}
+
 func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		log.Printf("Wrong method on game creating [%s]", r.Method)
@@ -144,7 +152,7 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Can not parse form data [%s]", err.Error())
 		return
 	}
-	if h.JSONversion != 4 {
+	if h.JSONversion < 4 {
 		io.WriteString(w, "-1")
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
@@ -170,6 +178,9 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 		if p.Name == "Autohoster" && p.Hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
 			continue
 		}
+		if p.Name == "" || p.Hash == "" {
+			continue
+		}
 		playerID := 0
 		perr := tx.QueryRow(context.Background(), `
 			INSERT INTO players as p (name, hash)
@@ -191,7 +202,8 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 		tdbteams[int(p.Position)] = int(p.Team)
 		tdbcolour[int(p.Position)] = int(p.Colour)
 	}
-	spew.Dump(tdbplayers)
+	// spew.Dump(tdbplayers)
+
 	gameid := -1
 	starttime := ParseMilliTimestamp(int64(h.Game.StartDate))
 	log.Println(starttime.Format("2006-01-02 15:04:05"))
@@ -230,7 +242,7 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Can not parse form data [%s]", err.Error())
 		return
 	}
-	if h.JSONversion != 4 {
+	if h.JSONversion < 4 {
 		io.WriteString(w, "-1")
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
@@ -296,13 +308,13 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	params := mux.Vars(r)
 	gid := params["gid"]
-	h := JSONgame{}
+	h := JSONgameWithRes{}
 	err := decodeJSONBody(w, r, &h)
 	if err != nil {
 		log.Printf("Can not parse form data [%s]", err.Error())
 		return
 	}
-	if h.JSONversion != 4 {
+	if h.JSONversion < 4 {
 		io.WriteString(w, "-1")
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
@@ -343,9 +355,10 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbdrescount[int(p.Position)] = int(p.Rescount)
 		tbdusertype[int(p.Position)] = p.Usertype
 	}
+	tbdreslog, _ := json.Marshal(h.ResearchComplete)
 	tag, derr := dbpool.Exec(context.Background(), `
-	UPDATE games SET timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitloss = $6, unitslost = $7, unitbuilt = $8, structs = $9, structbuilt = $10, structurelost = $11, rescount = $12, usertype = $13
-	WHERE id = $14`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, gid)
+	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitloss = $6, unitslost = $7, unitbuilt = $8, structs = $9, structbuilt = $10, structurelost = $11, rescount = $12, usertype = $13, researchlog = $14
+	WHERE id = $15`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), gid)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")

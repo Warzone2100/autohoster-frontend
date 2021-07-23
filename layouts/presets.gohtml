@@ -1,0 +1,54 @@
+{{define "presetedit"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 container">
+			<h3>Users</h3>
+			<table class="table">
+				<tr>
+					<td>Id</td>
+					<td>Name</td>
+					<td>Hash</td>
+				</tr>
+				{{range $i, $e := .Presets}}
+				<tr>
+					<td>{{$e.Id}}</td>
+					<td>{{$e.MapName}}</td>
+					<td>{{$e.MapName}}</td>
+					<td>
+						<div class="d-inline-flex">
+							<form style="padding-left: 4px;" method="POST" action="/presets" target="_self">
+								<input type="hidden" name="id" value="{{$e.Id}}">
+								<input type="hidden" name="param" value="allow_preset_request">
+								<input type="hidden" name="val" value="{{if $e.allow_preset_request}}false{{else}}true{{end}}">
+								<input type="submit" value="S">
+							</form>
+						</div>
+					</td>
+					<td><div class="{{if $e.allow_host_request}}text-success{{else}}text-danger{{end}} d-inline-flex">
+						{{if $e.allow_host_request}}Yes{{else}}No{{end}}
+						<form style="padding-left: 4px;" method="POST" action="/users" target="_self">
+							<input type="hidden" name="name" value="{{$e.username}}">
+							<input type="hidden" name="param" value="allow_host_request">
+							<input type="hidden" name="val" value="{{if $e.allow_host_request}}false{{else}}true{{end}}">
+							<input type="submit" value="S">
+						</form></div></td>
+					<td><div class="form-inline"><form method="POST" action="/users" target="_self">
+							<input type="hidden" name="name" value="{{$e.username}}">
+							<input type="hidden" name="param" value="norequest_reason">
+							<input type="text" name="val" value="{{$e.norequest_reason}}">
+							<input type="submit" value="S">
+						</form></div></td>
+				</tr>
+				{{end}}
+			</table>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}

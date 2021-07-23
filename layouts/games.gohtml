@@ -233,81 +233,145 @@
 				</table>
 			</div>*/}}
 			<div class="container">
-			<button type="button" class="btn btn-primary mr-1" onClick="ChangeToKills();">Kills</button>
-			<button type="button" class="btn btn-primary mr-1" onClick="ChangeToUnits();">Units</button>
-			<button type="button" class="btn btn-primary mr-1" onClick="ChangeToPower();">Power</button>
+				<div class="btn-group" role="group" id="Switchbuttons">
+				</div>
+				<div>
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" id="stackedSwitch" onChange="ToggleStacked();">
+						<label class="form-check-label" for="stackedSwitch">Stacked</label>
+					</div>
+					<!-- <div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" id="filledSwitch" onChange="ToggleFilled();">
+						<label class="form-check-label" for="filledSwitch">Filled</label>
+					</div> -->
+					<!-- <div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" id="invertedSwitch" onChange="ToggleInverted();" checked>
+						<label class="form-check-label" for="invertedSwitch">Inverted</label>
+					</div> -->
+				</div>
 			<script>
 			var colours = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(32, 32, 32)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
 			var chart;
-			var dkills = [
-{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{label: '{{$player.Name}}', data: [], borderColor: colours[{{$player.Colour}}]},
+			var dany = {};
+			var dfields =  ['kills', 'power', 'score', 'droid', 'droidloss', 'droidlost', 'droidbuilt', 'struct', 'structbuilt', 'structlost', 'rescount', 'kd'];
+			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Unit loss', 'Units lost', 'Units built', 'Structures', 'Structures built', 'Structures lost', 'Research count', 'Kill/Death ratio'];
+			var chartDatasetName = dfields[0];
+			var dtempl = [
+{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{pointHitRadius: 20, label: '{{$player.Name}}', usertype: '{{$player.Usertype}}', data: [], borderColor: colours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
 {{end}}{{end}}{{end}}			];
-			var dpower = [
-{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{label: '{{$player.Name}}', data: [], borderColor: colours[{{$player.Colour}}]},
-{{end}}{{end}}{{end}}			];
-			var dunits = [
-{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{label: '{{$player.Name}}', data: [], borderColor: colours[{{$player.Colour}}]},
-{{end}}{{end}}{{end}}			];
-			function ChangeToKills() {
-				chart.config.data.datasets = dkills;
+			function ChartUpdateStyle() {
+				if (chartDatasetName == 'kd' || chartDatasetName == 'rescount'){
+					chart.options.scales.y.stacked = false;
+					document.getElementById("stackedSwitch").checked = false;
+					chart.config.data.datasets.forEach((item, i) => {
+						item.fill = false;
+					});
+					// document.getElementById("filledSwitch").checked = false;
+				} else {
+					chart.options.scales.y.stacked = document.getElementById("stackedSwitch").checked;
+					chart.config.data.datasets.forEach((item, i) => {
+						item.fill = document.getElementById("stackedSwitch").checked
+					});
+				}
+				// chart.config.data.datasets.forEach((item, i) => {
+				// 	item.data.forEach((d, ii) => {
+				// 		if(item.usertype = 'looser') {
+				// 			if(item.inverted) {
+				// 				if(!document.getElementById("invertedSwitch").checked) {
+				// 					d = d * -1;
+				// 					item.inverted = false;
+				// 				}
+				// 			} else {
+				// 				if(document.getElementById("invertedSwitch").checked) {
+				// 					d = d * -1;
+				// 					item.inverted = true;
+				// 				}
+				// 			}
+				// 		}
+				// 	});
+				// });
 				chart.update();
 			}
-			function ChangeToUnits() {
-				chart.config.data.datasets = dunits;
-				chart.update();
+			function ToggleStacked() {
+				ChartUpdateStyle();
 			}
-			function ChangeToPower() {
-				chart.config.data.datasets = dpower;
-				chart.update();
+			function ToggleFilled() {
+				ChartUpdateStyle();
+			}
+			function ToggleInverted() {
+				ChartUpdateStyle();
+			}
+			function ChangeToName(name) {
+				chart.config.data.datasets = dany[name];
+				chartDatasetName = name;
+				chart.config.options.scales.y.title.text = dfieldsT[dfields.indexOf(name)];
+				ChartUpdateStyle();
 			}
 			window.onload = function () {
+				dfields.forEach((item, i) => {
+					let b = document.createElement("button")
+					b.classList.add("btn");
+					b.classList.add("btn-primary");
+					b.classList.add("mr-1");
+					b.onclick = function() {ChangeToName(item)};
+					b.innerHTML = dfieldsT[i];
+					document.getElementById('Switchbuttons').append(b);
+				});
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
 					if (xhr.readyState === 4 && xhr.status === 200) {
-						const resp = JSON.parse(xhr.response);
-						resp.sort((f, s) => { return f.gametime - s.gametime })
+						const resp = JSON.parse(xhr.response).sort((f, s) => { return f.gametime - s.gametime });
 						var ctx = document.getElementById('Kills').getContext('2d');
 						var l = [];
-						for(const ii in resp) {
-							var i = resp[ii];
-							let minutes = Math.floor(i.gametime / 60000);
-							let seconds = ((i.gametime % 60000) / 1000).toFixed(0);
+						dfields.forEach((v) => {
+							dany[v] = JSON.parse(JSON.stringify(dtempl));
+						});
+						resp.forEach((tick, i) => {
+							let minutes = Math.floor(tick.gametime / 60000);
+							let seconds = ((tick.gametime % 60000) / 1000).toFixed(0);
 							l.push(minutes + ":" + (seconds < 10 ? '0' : '') + seconds);
-							var c = 0;
-							for(const jj in i.kills) {
-								var j = i.kills[jj];
-								if(c >= dkills.length) {
-									continue;
+							for (let variable in tick) {
+								if (Array.isArray(tick[variable])) {
+									tick[variable].splice(dtempl.length);
 								}
-								dkills[c].data.push(j);
-								c++;
 							}
-							c = 0;
-							for(const jj in i.droid) {
-								var j = i.droid[jj];
-								if(c >= dunits.length) {
-									continue;
+							dfields.forEach((v) => {
+								for(let pln = 0; pln < dtempl.length; pln++) {
+									let invers;
+									if (dany[v][pln].usertype == 'loser'){
+										invers = -1;
+										dany[v][pln].inverted = true;
+									} else {
+										invers = 1;
+										dany[v][pln].inverted = false;
+									}
+									if(v == 'kd') {
+										let del = (tick.droidlost[pln]+tick.droidloss[pln]+tick.structlost[pln]);
+										if(del == 0) {
+											dany[v][pln].data.push(invers*tick.kills[pln]);
+										} else {
+											dany[v][pln].data.push(invers*tick.kills[pln]/del);
+										}
+									} else {
+										dany[v][pln].data.push(invers*tick[v][pln]);
+									}
 								}
-								dunits[c].data.push(j);
-								c++;
-							}
-							c = 0;
-							for(const jj in i.power) {
-								var j = i.power[jj];
-								if(c >= dpower.length) {
-									continue;
-								}
-								dpower[c].data.push(j);
-								c++;
-							}
-						}
+							});
+						});
 						chart = new Chart(ctx, {
 						    type: 'line',
+							parsing: false,
+							normalized: true,
 						    data: {
 						        labels: l,
-						        datasets: dkills
-						    },
+						        datasets: dany[dfields[0]]
+							},
 						    options: {
+								spanGaps: true,
+								showLine: true,
+								animation: {
+									duration: 0
+								},
 								responsive: true,
 								maintainAspectRatio: false,
 								plugins: {
@@ -320,6 +384,10 @@
 										position: 'top'
 									},
 									zoom: {
+										pan: {
+											enabled: true,
+											mode: 'x',
+										},
 										zoom: {
 											wheel: {
 												enabled: true,
@@ -332,17 +400,29 @@
 									}
 								},
 								radius: 0,
+								scales: {
+									x: {
+										title: {
+											display: true,
+											text: 'time'
+										}
+									},
+									y : {
+										stacked: document.getElementById("stackedSwitch").checked,
+										title: {
+											display: true,
+											text: 'Value'
+										}
+									}
+								}
 							}
 						});
 					}
 				}
 				xhr.open('GET', 'https://tacticalpepe.me/api/graph/{{.ID}}', true);
 				xhr.send(null);
-
-				
 			}
 			</script>
-			
 			<div class="container" style="height:500px;">
 			<canvas id="Kills"></canvas>
 			</div>
