@@ -45,6 +45,7 @@ type DbGamePreview struct {
 	PowerLevel  int
 	Scavengers  bool
 	Alliances   int
+	Researchlog string
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +60,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
 		array_agg(row_to_json(p))::text[] as pnames,
-		score, kills, power, units, unitloss, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount
+		score, kills, power, units, unitloss, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, researchlog
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND games.id = $1
@@ -90,7 +91,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount)
+			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
