@@ -347,11 +347,7 @@
 									}
 									if(v == 'kd') {
 										let del = (tick.droidlost[pln]+tick.droidloss[pln]+tick.structlost[pln]);
-										if(del == 0) {
-											dany[v][pln].data.push(invers*tick.kills[pln]);
-										} else {
-											dany[v][pln].data.push(invers*tick.kills[pln]/del);
-										}
+										dany[v][pln].data.push(invers*(tick.kills[pln]+5)/(del+5));
 									} else {
 										dany[v][pln].data.push(invers*tick[v][pln]);
 									}
