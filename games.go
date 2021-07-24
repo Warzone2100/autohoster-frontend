@@ -60,7 +60,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
 		array_agg(row_to_json(p))::text[] as pnames,
-		score, kills, power, units, unitloss, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, researchlog
+		score, kills, power, units, unitloss, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, coalesce(researchlog, '{}')
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND games.id = $1
