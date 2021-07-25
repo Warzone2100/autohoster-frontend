@@ -188,6 +188,34 @@
 						{{end}}
 						{{end}}
 						{{end}}
+						
+						{{$fighterLabelRowPrinted := false}}
+						{{range $k, $player := .Players}}
+						{{if eq $player.Hash ""}}{{else}}
+						{{if eq $player.Usertype "fighter"}}
+						{{if $fighterLabelRowPrinted}}{{else}}<tr><td>Fighters</td></tr>{{$fighterLabelRowPrinted = true}}{{end}}
+						{{end}}
+						{{end}}
+						{{end}}
+						{{range $k, $player := .Players}}
+						{{if eq $player.Hash ""}}{{else}}
+						{{if eq $player.Usertype "fighter"}}
+						<tr class="wz-color-background-{{$player.Colour}}">
+							<td title="Hash: {{$player.Hash}}">
+								<span class="wz-color-{{$player.Colour}}"></span>
+								{{$player.Name}}
+							</td>
+							<td>{{$player.Position}} - {{$player.Team}}</td>
+							<td>---</td>
+							<td>---</td>
+							<td>---</td>
+							<td>---</td>
+							<td>---</td>
+							<td>---</td>
+						</tr>
+						{{end}}
+						{{end}}
+						{{end}}
 					</tbody>
 				</table>
 			</div>
