@@ -450,6 +450,60 @@
 			<div class="container" style="height:500px;">
 			<canvas id="Kills"></canvas>
 			</div>
+			<div class="container" id="Researchlog">
+				<script>
+				let formatter = new Intl.DateTimeFormat("ru", {
+				  hour: "numeric",
+				  minute: "numeric",
+				  second: "numeric",
+					timeZone: "UTC"
+				});
+						var Researchlog = JSON.parse({{.Researchlog}});
+						var body = document.getElementById("Researchlog");
+						Researchlog = Researchlog.filter((resObj) => {return (resObj.time > 100)})
+						let firstOpen = {};
+						Researchlog.forEach(resObj => {
+							if (!firstOpen[resObj.name] || firstOpen[resObj.name].time < resObj.time){
+								firstOpen[resObj.name] = resObj.time;
+							}
+						});
+						const printTable = Researchlog.map(resObj => {
+							let row = Array(10).fill("");
+							row[0] = formatter.format(new Date(resObj.time));
+							row[resObj.player] = resObj.name +"\n" +formatter.format(new Date( resObj.time - firstOpen[resObj.name] ));
+							return row;
+						});
+						// creates a <table> element and a <tbody> element
+						var tbl = document.createElement("table");
+						var tblBody = document.createElement("tbody");
+
+						// creating all cells
+						printTable.forEach((resObj) => {
+							// creates a table row
+							var row = document.createElement("tr");
+
+							for (var i = 0; i < resObj.length; i++) {
+								// Create a <td> element and a text node, make the text
+								// node the contents of the <td>, and put the <td> at
+								// the end of the table row
+								var cell = document.createElement("td");
+								var cellText = document.createTextNode(resObj[i]);
+								cell.appendChild(cellText);
+								row.appendChild(cell);
+							}
+
+							// add the row to the end of the table body
+							tblBody.appendChild(row);
+						});
+
+						// put the <tbody> in the <table>
+						tbl.appendChild(tblBody);
+						// appends <table> into <body>
+						body.appendChild(tbl);
+						// sets the border attribute of tbl to 2;
+
+				</script>
+			</div>
 			</div>
 			{{end}}
 		</div>
