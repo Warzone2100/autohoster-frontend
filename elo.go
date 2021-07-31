@@ -76,7 +76,8 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 			}
 			Team1Won = 1
 			if !SecondTeamFoundLost {
-				log.Printf("Game %d is sus", game.ID)
+				continue
+				// log.Printf("Game %d is sus", game.ID)
 			}
 		} else if game.Players[0].Usertype == "loser" {
 			SecondTeamFoundWon := false
@@ -91,38 +92,32 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 			}
 			Team2Won = 1
 			if !SecondTeamFoundWon {
-				log.Printf("Game %d is sus", game.ID)
+				continue
+				// log.Printf("Game %d is sus", game.ID)
 			}
 		}
+
 		Team1EloAvg := Team1EloSum / len(Team1ID)
 		Team2EloAvg := Team2EloSum / len(Team2ID)
 		log.Printf("Processing game %d", game.ID)
 		log.Printf("Team won: %v %v", Team2Won, Team1Won)
 		log.Printf("Team avg: %v %v", Team1EloAvg, Team2EloAvg)
 		K := float64(20)
-		Elo1 := 1 / (1 + math.Pow(float64(10), float64(Team1EloAvg-Team2EloAvg)/float64(400)))
-		Elo2 := 1 / (1 + math.Pow(float64(10), float64(Team2EloAvg-Team1EloAvg)/float64(400)))
-		log.Printf("Elo: %v %v", Elo1, Elo2)
-		New1 := Team1EloAvg + int(math.Round(K*(float64(Team2Won)-Elo1)))
-		New2 := Team2EloAvg + int(math.Round(K*(float64(Team1Won)-Elo2)))
-		log.Printf("New: %v %v", New1, New2)
-
-		Additive := 0
-		if New1-Team1EloAvg >= 0 {
-			Additive = New1 - Team1EloAvg
-		} else {
-			Additive = New2 - Team2EloAvg
-		}
-
+		Chance1 := 1 / (1 + math.Pow(float64(10), float64(Team1EloAvg-Team2EloAvg)/float64(400)))
+		Chance2 := 1 / (1 + math.Pow(float64(10), float64(Team2EloAvg-Team1EloAvg)/float64(400)))
+		log.Printf("Chances: %v %v", Chance1, Chance2)
+		diff1 := int(math.Round(K * (float64(Team1Won) - Chance1)))
+		diff2 := int(math.Round(K * (float64(Team2Won) - Chance2)))
+		log.Printf("diff: %v %v", diff1, diff2)
 		for pi, p := range game.Players {
-			if p.Usertype == "winner" {
+			if p.Team == game.Players[0].Team {
 				P[p.ID].Autowon++
-				P[p.ID].Elo += Additive
-				G[gamei].Players[pi].ElloDiff = Additive
-			} else if p.Usertype == "loser" {
+				P[p.ID].Elo += diff1
+				G[gamei].Players[pi].ElloDiff = diff1
+			} else {
 				P[p.ID].Autolost++
-				P[p.ID].Elo += -Additive + game.GameTime/600
-				G[gamei].Players[pi].ElloDiff = -Additive + game.GameTime/600
+				P[p.ID].Elo += diff2                  //+ game.GameTime/600
+				G[gamei].Players[pi].ElloDiff = diff2 //+ game.GameTime/600
 			}
 			P[p.ID].Autoplayed++
 		}
@@ -139,8 +134,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 				JOIN players as p ON p.id = any(games.players)
 				WHERE deleted = false AND hidden = false AND calculated = true AND finished = true
 				GROUP BY gid
-				ORDER BY timestarted
-				LIMIT 5`)
+				ORDER BY timestarted`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
@@ -173,7 +167,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 			Players[e.ID] = &e
 		}
 		for pslt, pid := range players {
-			if pid == -1 {
+			if pid == -1 || pid == 370 {
 				continue
 			}
 			var p EloGamePlayer
@@ -188,4 +182,17 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + spew.Sdump(Players) + spew.Sdump(Games) + "</pre>")})
 	CalcEloForAll(Games, Players)
 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + spew.Sdump(Players) + spew.Sdump(Games) + "</pre>")})
+	for _, p := range Players {
+		log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
+		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
+			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
+		if derr != nil {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
+			return
+		}
+		if tag.RowsAffected() != 1 {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database insert error, rows affected " + string(tag)})
+			return
+		}
+	}
 }
