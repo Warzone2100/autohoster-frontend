@@ -46,7 +46,6 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
 		switch {
 		case errors.As(err, &syntaxError):
 			msg := fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)
-			log.Print(r.Body)
 			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
 
 		case errors.Is(err, io.ErrUnexpectedEOF):
@@ -334,6 +333,14 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	tbdstructlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdrescount := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	var tbdusertype [11]string
+	gidnum, _ := strconv.Atoi(gid)
+	eg := EloGame{
+		ID:       gidnum,
+		GameTime: int(h.GameTime),
+		Base:     int(h.Game.BaseType),
+		Players:  []EloGamePlayer{},
+	}
+	pls := map[int]*Elo{}
 	for _, p := range h.PlayerData {
 		if p.Name == "Autohoster" && p.Hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
 			continue
@@ -354,11 +361,27 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbdstructlost[int(p.Position)] = int(p.StructLost)
 		tbdrescount[int(p.Position)] = int(p.Rescount)
 		tbdusertype[int(p.Position)] = p.Usertype
+		var playerID, elo, elo2, eap, eal, eaw int
+		perr := dbpool.QueryRow(context.Background(), `
+			SELECT id, elo, elo2, autoplayed, autolost, autowon FROM players WHERE hash = $1;`, p.Hash).Scan(&playerID, &elo, &elo2, &eap, &eal, &eaw)
+		if perr != nil {
+			log.Printf("Error [%s]", perr.Error())
+			io.WriteString(w, "err")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		eg.Players = append(eg.Players, EloGamePlayer{ID: playerID, Team: int(p.Team), Usertype: p.Usertype, EloDiff: 0})
+		pls[playerID] = &Elo{ID: playerID, Elo: elo, Elo2: 0, Autoplayed: eap, Autolost: eal, Autowon: eaw}
 	}
 	tbdreslog, _ := json.Marshal(h.ResearchComplete)
+	CalcElo(&eg, pls)
+	var elodiff []int
+	for _, eee := range eg.Players {
+		elodiff = append(elodiff, eee.EloDiff)
+	}
 	tag, derr := dbpool.Exec(context.Background(), `
-	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitloss = $6, unitslost = $7, unitbuilt = $8, structs = $9, structbuilt = $10, structurelost = $11, rescount = $12, usertype = $13, researchlog = $14
-	WHERE id = $15`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), gid)
+	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitloss = $6, unitslost = $7, unitbuilt = $8, structs = $9, structbuilt = $10, structurelost = $11, rescount = $12, usertype = $13, researchlog = $14, elodiff = $15
+	WHERE id = $16`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, gid)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")
@@ -370,6 +393,23 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "err")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+	for _, p := range pls {
+		log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
+		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
+			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
+		if derr != nil {
+			log.Printf("sql error [%s]", derr.Error())
+			io.WriteString(w, "err")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if tag.RowsAffected() != 1 {
+			log.Printf("Database insert error, rows affected [%s]", string(tag))
+			io.WriteString(w, "err")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 	io.WriteString(w, "ok")
 	w.WriteHeader(http.StatusOK)

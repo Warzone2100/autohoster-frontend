@@ -13,7 +13,7 @@ import (
 )
 
 type Elo struct {
-	ID         int `json:ID`
+	ID         int `json:"ID"`
 	Elo        int `json:"elo"`
 	Elo2       int `json:"elo2"`
 	Autowon    int `json:"autowon"`
@@ -25,7 +25,7 @@ type EloGamePlayer struct {
 	ID       int
 	Team     int
 	Usertype string
-	ElloDiff int
+	EloDiff  int
 }
 
 type EloGame struct {
@@ -107,13 +107,16 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	log.Printf("diff: %v %v", diff1, diff2)
 	for pi, p := range G.Players {
 		if p.Team == G.Players[0].Team {
-			P[p.ID].Autowon++
 			P[p.ID].Elo += diff1
-			G.Players[pi].ElloDiff = diff1
+			G.Players[pi].EloDiff = diff1
 		} else {
+			P[p.ID].Elo += diff2          //+ game.GameTime/600
+			G.Players[pi].EloDiff = diff2 //+ game.GameTime/600
+		}
+		if p.Usertype == "winner" {
+			P[p.ID].Autowon++
+		} else if p.Usertype == "loser" {
 			P[p.ID].Autolost++
-			P[p.ID].Elo += diff2           //+ game.GameTime/600
-			G.Players[pi].ElloDiff = diff2 //+ game.GameTime/600
 		}
 		P[p.ID].Autoplayed++
 	}
@@ -123,6 +126,9 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 	for _, p := range P {
 		p.Elo = 1400
 		p.Elo2 = 1400
+		p.Autowon = 0
+		p.Autolost = 0
+		p.Autoplayed = 0
 	}
 	for gamei, _ := range G {
 		CalcElo(G[gamei], P)
@@ -179,7 +185,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 			p.Usertype = usertype[pslt]
 			p.ID = pid
 			p.Team = teams[pslt]
-			p.ElloDiff = 0
+			p.EloDiff = 0
 			g.Players = append(g.Players, p)
 		}
 		Games = append(Games, &g)
@@ -191,6 +197,23 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
 		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
 			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
+		if derr != nil {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
+			return
+		}
+		if tag.RowsAffected() != 1 {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database insert error, rows affected " + string(tag)})
+			return
+		}
+	}
+	for _, g := range Games {
+		var elodiffs []int
+		for _, p := range g.Players {
+			elodiffs = append(elodiffs, p.EloDiff)
+		}
+		log.Printf("Updating game %d: elodiff %v ", g.ID, elodiffs)
+		tag, derr := dbpool.Exec(context.Background(), "UPDATE games SET elodiff = $1 WHERE id = $2",
+			elodiffs, g.ID)
 		if derr != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
 			return

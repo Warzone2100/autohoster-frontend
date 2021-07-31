@@ -31,6 +31,7 @@ type DbGamePlayerPreview struct {
 	StructBuilt   int
 	StructLost    int
 	ResearchCount int
+	EloDiff       int
 }
 type DbGamePreview struct {
 	ID          int
@@ -60,7 +61,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
 		array_agg(row_to_json(p))::text[] as pnames,
-		score, kills, power, units, unitloss, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, coalesce(researchlog, '{}')
+		score, kills, power, units, unitloss, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, coalesce(researchlog, '{}'), coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}')
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND games.id = $1
@@ -88,10 +89,11 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		var dsstructbuilt []int
 		var dsstructlost []int
 		var dsrescount []int
+		var dselodiff []int
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog)
+			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog, &dselodiff)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
@@ -136,6 +138,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 				g.Players[slot].StructBuilt = dsstructbuilt[slot]
 				g.Players[slot].StructLost = dsstructlost[slot]
 				g.Players[slot].ResearchCount = dsrescount[slot]
+				g.Players[slot].EloDiff = dselodiff[slot]
 			} else {
 				g.Players[slot].Usertype = "fighter"
 			}
@@ -168,7 +171,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		players, teams, colour, usertype,
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
-		array_agg(row_to_json(p))::text[] as pnames, kills
+		array_agg(row_to_json(p))::text[] as pnames, kills, coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}')
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false
@@ -193,10 +196,11 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		var plusertype []string
 		var plsj []string
 		var dskills []int
+		var dselodiff []int
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dskills)
+			&dskills, &dselodiff)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
@@ -228,6 +232,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 			if g.Finished {
 				g.Players[slot].Usertype = plusertype[slot]
 				g.Players[slot].Kills = dskills[slot]
+				g.Players[slot].EloDiff = dselodiff[slot]
 			} else {
 				g.Players[slot].Usertype = "fighter"
 				g.Players[slot].Kills = 0
@@ -313,6 +318,7 @@ type PlayerView struct {
 	StructBuilt   int
 	StructLost    int
 	ResearchCount int
+	EloDiff       int
 }
 type ResearchView struct {
 	Name    string
@@ -487,6 +493,7 @@ func DbGameViewHandler(w http.ResponseWriter, r *http.Request) {
 	var dsstructbuilt []int
 	var dsstructlost []int
 	var dsrescount []int
+	var dselodiff []int
 	derr := dbpool.QueryRow(context.Background(), `
 	SELECT
 		to_char(timestarted, 'YYYY-MM-DD HH24:MI') as ga, coalesce(to_char(timeended, 'YYYY-MM-DD HH24:MI'), 'Wha?') as gb, gametime as gc,
@@ -494,15 +501,15 @@ func DbGameViewHandler(w http.ResponseWriter, r *http.Request) {
 		players as gf, teams as gg, colour as gh, coalesce(elodiff, '{}') as gi, array_agg(players.name), array_agg(players.hash), coalesce(usertype, '{}') as gy,
 		baselevel as gj, powerlevel as gk, alliancetype as gl, scavs as gm,
 		score as gn, kills as go, power as gp, units as gq, unitloss as gr, unitslost as gs, unitbuilt as gt,
-		structs as gu, structbuilt as gv, structurelost as gw, rescount as gx
+		structs as gu, structbuilt as gv, structurelost as gw, rescount as gx, elodiff as gz
 	FROM games
 	JOIN players on coalesce(players.id = any(players), 'No')
 	WHERE games.id = $1
-	GROUP BY ga, gb, gc, gd, ge, gf, gg, gh, gi, gj, gk, gl, gm, gn, go, gp, gq, gr, gs, gt, gu, gv, gw, gx, gy
+	GROUP BY ga, gb, gc, gd, ge, gf, gg, gh, gi, gj, gk, gl, gm, gn, go, gp, gq, gr, gs, gt, gu, gv, gw, gx, gy, gz
 		`, gid).Scan(&dtimestarted, &dtimeended, &dgametime, &dmapname, &dmaphash,
 		&dplayers, &dteams, &dcolour, &delodiff, &dplname, &dplhash, &dpltype,
 		&dbase, &dpower, &dalliances, &dscav,
-		&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount)
+		&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &dselodiff)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Game not found"})
@@ -575,5 +582,6 @@ func DbGameViewHandler(w http.ResponseWriter, r *http.Request) {
 		"StaStructBuilt": dsstructbuilt,
 		"StaStructLost":  dsstructlost,
 		"StaResCount":    dsrescount,
+		"StaEloDiff":     dsrescount,
 	})
 }

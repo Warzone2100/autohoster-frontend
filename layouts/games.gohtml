@@ -39,7 +39,8 @@
 								{{if eq $player.Usertype "winner"}}
 								<div class="row">
 									<div class="col-sm games-winner-name" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
-									<div class="col-sm">{{$player.Kills}}</div>
+									<div class="col-sm">elo {{$player.EloDiff}}</div>
+									<div class="col-sm">kills {{$player.Kills}}</div>
 								</div>
 								{{end}}
 								{{end}}
@@ -51,7 +52,8 @@
 								{{if eq $player.Usertype "loser"}}
 								<div class="row">
 									<div class="col-sm games-loser-name" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
-									<div class="col-sm">{{$player.Kills}}</div>
+									<div class="col-sm">elo {{$player.EloDiff}}</div>
+									<div class="col-sm">kills {{$player.Kills}}</div>
 								</div>
 								{{end}}
 								{{end}}
@@ -139,6 +141,7 @@
 					<thead>
 						<th>Players</th>
 						<th>Position</th>
+						<th>Elo transfer</th>
 						<th>Kills</th>
 						<th>Droid lost</th>
 						<th>Units built</th>
@@ -157,6 +160,7 @@
 								{{$player.Name}}
 							</td>
 							<td>{{$player.Position}}</td>
+							<td>{{$player.EloDiff}}</td>
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>
@@ -178,6 +182,7 @@
 								{{$player.Name}}
 							</td>
 							<td>{{$player.Position}}</td>
+							<td>{{$player.EloDiff}}</td>
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>
