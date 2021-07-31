@@ -102,21 +102,24 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	Chance1 := 1 / (1 + math.Pow(float64(10), float64(Team1EloAvg-Team2EloAvg)/float64(400)))
 	Chance2 := 1 / (1 + math.Pow(float64(10), float64(Team2EloAvg-Team1EloAvg)/float64(400)))
 	log.Printf("Chances: %v %v", Chance1, Chance2)
-	diff1 := int(math.Round(K * (float64(Team1Won) - Chance1)))
-	diff2 := int(math.Round(K * (float64(Team2Won) - Chance2)))
+	diff1 := int(math.Round(K * Chance1))
+	diff2 := int(math.Round(K * Chance2))
 	log.Printf("diff: %v %v", diff1, diff2)
+	var Additive int
+	if G.Players[0].Usertype == "winner" {
+		Additive = diff1
+	} else {
+		Additive = diff2
+	}
 	for pi, p := range G.Players {
-		if p.Team == G.Players[0].Team {
-			P[p.ID].Elo += diff1
-			G.Players[pi].EloDiff = diff1
-		} else {
-			P[p.ID].Elo += diff2          //+ game.GameTime/600
-			G.Players[pi].EloDiff = diff2 //+ game.GameTime/600
-		}
 		if p.Usertype == "winner" {
+			P[p.ID].Elo += Additive
 			P[p.ID].Autowon++
-		} else if p.Usertype == "loser" {
+			G.Players[pi].EloDiff = Additive
+		} else {
+			P[p.ID].Elo -= Additive //+ game.GameTime/600
 			P[p.ID].Autolost++
+			G.Players[pi].EloDiff = -Additive //+ game.GameTime/600
 		}
 		P[p.ID].Autoplayed++
 	}
