@@ -2,3 +2,5 @@ static/public
 .env
 tpweb
 .swp
+prod
+dev

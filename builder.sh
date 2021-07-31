@@ -30,11 +30,11 @@ FLAG="$FLAG -X $TRG_PKG.CommitHash=$CommitHash"
 FLAG="$FLAG -X $TRG_PKG.GoVersion=$GoVersion"
 FLAG="$FLAG -X $TRG_PKG.GitTag=$GitTag"
 
-if [[ $1 =~ '-i' ]];
+if [[ $1 =~ 'dev' ]];
 then
-    echo 'go install'
-    go install -v -ldflags "$FLAG"
+    echo 'go build'
+    go build -v -ldflags "$FLAG" -o dev
 else
     echo 'go build'
-    go build -v -ldflags "$FLAG"
+    go build -v -ldflags "$FLAG" -o prod
 fi
