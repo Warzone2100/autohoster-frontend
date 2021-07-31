@@ -282,6 +282,17 @@ func robotsHandler(w http.ResponseWriter, r *http.Request) {
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./static/favicon.ico")
 }
+func microsoftAuthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", "111")
+	fmt.Fprint(w, `{
+  "associatedApplications": [
+    {
+      "applicationId": "88650e7e-efee-4857-b9a9-cf580a00ef43"
+    }
+  ]
+}`)
+}
 func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	hash := params["hash"]
@@ -306,6 +317,19 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 		Level      int    `json:"level"`
 		Elo        string `json:"elo"`
 	}
+	// if elo == "" {
+	// 	var j string
+	// 	derr := dbpool.QueryRow(context.Background(), `SELECT json_agg(frames)::text FROM frames WHERE game = $1`, gid).Scan(&j)
+	// 	if derr != nil {
+	// 		if derr == pgx.ErrNoRows {
+	// 			w.WriteHeader(http.StatusNotFound)
+	// 			return
+	// 		}
+	// 		w.WriteHeader(http.StatusInternalServerError)
+	// 		log.Print(derr.Error())
+	// 		return
+	// 	}
+	// }
 	m := Ra{false, isautohoster, [3]int{0, 0, 0}, 0, -1, elo}
 	j, err := json.Marshal(m)
 	if err != nil {
@@ -414,6 +438,7 @@ func main() {
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	router.HandleFunc("/favicon.ico", faviconHandler)
 	router.HandleFunc("/robots.txt", robotsHandler)
+	router.HandleFunc("/.well-known/microsoft-identity-association.json", microsoftAuthHandler)
 	router.HandleFunc("/", indexHandler)
 
 	router.HandleFunc("/legal", legalHandler)
@@ -446,11 +471,12 @@ func main() {
 
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
 	// router.HandleFunc("/api/watch", APIwsWatch)
-
+	router.HandleFunc("/elo/calc", EloRecalcHandler)
+	
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
-	router2 := handlers.CompressHandler(router1)
-	router3 := handlers.CustomLoggingHandler(os.Stdout, router2, customLogger)
+	//	router2 := handlers.CompressHandler(router1)
+	router3 := handlers.CustomLoggingHandler(os.Stdout, router1, customLogger)
 	// router4 := handlers.RecoveryHandler()(router3)
 	log.Println("Started!")
 	log.Panic(http.ListenAndServe(":"+port, router3))
