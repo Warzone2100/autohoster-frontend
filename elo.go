@@ -35,92 +35,97 @@ type EloGame struct {
 	Players  []EloGamePlayer
 }
 
+func CalcElo(G *EloGame, P map[int]*Elo) {
+	Team1ID := []int{}
+	Team2ID := []int{}
+	for _, p := range G.Players {
+		if p.Team == 0 {
+			Team1ID = append(Team1ID, p.ID)
+		} else if p.Team == 1 {
+			Team2ID = append(Team2ID, p.ID)
+		}
+	}
+	if len(Team1ID) != len(Team2ID) {
+		log.Printf("Incorrect length: %d", G.ID)
+		return
+	}
+	Team1EloSum := 0
+	Team2EloSum := 0
+	for _, p := range Team1ID {
+		Team1EloSum += P[p].Elo
+	}
+	for _, p := range Team2ID {
+		Team2EloSum += P[p].Elo
+	}
+	Team1Won := 0
+	Team2Won := 0
+	if G.Players[0].Usertype == "winner" {
+		SecondTeamFoundLost := false
+		for i, p := range G.Players {
+			if i == 0 {
+				continue
+			}
+			if p.Team != G.Players[0].Team && p.Usertype == "loser" {
+				SecondTeamFoundLost = true
+				break
+			}
+		}
+		Team1Won = 1
+		if !SecondTeamFoundLost {
+			log.Printf("Game %d is sus", G.ID)
+			return
+		}
+	} else if G.Players[0].Usertype == "loser" {
+		SecondTeamFoundWon := false
+		for i, p := range G.Players {
+			if i == 0 {
+				continue
+			}
+			if p.Team != G.Players[0].Team && p.Usertype == "winner" {
+				SecondTeamFoundWon = true
+				break
+			}
+		}
+		Team2Won = 1
+		if !SecondTeamFoundWon {
+			log.Printf("Game %d is sus", G.ID)
+			return
+		}
+	}
+
+	Team1EloAvg := Team1EloSum / len(Team1ID)
+	Team2EloAvg := Team2EloSum / len(Team2ID)
+	log.Printf("Processing game %d", G.ID)
+	log.Printf("Team won: %v %v", Team2Won, Team1Won)
+	log.Printf("Team avg: %v %v", Team1EloAvg, Team2EloAvg)
+	K := float64(20)
+	Chance1 := 1 / (1 + math.Pow(float64(10), float64(Team1EloAvg-Team2EloAvg)/float64(400)))
+	Chance2 := 1 / (1 + math.Pow(float64(10), float64(Team2EloAvg-Team1EloAvg)/float64(400)))
+	log.Printf("Chances: %v %v", Chance1, Chance2)
+	diff1 := int(math.Round(K * (float64(Team1Won) - Chance1)))
+	diff2 := int(math.Round(K * (float64(Team2Won) - Chance2)))
+	log.Printf("diff: %v %v", diff1, diff2)
+	for pi, p := range G.Players {
+		if p.Team == G.Players[0].Team {
+			P[p.ID].Autowon++
+			P[p.ID].Elo += diff1
+			G.Players[pi].ElloDiff = diff1
+		} else {
+			P[p.ID].Autolost++
+			P[p.ID].Elo += diff2           //+ game.GameTime/600
+			G.Players[pi].ElloDiff = diff2 //+ game.GameTime/600
+		}
+		P[p.ID].Autoplayed++
+	}
+}
+
 func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 	for _, p := range P {
 		p.Elo = 1400
 		p.Elo2 = 1400
 	}
-	for gamei, game := range G {
-		Team1ID := []int{}
-		Team2ID := []int{}
-		for _, p := range game.Players {
-			if p.Team == 0 {
-				Team1ID = append(Team1ID, p.ID)
-			} else if p.Team == 1 {
-				Team2ID = append(Team2ID, p.ID)
-			}
-		}
-		if len(Team1ID) != len(Team2ID) {
-			continue
-		}
-		Team1EloSum := 0
-		Team2EloSum := 0
-		for _, p := range Team1ID {
-			Team1EloSum += P[p].Elo
-		}
-		for _, p := range Team2ID {
-			Team2EloSum += P[p].Elo
-		}
-		Team1Won := 0
-		Team2Won := 0
-		if game.Players[0].Usertype == "winner" {
-			SecondTeamFoundLost := false
-			for i, p := range game.Players {
-				if i == 0 {
-					continue
-				}
-				if p.Team != game.Players[0].Team && p.Usertype == "loser" {
-					SecondTeamFoundLost = true
-					break
-				}
-			}
-			Team1Won = 1
-			if !SecondTeamFoundLost {
-				continue
-				// log.Printf("Game %d is sus", game.ID)
-			}
-		} else if game.Players[0].Usertype == "loser" {
-			SecondTeamFoundWon := false
-			for i, p := range game.Players {
-				if i == 0 {
-					continue
-				}
-				if p.Team != game.Players[0].Team && p.Usertype == "winner" {
-					SecondTeamFoundWon = true
-					break
-				}
-			}
-			Team2Won = 1
-			if !SecondTeamFoundWon {
-				continue
-				// log.Printf("Game %d is sus", game.ID)
-			}
-		}
-
-		Team1EloAvg := Team1EloSum / len(Team1ID)
-		Team2EloAvg := Team2EloSum / len(Team2ID)
-		log.Printf("Processing game %d", game.ID)
-		log.Printf("Team won: %v %v", Team2Won, Team1Won)
-		log.Printf("Team avg: %v %v", Team1EloAvg, Team2EloAvg)
-		K := float64(20)
-		Chance1 := 1 / (1 + math.Pow(float64(10), float64(Team1EloAvg-Team2EloAvg)/float64(400)))
-		Chance2 := 1 / (1 + math.Pow(float64(10), float64(Team2EloAvg-Team1EloAvg)/float64(400)))
-		log.Printf("Chances: %v %v", Chance1, Chance2)
-		diff1 := int(math.Round(K * (float64(Team1Won) - Chance1)))
-		diff2 := int(math.Round(K * (float64(Team2Won) - Chance2)))
-		log.Printf("diff: %v %v", diff1, diff2)
-		for pi, p := range game.Players {
-			if p.Team == game.Players[0].Team {
-				P[p.ID].Autowon++
-				P[p.ID].Elo += diff1
-				G[gamei].Players[pi].ElloDiff = diff1
-			} else {
-				P[p.ID].Autolost++
-				P[p.ID].Elo += diff2                  //+ game.GameTime/600
-				G[gamei].Players[pi].ElloDiff = diff2 //+ game.GameTime/600
-			}
-			P[p.ID].Autoplayed++
-		}
+	for gamei, _ := range G {
+		CalcElo(G[gamei], P)
 	}
 }
 
