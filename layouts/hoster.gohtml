@@ -293,12 +293,12 @@ var presets = [
 </html>
 {{end}}
 {{define "wzprofile"}}
-<div align="left" style="height:45px;margin-left:auto;margin-right:auto;">
-	<table cellspacing="0" cellpadding="0" style="margin: 0 auto">
+<div align="left" style="height:45px;">
+	<table cellspacing="0" cellpadding="0" style="margin: 0">
 		<tbody>
 			<tr>
 				<td class="rank-star">
-					{{if gt .Played 4}}
+					{{if gt .Autoplayed 4}}
 						{{if gt .Elo 1800}}
 						<object class="rank rank-starGold"></object>
 						{{else if gt .Elo 1550}}
@@ -310,41 +310,41 @@ var presets = [
 				</td>
 				<!-- medal -->
 				<td rowspan="3" class="rank-medal">
-					{{if le .Played 4}}
+					{{if le .Autoplayed 4}}
 					<object class="rank rank-pacifier"></object>
-					{{else if eq .Losses 0}}
-					{{else if (ge .Wins 24) and gt (div .Wins .Losses) 12}}
+					{{else if eq .Autolost 0}}
+					{{else if (ge .Autowon 24) and gt (div .Autowon .Autolost) 12}}
 					<object class="rank rank-medalGold"></object>
-					{{else if (ge .Wins 12) and gt (div .Wins .Losses) 6}}
+					{{else if (ge .Autowon 12) and gt (div .Autowon .Autolost) 6}}
 					<object class="rank rank-medalDouble"></object>
-					{{else if (ge .Wins 6) and gt (div .Wins .Losses) 3}}
+					{{else if (ge .Autowon 6) and gt (div .Autowon .Autolost) 3}}
 					<object class="rank rank-medalSilver"></object>
 					{{end}}
 				</td>
 				<!-- name -->
 				<td rowspan="3" class="rank-link">
-					<a href="/wz-profile?id={{.Id}}">{{.Name}}</a>
+					<a href="/players/{{.ID}}">{{.Name}}</a> <br>{{.Elo}} {{if avail "EloDiff" .}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}
 				</td>
 			</tr><tr>
 				<!-- middle star -->
 				<td class="rank-star">
-					{{if gt .Played 60}}
+					{{if gt .Autoplayed 60}}
 					<object class="rank rank-starGold"></object>
-					{{else if gt .Played 30}}
+					{{else if gt .Autoplayed 30}}
 					<object class="rank rank-starSilver"></object>
-					{{else if gt .Played 10}}
+					{{else if gt .Autoplayed 10}}
 					<object class="rank rank-starBronze"></object>
 					{{end}}
 				</td>
 			</tr><tr>
 				<!-- bottom star -->
 				<td class="rank-star">
-					{{if gt .Played 4}}
-						{{if gt .Wins 60}}
+					{{if gt .Autoplayed 4}}
+						{{if gt .Autowon 60}}
 						<object class="rank rank-starGold"></object>
-						{{else if gt .Wins 30}}
+						{{else if gt .Autowon 30}}
 						<object class="rank rank-starSilver"></object>
-						{{else if gt .Wins 10}}
+						{{else if gt .Autowon 10}}
 						<object class="rank rank-starBronze"></object>
 						{{end}}
 					{{end}}

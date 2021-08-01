@@ -38,9 +38,7 @@
 								{{if eq $player.Hash ""}}{{else}}
 								{{if eq $player.Usertype "winner"}}
 								<div class="row">
-									<div class="col-sm games-winner-name" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
-									<div class="col-sm">elo {{$player.EloDiff}}</div>
-									<div class="col-sm">kills {{$player.Kills}}</div>
+									<div class="col-sm games-winner-name">{{template "wzprofile" $player}}</div>
 								</div>
 								{{end}}
 								{{end}}
@@ -51,9 +49,10 @@
 								{{if eq $player.Hash ""}}{{else}}
 								{{if eq $player.Usertype "loser"}}
 								<div class="row">
-									<div class="col-sm games-loser-name" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
+									<div class="col-sm games-loser-name">{{template "wzprofile" $player}}</div>
+									<!-- <div class="col-sm games-loser-name" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
 									<div class="col-sm">elo {{$player.EloDiff}}</div>
-									<div class="col-sm">kills {{$player.Kills}}</div>
+									<div class="col-sm">kills {{$player.Kills}}</div> -->
 								</div>
 								{{end}}
 								{{end}}
