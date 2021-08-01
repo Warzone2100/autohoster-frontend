@@ -74,7 +74,7 @@
 					</td>
 					<td>
 						{{if $e.Finished}}
-						<a href="/gamedetails/{{$e.ID}}" class="btn btn-primary">More</a>
+						<a href="/games/{{$e.ID}}" class="btn btn-primary">More</a>
 						{{else}}
 						<button class="btn btn-primary" type="button" disabled>
 							<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -97,7 +97,7 @@
 		{{template "head"}}
 		<meta content="Autohosted game {{.Game.ID}}" property="og:title">
 		<meta content="Map: {{.Game.MapName}} At: {{.Game.TimeStarted}} Game time: {{GameTimeToStringI .Game.GameTime}}" property="og:description">
-		<meta content="https://tacticalpepe.me/gamedetails/{{.Game.ID}}" property="og:url">
+		<meta content="https://tacticalpepe.me/games/{{.Game.ID}}" property="og:url">
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
 		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>

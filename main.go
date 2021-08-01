@@ -488,8 +488,9 @@ func main() {
 	// router.HandleFunc("/games", listGamesHandler)
 	router.HandleFunc("/games", listDbGamesHandler)
 	// router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
-	router.HandleFunc("/gamedetails/{id:[0-9]+}", DbGameDetailsHandler)
-	router.HandleFunc("/players", PlayersHandler)
+	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
+	router.HandleFunc("/players", PlayersListHandler)
+	// router.HandleFunc("/players/{id:[0-9]+}", PlayersHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
@@ -498,7 +499,7 @@ func main() {
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
 	// router.HandleFunc("/api/watch", APIwsWatch)
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
-	
+
 	router0 := sessionManager.LoadAndSave(router)
 	router1 := handlers.ProxyHeaders(router0)
 	//	router2 := handlers.CompressHandler(router1)

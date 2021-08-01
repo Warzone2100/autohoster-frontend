@@ -18,7 +18,7 @@ type PlayerLeaderboard struct {
 	Autowon    int
 }
 
-func PlayersHandler(w http.ResponseWriter, r *http.Request) {
+func PlayersListHandler(w http.ResponseWriter, r *http.Request) {
 	sorttypearr, ok := r.URL.Query()["sort"]
 	var sortby string
 	if !ok || len(sorttypearr[0]) < 1 {
