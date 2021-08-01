@@ -18,7 +18,8 @@ func myNotFoundHandler() http.Handler {
 		ip := r.Header.Get("CF-Connecting-IP")
 		geo := r.Header.Get("CF-IPCountry")
 		ua := r.Header.Get("user-agent")
-		log.Println("["+geo+" "+ip+"]", r.Method, r.URL.Path, "["+ua+"]")
+		log.Println("["+geo+" "+ip+"] 404", r.Method, r.URL.Path, "["+ua+"]")
+		w.WriteHeader(http.StatusNotFound)
 		basicLayoutLookupRespond("error404", w, r, map[string]interface{}{})
 	})
 }
