@@ -114,15 +114,9 @@ func getWzProfile(id int, table string) map[string]interface{} {
 	var elo int
 	var pl map[string]interface{}
 	var derr error
-	if table == "players" {
-		req := "SELECT name, hash FROM " + table + " WHERE id = $1"
-		derr = dbpool.QueryRow(context.Background(), req, id).
-			Scan(&name, &hash)
-	} else {
-		req := "SELECT name, hash, autoplayed, autowon, autolost, elo FROM " + table + " WHERE id = $1 AND hidden = false AND deleted = false"
-		derr = dbpool.QueryRow(context.Background(), req, id).
-			Scan(&name, &hash, &played, &wins, &losses, &elo)
-	}
+	req := "SELECT name, hash, autoplayed, autowon, autolost, elo FROM " + table + " WHERE id = $1"
+	derr = dbpool.QueryRow(context.Background(), req, id).
+		Scan(&name, &hash, &played, &wins, &losses, &elo)
 	if derr != nil {
 		if derr != pgx.ErrNoRows {
 			log.Println("getWzProfile: " + derr.Error())
@@ -130,15 +124,13 @@ func getWzProfile(id int, table string) map[string]interface{} {
 		return pl
 	}
 	pl = map[string]interface{}{
-		"Id":   id,
-		"Name": name,
-		"Hash": hash,
-	}
-	if table != "players" {
-		pl["Played"] = played
-		pl["Wins"] = wins
-		pl["Losses"] = losses
-		pl["Elo"] = elo
+		"ID":         id,
+		"Name":       name,
+		"Hash":       hash,
+		"Autoplayed": played,
+		"Autowon":    wins,
+		"Autolost":   losses,
+		"Elo":        elo,
 	}
 	return pl
 }
@@ -317,20 +309,53 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 		Level      int    `json:"level"`
 		Elo        string `json:"elo"`
 	}
-	// if elo == "" {
-	// 	var j string
-	// 	derr := dbpool.QueryRow(context.Background(), `SELECT json_agg(frames)::text FROM frames WHERE game = $1`, gid).Scan(&j)
-	// 	if derr != nil {
-	// 		if derr == pgx.ErrNoRows {
-	// 			w.WriteHeader(http.StatusNotFound)
-	// 			return
-	// 		}
-	// 		w.WriteHeader(http.StatusInternalServerError)
-	// 		log.Print(derr.Error())
-	// 		return
-	// 	}
-	// }
-	m := Ra{false, isautohoster, [3]int{0, 0, 0}, 0, -1, elo}
+	m := Ra{true, isautohoster, [3]int{0, 0, 0}, 0, -1, elo}
+	var de, dap, daw, dal int
+	derr := dbpool.QueryRow(context.Background(), `SELECT elo, autoplayed, autowon, autolost FROM players WHERE hash = $1`, hash).Scan(&de, &dap, &daw, &dal)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+
+		} else {
+			log.Print(derr)
+		}
+	} else {
+		if elo == "" {
+			m.Elo = fmt.Sprintf("Elo: %d W%d/L%d", de, daw, dal)
+		}
+		if dap < 5 {
+			m.Dummy = true
+		} else {
+			m.Dummy = false
+			if daw >= 24 && daw/dal > 12 {
+				m.Medal = 1
+			} else if daw >= 12 && daw/dal > 6 {
+				m.Medal = 2
+			} else if daw >= 6 && daw/dal > 3 {
+				m.Medal = 3
+			}
+			if de > 1800 {
+				m.Star[0] = 1
+			} else if de > 1550 {
+				m.Star[0] = 2
+			} else if de > 1400 {
+				m.Star[0] = 3
+			}
+			if dap > 60 {
+				m.Star[1] = 1
+			} else if dap > 30 {
+				m.Star[1] = 2
+			} else if dap > 10 {
+				m.Star[1] = 3
+			}
+			if daw > 60 {
+				m.Star[2] = 1
+			} else if daw > 30 {
+				m.Star[2] = 2
+			} else if daw > 10 {
+				m.Star[2] = 3
+			}
+		}
+	}
 	j, err := json.Marshal(m)
 	if err != nil {
 		log.Println(err.Error())
