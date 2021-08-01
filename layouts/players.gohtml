@@ -1,0 +1,44 @@
+{{define "players"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="Latest hosted games" property="og:title">
+		<meta content="Multihoster powered game autohosting solution" property="og:description">
+		<meta content="https://tacticalpepe.me/games" property="og:url">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 container">
+			<h3>Autorating players</h3>
+			<table class="table">
+				<thead>
+					<td>ID</td>
+					<td>Name</td>
+					<td>Elo</td>
+					<td>Elo2</td>
+					<td>Played</td>
+					<td>Won</td>
+					<td>Lost</td>
+				</thead>
+				<tbody>
+			{{range $_, $p := .Players}}
+				<tr>
+					<td>{{$p.ID}}</td>
+					<td title="{{$p.Hash}}">{{template "wzprofile" $p}}</td>
+					<td>{{$p.Elo}}</td>
+					<td>{{$p.Elo2}}</td>
+					<td>{{$p.Autoplayed}}</td>
+					<td>{{$p.Autowon}}</td>
+					<td>{{$p.Autolost}}</td>
+				</tr>
+			{{end}}
+			</table>
+		</div>
+	</body>
+</html>
+{{end}}
+{{define "playerdetail"}}
+
+{{end}}

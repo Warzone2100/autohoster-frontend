@@ -489,6 +489,7 @@ func main() {
 	router.HandleFunc("/games", listDbGamesHandler)
 	// router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
 	router.HandleFunc("/gamedetails/{id:[0-9]+}", DbGameDetailsHandler)
+	router.HandleFunc("/players", PlayersHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
