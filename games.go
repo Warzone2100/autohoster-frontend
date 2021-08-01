@@ -32,6 +32,11 @@ type DbGamePlayerPreview struct {
 	StructLost    int
 	ResearchCount int
 	EloDiff       int
+	Autoplayed    int `json:"autoplayed"`
+	Autolost      int `json:"autolost"`
+	Autowon       int `json:"autowon"`
+	Elo           int `json:"elo"`
+	Elo2          int `json:"elo2"`
 }
 type DbGamePreview struct {
 	ID          int
