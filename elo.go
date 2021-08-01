@@ -32,17 +32,34 @@ type EloGame struct {
 	ID       int
 	GameTime int
 	Base     int
+	IsFFA    bool
 	Players  []EloGamePlayer
 }
 
 func CalcElo(G *EloGame, P map[int]*Elo) {
 	Team1ID := []int{}
 	Team2ID := []int{}
-	for _, p := range G.Players {
-		if p.Team == 0 {
-			Team1ID = append(Team1ID, p.ID)
-		} else if p.Team == 1 {
-			Team2ID = append(Team2ID, p.ID)
+	if G.IsFFA == false {
+		for _, p := range G.Players {
+			if p.Team == 0 {
+				Team1ID = append(Team1ID, p.ID)
+			} else if p.Team == 1 {
+				Team2ID = append(Team2ID, p.ID)
+			}
+		}
+	} else {
+		fighterscount := 0
+		for _, p := range G.Players {
+			if p.Usertype == "winner" || p.Usertype == "loser" {
+				fighterscount++
+			}
+		}
+		if fighterscount == 2 {
+			Team1ID = append(Team1ID, G.Players[0].ID)
+			Team2ID = append(Team2ID, G.Players[1].ID)
+		} else {
+			log.Printf("FFA game with not 2 players: %d", G.ID)
+			return
 		}
 	}
 	if len(Team1ID) != len(Team2ID) {
@@ -65,7 +82,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			if i == 0 {
 				continue
 			}
-			if p.Team != G.Players[0].Team && p.Usertype == "loser" {
+			if (p.Team != G.Players[0].Team || G.IsFFA) && p.Usertype == "loser" {
 				SecondTeamFoundLost = true
 				break
 			}
@@ -81,7 +98,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			if i == 0 {
 				continue
 			}
-			if p.Team != G.Players[0].Team && p.Usertype == "winner" {
+			if (p.Team != G.Players[0].Team || G.IsFFA) && p.Usertype == "winner" {
 				SecondTeamFoundWon = true
 				break
 			}
@@ -141,7 +158,7 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 	rows, derr := dbpool.Query(context.Background(), `
 				SELECT
-					games.id as gid, gametime,
+					games.id as gid, gametime, alliancetype,
 					players, teams, usertype,
 					array_agg(row_to_json(p))::text[] as pnames
 				FROM games
@@ -166,11 +183,13 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		var teams []int
 		var usertype []string
 		var playerinfo []string
-		err := rows.Scan(&g.ID, &g.GameTime, &players, &teams, &usertype, &playerinfo)
+		var alliance int
+		err := rows.Scan(&g.ID, &g.GameTime, &alliance, &players, &teams, &usertype, &playerinfo)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
 		}
+		g.IsFFA = alliance == 0
 		for _, pv := range playerinfo {
 			var e Elo
 			err := json.Unmarshal([]byte(pv), &e)
