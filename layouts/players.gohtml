@@ -11,7 +11,27 @@
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 container">
-			<h3>Autorating players</h3>
+			<div class="row">
+				<div class="col-sm">
+					<h3>Autorating players</h3>
+				</div>
+				<div class="col-sm" style="text-align:right">
+					<form>
+						<select name="sort">
+							<option value="autowon">Wins count</option>
+							<option value="autolost">Looses count</option>
+							<option value="autoplayed">Played count</option>
+							<option value="elo">Elo</option>
+							<option value="elo2">Elo 2</option>
+							<option value="name">Name</option>
+							<option value="id">ID</option>
+							<option value="hash">Hash</option>
+						</select>
+						<input type="submit" class="btn btn-primary" value="Sort">
+					</form>
+				</div>
+			</div>
+			</table>
 			<table class="table">
 				<thead>
 					<td>ID</td>
