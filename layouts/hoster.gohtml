@@ -323,7 +323,7 @@ var presets = [
 				</td>
 				<!-- name -->
 				<td rowspan="3" class="rank-link">
-					<a href="/players/{{.ID}}">{{.Name}}</a> <br>{{.Elo}} {{if avail "EloDiff" .}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}
+					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a> <br>{{.Elo}} {{if avail "EloDiff" .}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}
 				</td>
 			</tr><tr>
 				<!-- middle star -->
