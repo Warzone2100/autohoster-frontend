@@ -39,6 +39,103 @@
 	</body>
 </html>
 {{end}}
-{{define "playerdetail"}}
-
+{{define "player"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="Latest hosted games" property="og:title">
+		<meta content="Multihoster powered game autohosting solution" property="og:description">
+		<meta content="https://tacticalpepe.me/games" property="og:url">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 container">
+			<h3 style="padding-bottom:18px">{{template "wzprofile" .Player}}</h3>
+			<table class="table"><tr>
+			<td>Hash: {{.Player.Hash}}<td>
+			<td>Lost: {{.Player.Autolost}}<td></tr><tr>
+			<td>Elo: {{.Player.Elo}}<td>
+			<td>Won: {{.Player.Autowon}}<td></tr><tr>
+			<td>Elo2: {{.Player.Elo2}}<td>
+			<td>Played: {{.Player.Autoplayed}}<td></tr>
+			</table>
+			<table class="table">
+				<tr>
+					<th>ID</th>
+					<th>Time</th>
+					<th>Map,<br>Settings</th>
+					<th>Players</th>
+				</tr>
+				{{range $i, $e := .Games}}
+				<tr>
+					<td>{{$e.ID}}</td>
+					<td>{{$e.TimeStarted}}{{if $e.Finished}}<br>({{GameTimeToStringI $e.GameTime}}){{end}}</td>
+					<td>
+						{{$e.MapName}}<br>
+						<img class="icons icons-base{{$e.BaseLevel}}">
+						<img class="icons icons-alliance{{allianceToClassI $e.Alliances}}">
+						<img class="icons icons-scav{{boolto10 $e.Scavengers}}">
+					</td>
+					<td>
+						<div class="container">
+						<div class="row">
+							{{if $e.Finished}}
+							<div class="col-sm">
+								{{range $k, $player := $e.Players}}
+								{{if eq $player.Hash ""}}{{else}}
+								{{if eq $player.Usertype "winner"}}
+								<div class="row">
+									<div class="col-sm games-winner-name">{{template "wzprofile" $player}}</div>
+								</div>
+								{{end}}
+								{{end}}
+								{{end}}
+							</div>
+							<div class="col-sm">
+								{{range $k, $player := $e.Players}}
+								{{if eq $player.Hash ""}}{{else}}
+								{{if eq $player.Usertype "loser"}}
+								<div class="row">
+									<div class="col-sm games-loser-name">{{template "wzprofile" $player}}</div>
+									<!-- <div class="col-sm games-loser-name" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
+									<div class="col-sm">elo {{$player.EloDiff}}</div>
+									<div class="col-sm">kills {{$player.Kills}}</div> -->
+								</div>
+								{{end}}
+								{{end}}
+								{{end}}
+							</div>
+							{{else}}
+							<div class="col-sm">
+								{{range $k, $player := $e.Players}}
+								{{if eq $player.Hash ""}}{{else}}
+								<div class="row">
+									<div class="col-sm" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
+								</div>
+								{{end}}
+								{{end}}
+							</div>
+							{{end}}
+						</div>
+						</div>
+					</td>
+					<td>
+						{{if $e.Finished}}
+						<a href="/games/{{$e.ID}}" class="btn btn-primary">More</a>
+						{{else}}
+						<button class="btn btn-primary" type="button" disabled>
+							<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+							In game
+						</button>
+						{{end}}
+					</td>
+				</tr>
+				{{end}}
+			</table>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
 {{end}}
