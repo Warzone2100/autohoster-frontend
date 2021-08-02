@@ -170,7 +170,16 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		// spew.Dump(g)
-		gms = append(gms, g)
+		includegame := true
+		for _, gameplayer := range g.Players {
+			if gameplayer.Usertype == "spectator" && gameplayer.ID == pid {
+				includegame = false
+				break
+			}
+		}
+		if includegame {
+			gms = append(gms, g)
+		}
 	}
 	basicLayoutLookupRespond("player", w, r, map[string]interface{}{"Player": pp, "Games": gms})
 }
