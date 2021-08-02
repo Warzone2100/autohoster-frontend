@@ -147,7 +147,11 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 				g.Players[slot].StructBuilt = dsstructbuilt[slot]
 				g.Players[slot].StructLost = dsstructlost[slot]
 				g.Players[slot].ResearchCount = dsrescount[slot]
-				g.Players[slot].EloDiff = dselodiff[slot]
+				if len(dselodiff) > slot {
+					g.Players[slot].EloDiff = dselodiff[slot]
+				} else {
+					g.Players[slot].EloDiff = 0
+				}
 			} else {
 				g.Players[slot].Usertype = "fighter"
 			}
