@@ -296,9 +296,7 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	if isautohoster {
 		elo = "Visit https://tacticalpepe.me"
 	}
-	if hash == "aa8519279495c1e8e6f1603aa31c01796d4eeae46e4a81e666404aea0064371d" {
-		elo = "Admin (⌐■_■)"
-	} else if hash == "7bade06ad15023640093ced192db5082641b625f74a72193142453a9ad742d93" {
+	if hash == "7bade06ad15023640093ced192db5082641b625f74a72193142453a9ad742d93" {
 		elo = "Dirty manque cheater"
 	}
 	type Ra struct {
