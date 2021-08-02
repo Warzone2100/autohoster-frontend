@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
@@ -75,7 +76,12 @@ func PlayersListHandler(w http.ResponseWriter, r *http.Request) {
 
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	pid := params["id"]
+	pids := params["id"]
+	pid, err := strconv.Atoi(pids)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Badly formatted player id"})
+		return
+	}
 	var pp PlayerLeaderboard
 	derr := dbpool.QueryRow(context.Background(), `
 	SELECT name, hash, elo, elo2, autoplayed, autolost, autowon
