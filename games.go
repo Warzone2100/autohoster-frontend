@@ -72,7 +72,11 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	WHERE deleted = false AND hidden = false AND games.id = $1
 	GROUP BY gid`, gidn)
 	if derr != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + derr.Error()})
+		if derr == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Game not found"})
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + derr.Error()})
+		}
 		return
 		// return g, derr
 	}
