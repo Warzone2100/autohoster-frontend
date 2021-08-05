@@ -133,12 +133,13 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			P[p.ID].Elo += Additive
 			P[p.ID].Autowon++
 			G.Players[pi].EloDiff = Additive
-		} else {
+			P[p.ID].Autoplayed++
+		} else if p.Usertype == "loser" {
 			P[p.ID].Elo -= Additive //+ game.GameTime/600
 			P[p.ID].Autolost++
 			G.Players[pi].EloDiff = -Additive //+ game.GameTime/600
+			P[p.ID].Autoplayed++
 		}
-		P[p.ID].Autoplayed++
 	}
 }
 
