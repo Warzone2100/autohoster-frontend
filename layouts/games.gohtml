@@ -63,7 +63,7 @@
 								{{range $k, $player := $e.Players}}
 								{{if eq $player.Hash ""}}{{else}}
 								<div class="row">
-									<div class="col-sm" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
+									<div class="col-sm">{{template "wzprofile" $player}}</div>
 								</div>
 								{{end}}
 								{{end}}
