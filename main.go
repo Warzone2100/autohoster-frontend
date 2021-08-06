@@ -248,6 +248,7 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 		m["NavWhere"] = page
 		sessionAppendUser(r, &m)
 		w.Header().Set("Server", "TacticalPepe webserver "+CommitHash)
+		w.Header().Set("Access-Control-Allow-Origin", "http://tacticalpepe.me http://dev.tacticalpepe.me")
 		err := in.Execute(w, m)
 		if err != nil {
 			log.Println(err)
