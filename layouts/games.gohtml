@@ -265,9 +265,11 @@
 				</table>
 			</div>*/}}
 			<div class="container">
+				<div id="LoadGraphBtn" class="btn btn-primary" onclick="LoadGraph();document.getElementById(`LoadGraphBtn`).style.display = `none`;">Load graph</div>
+				<div id="LoadingGraphText" style="display:none">Loading graph, please wait...</div>
 				<div class="btn-group" role="group" id="Switchbuttons">
 				</div>
-				<div>
+				<div id="GraphTogglesDiv" style="display: none">
 					<div class="form-check form-switch">
 						<input class="form-check-input" type="checkbox" id="stackedSwitch" onChange="ToggleStacked();">
 						<label class="form-check-label" for="stackedSwitch">Stacked</label>
@@ -281,6 +283,7 @@
 						<label class="form-check-label" for="invertedSwitch">Inverted</label>
 					</div> -->
 				</div>
+			</div>
 			<script>
 			var colours = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(32, 32, 32)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
 			var chart;
@@ -289,7 +292,7 @@
 			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Unit loss', 'Units lost', 'Units built', 'Structures', 'Structures built', 'Structures lost', 'Research count', 'Kill/Death ratio'];
 			var chartDatasetName = dfields[0];
 			var dtempl = [
-{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{pointHitRadius: 20, label: '{{$player.Name}}', usertype: '{{$player.Usertype}}', data: [], borderColor: colours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
+{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: colours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
 {{end}}{{end}}{{end}}			];
 			function ChartUpdateStyle() {
 				if (chartDatasetName == 'kd' || chartDatasetName == 'rescount'){
@@ -339,7 +342,68 @@
 				chart.config.options.scales.y.title.text = dfieldsT[dfields.indexOf(name)];
 				ChartUpdateStyle();
 			}
-			window.onload = function () {
+			function PlotData(JsonData) {
+				const resp = JSON.parse(JsonData).sort((f, s) => { return f.gametime - s.gametime });
+				var ctx = document.getElementById('GraphCanvas').getContext('2d');
+				var l = [];
+				dfields.forEach((v) => {
+					dany[v] = JSON.parse(JSON.stringify(dtempl));
+				});
+				resp.forEach((tick, i) => {
+					let minutes = Math.floor(tick.gametime / 60000);
+					let seconds = ((tick.gametime % 60000) / 1000).toFixed(0);
+					l.push(minutes + ":" + (seconds < 10 ? '0' : '') + seconds);
+					for (let variable in tick) {
+						if (Array.isArray(tick[variable])) {
+							tick[variable].splice(dtempl.length);
+						}
+					}
+					dfields.forEach((v) => {
+						for(let pln = 0; pln < dtempl.length; pln++) {
+							let invers;
+							if (dany[v][pln].usertype == 'loser'){
+								invers = -1;
+								dany[v][pln].inverted = true;
+							} else {
+								invers = 1;
+								dany[v][pln].inverted = false;
+							}
+							if(v == 'kd') {
+								let del = (tick.droidlost[pln]+tick.droidloss[pln]+tick.structlost[pln]);
+								dany[v][pln].data.push(invers*(tick.kills[pln]+5)/(del+5));
+							} else {
+								dany[v][pln].data.push(invers*tick[v][pln]);
+							}
+						}
+					});
+				});
+				chart = new Chart(ctx, {
+					type: 'line', parsing: false, normalized: true,
+					data: {labels: l, datasets: dany[dfields[0]]},
+					options: {spanGaps: true, showLine: true,
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Game {{.ID}}', position: 'top'},
+							zoom: {
+								pan: {enabled: true, mode: 'x'},
+								zoom: {
+									wheel: {enabled: true},
+									pinch: {enabled: true},
+									mode: 'x',
+								}
+							}
+						}, radius: 0,
+						scales: {
+							x: {title: {display: true, text: 'time'}},
+							y : {stacked: document.getElementById("stackedSwitch").checked,
+								title: {display: true, text: 'Value'}
+							}
+						}
+					}
+				});
+			}
+			function LoadGraph() {
 				dfields.forEach((item, i) => {
 					let b = document.createElement("button")
 					b.classList.add("btn");
@@ -349,164 +413,161 @@
 					b.innerHTML = dfieldsT[i];
 					document.getElementById('Switchbuttons').append(b);
 				});
+				document.getElementById(`GraphTogglesDiv`).style.display = `block`;
+				document.getElementById(`GraphContainingDiv`).style.display = `block`;
+				document.getElementById(`LoadingGraphText`).style.display = `block`;
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
 					if (xhr.readyState === 4 && xhr.status === 200) {
-						const resp = JSON.parse(xhr.response).sort((f, s) => { return f.gametime - s.gametime });
-						var ctx = document.getElementById('Kills').getContext('2d');
-						var l = [];
-						dfields.forEach((v) => {
-							dany[v] = JSON.parse(JSON.stringify(dtempl));
-						});
-						resp.forEach((tick, i) => {
-							let minutes = Math.floor(tick.gametime / 60000);
-							let seconds = ((tick.gametime % 60000) / 1000).toFixed(0);
-							l.push(minutes + ":" + (seconds < 10 ? '0' : '') + seconds);
-							for (let variable in tick) {
-								if (Array.isArray(tick[variable])) {
-									tick[variable].splice(dtempl.length);
-								}
-							}
-							dfields.forEach((v) => {
-								for(let pln = 0; pln < dtempl.length; pln++) {
-									let invers;
-									if (dany[v][pln].usertype == 'loser'){
-										invers = -1;
-										dany[v][pln].inverted = true;
-									} else {
-										invers = 1;
-										dany[v][pln].inverted = false;
-									}
-									if(v == 'kd') {
-										let del = (tick.droidlost[pln]+tick.droidloss[pln]+tick.structlost[pln]);
-										dany[v][pln].data.push(invers*(tick.kills[pln]+5)/(del+5));
-									} else {
-										dany[v][pln].data.push(invers*tick[v][pln]);
-									}
-								}
-							});
-						});
-						chart = new Chart(ctx, {
-						    type: 'line',
-							parsing: false,
-							normalized: true,
-						    data: {
-						        labels: l,
-						        datasets: dany[dfields[0]]
-							},
-						    options: {
-								spanGaps: true,
-								showLine: true,
-								animation: {
-									duration: 0
-								},
-								responsive: true,
-								maintainAspectRatio: false,
-								plugins: {
-									legend: {
-										position: 'top',
-									},
-									title: {
-										display: true,
-										text: 'Game {{.ID}}',
-										position: 'top'
-									},
-									zoom: {
-										pan: {
-											enabled: true,
-											mode: 'x',
-										},
-										zoom: {
-											wheel: {
-												enabled: true,
-											},
-											pinch: {
-												enabled: true,
-											},
-											mode: 'x',
-										}
-									}
-								},
-								radius: 0,
-								scales: {
-									x: {
-										title: {
-											display: true,
-											text: 'time'
-										}
-									},
-									y : {
-										stacked: document.getElementById("stackedSwitch").checked,
-										title: {
-											display: true,
-											text: 'Value'
-										}
-									}
-								}
-							}
-						});
+						PlotData(xhr.response);
+						document.getElementById(`LoadingGraphText`).style.display = `none`;
 					}
 				}
 				xhr.open('GET', 'https://tacticalpepe.me/api/graph/{{.ID}}', true);
 				xhr.send(null);
 			}
+			window.onload = function () {
+				dtempl.sort((f, s) => { return f.gamePosition - s.gamePosition });
+			}
 			</script>
-			<div class="container" style="height:500px;">
-			<canvas id="Kills"></canvas>
+			<div class="container" id="GraphContainingDiv" style="height:500px;display:none">
+			<canvas id="GraphCanvas"></canvas>
 			</div>
 			<div class="container" id="Researchlog">
-				<script>
+				<div>Research log players are not matching players that made research!</div>
+				<div id="LoadReslogBtn" class="btn btn-primary" onclick="LoadResearchLog(); document.getElementById(`LoadReslogBtn`).style.display = `none`;">Load research log</div>
+				<div id="LoadingReslogText" style="display:none">Research log is loading, please wait...</div>
+			<script>
+			function AssembleResearchLog2(JsonData) {
 				let formatter = new Intl.DateTimeFormat("ru", {
-				  hour: "numeric",
-				  minute: "numeric",
-				  second: "numeric",
+					hour: "numeric",
+					minute: "numeric",
+					second: "numeric",
 					timeZone: "UTC"
 				});
-						var Researchlog = JSON.parse({{.Researchlog}});
-						var body = document.getElementById("Researchlog");
-						Researchlog = Researchlog.filter((resObj) => {return (resObj.time > 100)})
-						let firstOpen = {};
-						Researchlog.forEach(resObj => {
-							if (!firstOpen[resObj.name] || firstOpen[resObj.name].time < resObj.time){
-								firstOpen[resObj.name] = resObj.time;
-							}
-						});
-						const printTable = Researchlog.map(resObj => {
-							let row = Array(10).fill("");
-							row[0] = formatter.format(new Date(resObj.time));
-							row[resObj.player] = resObj.name +"\n" +formatter.format(new Date( resObj.time - firstOpen[resObj.name] ));
-							return row;
-						});
-						// creates a <table> element and a <tbody> element
-						var tbl = document.createElement("table");
-						var tblBody = document.createElement("tbody");
+				let ResearchLog = JSON.parse(JsonData).filter((resObj) => {return (resObj.time > 100)});
+				ResearchLog.forEach(r => {r.player -= 1});
+				let Table = document.createElement("table");
+				Table.classList.add("table");
+				document.getElementById("Researchlog").appendChild(Table);
+				
+				let Theader = document.createElement("thead");
+				Table.appendChild(Theader);
+				let HeaderRow = document.createElement("tr");
+				Theader.appendChild(HeaderRow);
+				let HeaderCellTime = document.createElement("td");
+				HeaderCellTime.appendChild(document.createTextNode("Time researched"))
+				HeaderRow.appendChild(HeaderCellTime);
+				dtempl.forEach(t => {
+					let HeaderCellPlayer = document.createElement("td");
+					HeaderCellPlayer.appendChild(document.createTextNode(t.label))
+					HeaderRow.appendChild(HeaderCellPlayer);
+				});
+				// let HeaderCellDifference = document.createElement("td");
+				// HeaderCellDifference.appendChild(document.createTextNode("Time difference"))
+				// HeaderRow.appendChild(HeaderCellDifference);
+				
+				let PrimeOpen = {};
+				ResearchLog.forEach(Research => {
+					if (!PrimeOpen[Research.name] || (PrimeOpen[Research.name].time < Research.time && Research.time - PrimeOpen[Research.name].time > 20)) {
+						PrimeOpen[Research.name] = Research.time;
+					}
+				});
+				
+				let Tbody = document.createElement("tbody");
+				Table.appendChild(Tbody);
+				ResearchLog.forEach(Research => {
+					let ResRow = document.createElement("tr");
+					Tbody.appendChild(ResRow);
+					
+					let HeaderCellTime = document.createElement("td");
+					HeaderCellTime.appendChild(document.createTextNode(formatter.format(new Date(Research.time))))
+					ResRow.appendChild(HeaderCellTime);
+					
+					for(let Pad=0; Pad<Research.player; Pad++) {
+						ResRow.appendChild(document.createElement("td"));
+					}
+					
+					let HeaderCellName = document.createElement("td");
+					HeaderCellName.appendChild(document.createTextNode(Research.name))
+					HeaderCellName.appendChild(document.createElement("br"));
+					if(PrimeOpen[Research.name] < Research.time) {
+						let LateText = document.createElement("text");
+						LateText.style.color="red";
+						LateText.innerHTML = formatter.format(new Date(Research.time-PrimeOpen[Research.name]));
+						HeaderCellName.appendChild(LateText)
+					}
+					ResRow.appendChild(HeaderCellName);
+					
+					for(let Pad=Research.player; Pad<dtempl.length; Pad++) {
+						ResRow.appendChild(document.createElement("td"));
+					}
+				});
+			}
+			function AssembleResearchLog(JsonData) {
+				let formatter = new Intl.DateTimeFormat("ru", {
+					hour: "numeric",
+					minute: "numeric",
+					second: "numeric",
+					timeZone: "UTC"
+				});
+				var Researchlog = JSON.parse({{.Researchlog}});
+				var body = document.getElementById("Researchlog");
+				Researchlog = Researchlog.filter((resObj) => {return (resObj.time > 100)})
+				let firstOpen = {};
+				Researchlog.forEach(resObj => {
+					if (!firstOpen[resObj.name] || firstOpen[resObj.name].time < resObj.time){
+						firstOpen[resObj.name] = resObj.time;
+					}
+				});
+				const printTable = Researchlog.map(resObj => {
+					let row = Array(10).fill("");
+					row[0] = formatter.format(new Date(resObj.time));
+					row[resObj.player] = resObj.name +"\n" +formatter.format(new Date( resObj.time - firstOpen[resObj.name] ));
+					return row;
+				});
+				// creates a <table> element and a <tbody> element
+				var tbl = document.createElement("table");
+				var tblBody = document.createElement("tbody");
 
-						// creating all cells
-						printTable.forEach((resObj) => {
-							// creates a table row
-							var row = document.createElement("tr");
+				// creating all cells
+				printTable.forEach((resObj) => {
+					// creates a table row
+					var row = document.createElement("tr");
 
-							for (var i = 0; i < resObj.length; i++) {
-								// Create a <td> element and a text node, make the text
-								// node the contents of the <td>, and put the <td> at
-								// the end of the table row
-								var cell = document.createElement("td");
-								var cellText = document.createTextNode(resObj[i]);
-								cell.appendChild(cellText);
-								row.appendChild(cell);
-							}
+					for (var i = 0; i < resObj.length; i++) {
+						// Create a <td> element and a text node, make the text
+						// node the contents of the <td>, and put the <td> at
+						// the end of the table row
+						var cell = document.createElement("td");
+						var cellText = document.createTextNode(resObj[i]);
+						cell.appendChild(cellText);
+						row.appendChild(cell);
+					}
 
-							// add the row to the end of the table body
-							tblBody.appendChild(row);
-						});
+					// add the row to the end of the table body
+					tblBody.appendChild(row);
+				});
 
-						// put the <tbody> in the <table>
-						tbl.appendChild(tblBody);
-						// appends <table> into <body>
-						body.appendChild(tbl);
-						// sets the border attribute of tbl to 2;
-
-				</script>
+				// put the <tbody> in the <table>
+				tbl.appendChild(tblBody);
+				// appends <table> into <body>
+				body.appendChild(tbl);
+				// sets the border attribute of tbl to 2;
+			}
+			function LoadResearchLog() {
+				document.getElementById(`LoadingReslogText`).style.display = `block`;
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						AssembleResearchLog2(xhr.response);
+						document.getElementById(`LoadingReslogText`).style.display = `none`;
+					}
+				}
+				xhr.open('GET', 'https://tacticalpepe.me/api/reslog/{{.ID}}', true);
+				xhr.send(null);
+			}
+			</script>
 			</div>
 			</div>
 			{{end}}
