@@ -12,7 +12,7 @@ import (
 
 func APIgetGraphData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		log.Printf("Wrong method on game creating [%s]", r.Method)
+		log.Printf("Wrong method on graph api [%s]", r.Method)
 		return
 	}
 	params := mux.Vars(r)
