@@ -313,16 +313,16 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	derr := dbpool.QueryRow(context.Background(), `SELECT elo, elo2, autoplayed, autowon, autolost, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1) FROM players WHERE hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-
+			m.Elo = fmt.Sprintf("Unknown player")
 		} else {
 			log.Print(derr)
 		}
 	} else {
 		if elo == "" {
 			if dui != -1 && dui != 0 {
-				m.Elo = fmt.Sprintf("Elo: %d [%d] W%d/L%d", de, de2, daw, dal)
+				m.Elo = fmt.Sprintf("R[%d] E[%d] W%d/L%d", de2, de, daw, dal)
 			} else {
-				m.Elo = fmt.Sprintf("[unapproved] %d W%d/L%d", de, daw, dal)
+				m.Elo = fmt.Sprintf("unapproved E[%d] W%d/L%d", de, daw, dal)
 			}
 		}
 		if dap < 5 {
