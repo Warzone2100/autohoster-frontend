@@ -19,6 +19,7 @@ type Elo struct {
 	Autowon    int `json:"autowon"`
 	Autolost   int `json:"autolost"`
 	Autoplayed int `json:"autoplayed"`
+	Userid     int `json:"f1"`
 }
 
 type EloGamePlayer struct {
@@ -131,17 +132,33 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 		Additive = diff2
 		Timeitive = diff1
 	}
+	calcelo2 := true
+	for _, p := range G.Players {
+		if P[p.ID].Userid == -1 || P[p.ID].Userid == 0 {
+			calcelo2 = false
+			break
+		}
+	}
 	for pi, p := range G.Players {
 		log.Printf("Applying elo to player %d [%s]", pi, p.Usertype)
 		if p.Usertype == "winner" {
 			P[p.ID].Elo += Additive
+			if calcelo2 {
+				P[p.ID].Elo2 += Additive
+			}
 			P[p.ID].Autowon++
 			G.Players[pi].EloDiff = Additive
 			P[p.ID].Autoplayed++
-			log.Printf(" === %d applying additive %d", pi, Additive)
+			log.Printf(" === %d applying additive %d uid %d", pi, Additive, P[p.ID].Userid)
 		} else if p.Usertype == "loser" {
 			P[p.ID].Elo -= Additive
+			if calcelo2 {
+				P[p.ID].Elo2 -= Additive
+			}
 			P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+			if calcelo2 {
+				P[p.ID].Elo2 += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+			}
 			log.Printf(" === %d applying additive %d", pi, Additive)
 			log.Printf(" === %d applying time bonus (%d/60) = %d :: (%d/60000) = %d [[[%d]]]", pi, Timeitive, (float64(Timeitive) / float64(60)), float64(G.GameTime), (float64(G.GameTime) / float64(60000)), math.Round((float64(Timeitive)/float64(60))*(float64(G.GameTime)/float64(60000)-5)))
 			P[p.ID].Autolost++
@@ -156,7 +173,11 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 	for _, p := range P {
 		p.Elo = 1400
-		p.Elo2 = 1400
+		if p.Userid != -1 && p.Userid != 0 {
+			p.Elo2 = 1400
+		} else {
+			p.Elo2 = 0
+		}
 		p.Autowon = 0
 		p.Autolost = 0
 		p.Autoplayed = 0
@@ -171,7 +192,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 				SELECT
 					games.id as gid, gametime, alliancetype,
 					players, teams, usertype,
-					array_agg(row_to_json(p))::text[] as pnames
+					array_agg(to_json(p)::jsonb || to_json(row(coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1)))::jsonb)::text[] as pnames
 				FROM games
 				JOIN players as p ON p.id = any(games.players)
 				WHERE deleted = false AND hidden = false AND calculated = true AND finished = true
