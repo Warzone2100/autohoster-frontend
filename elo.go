@@ -123,21 +123,31 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	diff2 := int(math.Round(K * Chance2))
 	log.Printf("diff: %v %v", diff1, diff2)
 	var Additive int
+	var Timeitive int
 	if G.Players[0].Usertype == "winner" {
 		Additive = diff1
+		Timeitive = diff2
 	} else {
 		Additive = diff2
+		Timeitive = diff1
 	}
 	for pi, p := range G.Players {
+		log.Printf("Applying elo to player %d [%s]", pi, p.Usertype)
 		if p.Usertype == "winner" {
 			P[p.ID].Elo += Additive
 			P[p.ID].Autowon++
 			G.Players[pi].EloDiff = Additive
 			P[p.ID].Autoplayed++
+			log.Printf(" === %d applying additive %d", pi, Additive)
 		} else if p.Usertype == "loser" {
-			P[p.ID].Elo -= Additive //+ game.GameTime/600
+			P[p.ID].Elo -= Additive
+			P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+			log.Printf(" === %d applying additive %d", pi, Additive)
+			log.Printf(" === %d applying time bonus (%d/60) = %d :: (%d/60000) = %d [[[%d]]]", pi, Timeitive, (float64(Timeitive) / float64(60)), float64(G.GameTime), (float64(G.GameTime) / float64(60000)), math.Round((float64(Timeitive)/float64(60))*(float64(G.GameTime)/float64(60000)-5)))
 			P[p.ID].Autolost++
-			G.Players[pi].EloDiff = -Additive //+ game.GameTime/600
+			G.Players[pi].EloDiff -= Additive
+			G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+
 			P[p.ID].Autoplayed++
 		}
 	}
