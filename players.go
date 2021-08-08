@@ -19,6 +19,7 @@ type PlayerLeaderboard struct {
 	Autoplayed int
 	Autolost   int
 	Autowon    int
+	Userid     int
 }
 
 func PlayersListHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +54,9 @@ func PlayersListHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rows, derr := dbpool.Query(context.Background(), `
-	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon
+	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1)
 	FROM players
+	WHERE autoplayed > 0
 	ORDER BY `+sortby+` `+sortdir)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
@@ -68,7 +70,7 @@ func PlayersListHandler(w http.ResponseWriter, r *http.Request) {
 	var P []PlayerLeaderboard
 	for rows.Next() {
 		var pp PlayerLeaderboard
-		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon)
+		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid)
 		P = append(P, pp)
 	}
 	basicLayoutLookupRespond("players", w, r, map[string]interface{}{"Players": P})
@@ -84,8 +86,8 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var pp PlayerLeaderboard
 	derr := dbpool.QueryRow(context.Background(), `
-	SELECT name, hash, elo, elo2, autoplayed, autolost, autowon
-	FROM players WHERE id = $1`, pid).Scan(&pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon)
+	SELECT name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1)
+	FROM players WHERE id = $1`, pid).Scan(&pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Player not found"})
