@@ -309,8 +309,8 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 		Elo        string `json:"elo"`
 	}
 	m := Ra{true, isautohoster, [3]int{0, 0, 0}, 0, -1, elo}
-	var de, dap, daw, dal, dui int
-	derr := dbpool.QueryRow(context.Background(), `SELECT elo, autoplayed, autowon, autolost coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1) FROM players WHERE hash = $1`, hash).Scan(&de, &dap, &daw, &dal, &dui)
+	var de, de2, dap, daw, dal, dui int
+	derr := dbpool.QueryRow(context.Background(), `SELECT elo, elo2, autoplayed, autowon, autolost, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1) FROM players WHERE hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 
@@ -320,9 +320,9 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		if elo == "" {
 			if dui != -1 && dui != 0 {
-				m.Elo = fmt.Sprintf("Elo: %d W%d/L%d", de, daw, dal)
+				m.Elo = fmt.Sprintf("Elo: %d [%d] W%d/L%d", de, de2, daw, dal)
 			} else {
-				m.Elo = fmt.Sprintf("[Unauthorized] W%d/L%d", de, daw, dal)
+				m.Elo = fmt.Sprintf("[unapproved] %d W%d/L%d", de, daw, dal)
 			}
 		}
 		if dap < 5 {
