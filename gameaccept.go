@@ -361,9 +361,9 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbdstructlost[int(p.Position)] = int(p.StructLost)
 		tbdrescount[int(p.Position)] = int(p.Rescount)
 		tbdusertype[int(p.Position)] = p.Usertype
-		var playerID, elo, elo2, eap, eal, eaw int
+		var playerID, elo, elo2, eap, eal, eaw, euid int
 		perr := dbpool.QueryRow(context.Background(), `
-			SELECT id, elo, elo2, autoplayed, autolost, autowon FROM players WHERE hash = $1;`, p.Hash).Scan(&playerID, &elo, &elo2, &eap, &eal, &eaw)
+			SELECT id, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1) FROM players WHERE hash = $1;`, p.Hash).Scan(&playerID, &elo, &elo2, &eap, &eal, &eaw, &euid)
 		if perr != nil {
 			log.Printf("Error [%s]", perr.Error())
 			io.WriteString(w, "err")
@@ -371,7 +371,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		eg.Players = append(eg.Players, EloGamePlayer{ID: playerID, Team: int(p.Team), Usertype: p.Usertype, EloDiff: 0})
-		pls[playerID] = &Elo{ID: playerID, Elo: elo, Elo2: 0, Autoplayed: eap, Autolost: eal, Autowon: eaw}
+		pls[playerID] = &Elo{ID: playerID, Elo: elo, Elo2: elo2, Autoplayed: eap, Autolost: eal, Autowon: eaw, Userid: euid}
 	}
 	tbdreslog, _ := json.Marshal(h.ResearchComplete)
 	CalcElo(&eg, pls)
