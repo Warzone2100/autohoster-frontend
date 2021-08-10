@@ -423,7 +423,8 @@
 						document.getElementById(`LoadingGraphText`).style.display = `none`;
 					}
 				}
-				xhr.open('GET', 'https://tacticalpepe.me/api/graph/{{.ID}}', true);
+				// fuck you cors
+				xhr.open('GET', window.location.origin+'/api/graph/{{.ID}}', true);
 				xhr.send(null);
 			}
 			window.onload = function () {

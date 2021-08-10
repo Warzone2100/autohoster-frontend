@@ -28,6 +28,7 @@ func APIgetResearchlogData(w http.ResponseWriter, r *http.Request) {
 		log.Print(derr.Error())
 		return
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://tacticalpepe.me https://dev.tacticalpepe.me")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	io.WriteString(w, j)
 	w.WriteHeader(http.StatusOK)
