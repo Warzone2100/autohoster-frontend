@@ -92,7 +92,6 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		var dskills []int
 		var dspower []int
 		var dsdroid []int
-		var dsdroidloss []int
 		var dsdroidlost []int
 		var dsdroidbuilt []int
 		var dsstruct []int
@@ -103,7 +102,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidloss, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog, &dselodiff)
+			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog, &dselodiff)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
@@ -139,7 +138,6 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 				g.Players[slot].Kills = dskills[slot]
 				g.Players[slot].Score = dsscore[slot]
 				g.Players[slot].Droid = dsdroid[slot]
-				g.Players[slot].DroidLoss = dsdroidloss[slot]
 				g.Players[slot].DroidLost = dsdroidlost[slot]
 				g.Players[slot].DroidBuilt = dsdroidbuilt[slot]
 				g.Players[slot].Kills = dskills[slot]

@@ -89,24 +89,28 @@ func ParseMilliTimestamp(tm int64) time.Time {
 }
 
 type JSONgamePlayer struct {
-	Playnum     float64 `json:"playnum"`
-	Name        string  `json:"name"`
-	Hash        string  `json:"hash"`
-	Team        float64 `json:"team"`
-	Position    float64 `json:"position"`
-	Colour      float64 `json:"colour"`
-	Score       float64 `json:"score"`
-	Kills       float64 `json:"kills"`
-	Power       float64 `json:"power"`
-	Droid       float64 `json:"droid"`
-	DroidLoss   float64 `json:"droidLoss"`
-	DroidLost   float64 `json:"droidLost"`
-	DroidBuilt  float64 `json:"droidBuilt"`
-	Rescount    float64 `json:"researchComplete"`
-	Struct      float64 `json:"struct"`
-	StructBuilt float64 `json:"structBuilt"`
-	StructLost  float64 `json:"structureLost"`
-	Usertype    string  `json:"usertype"`
+	Playnum  float64 `json:"playnum"`
+	Name     string  `json:"name"`
+	Hash     string  `json:"hash"`
+	Team     float64 `json:"team"`
+	Position float64 `json:"position"`
+	Colour   float64 `json:"colour"`
+	Score    float64 `json:"score"`
+	Kills    float64 `json:"kills"`
+	Power    float64 `json:"power"`
+	Droid    float64 `json:"droid"`
+	//	DroidLoss   float64 `json:"droidLoss"`   deprecated in ver 7
+	DroidHp      float64 `json:"hp"` // added in ver 7
+	DroidLost    float64 `json:"droidLost"`
+	DroidBuilt   float64 `json:"droidBuilt"`
+	Rescount     float64 `json:"researchComplete"`
+	Struct       float64 `json:"struct"`
+	StructBuilt  float64 `json:"structBuilt"`
+	StructLost   float64 `json:"structureLost"`
+	StructKilled float64 `json:"structureKill"` // added in ver 7
+	Usertype     string  `json:"usertype"`
+	SummExp      float64 `json:"summExp"` // added in ver 7
+	OilRigs      float64 `json:"oilRigs"` // added in ver 7
 }
 
 type JSONgameCore struct {
@@ -253,13 +257,16 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 	tbdpower := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdscore := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroid := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
-	tbddroidloss := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	//tbddroidloss := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstruct := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbdstructkilled := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdrescount := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbdsummexp := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbdoilrigs := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	for _, p := range h.PlayerData {
 		if p.Name == "Autohoster" && p.Hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
 			continue
@@ -272,17 +279,21 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 		tbdpower[int(p.Position)] = int(p.Power)
 		tbdscore[int(p.Position)] = int(p.Score)
 		tbddroid[int(p.Position)] = int(p.Droid)
-		tbddroidloss[int(p.Position)] = int(p.DroidLoss)
+		//tbddroidloss[int(p.Position)] = int(p.DroidLoss)
 		tbddroidlost[int(p.Position)] = int(p.DroidLost)
 		tbddroidbuilt[int(p.Position)] = int(p.DroidBuilt)
 		tbdstruct[int(p.Position)] = int(p.Struct)
 		tbdstructbuilt[int(p.Position)] = int(p.StructBuilt)
 		tbdstructlost[int(p.Position)] = int(p.StructLost)
+		tbdstructkilled[int(p.Position)] = int(p.StructKilled)
 		tbdrescount[int(p.Position)] = int(p.Rescount)
+		tbdsummexp[int(p.Position)] = int(p.SummExp)
+		tbdoilrigs[int(p.Position)] = int(p.OilRigs)
 	}
 	tag, derr := dbpool.Exec(context.Background(), `
-INSERT INTO frames (game, gametime, kills, power, score, droid, droidloss, droidlost, droidbuilt, struct, structbuilt, structlost, rescount)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`, gid, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount)
+INSERT INTO frames (game, gametime, kills, power, score, droid, droidlost, droidbuilt, struct, structbuilt, structlost, rescount, structkilled, summexp, oilrigs)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`, gid, h.GameTime,
+		tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdstructkilled, tbdsummexp, tbdoilrigs)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")
@@ -325,13 +336,15 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	tbdpower := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdscore := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroid := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
-	tbddroidloss := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstruct := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbdstructkilled := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdrescount := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbdsummexp := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbdoilrigs := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	var tbdusertype [11]string
 	gidnum, _ := strconv.Atoi(gid)
 	eg := EloGame{
@@ -353,13 +366,15 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbdpower[int(p.Position)] = int(p.Power)
 		tbdscore[int(p.Position)] = int(p.Score)
 		tbddroid[int(p.Position)] = int(p.Droid)
-		tbddroidloss[int(p.Position)] = int(p.DroidLoss)
 		tbddroidlost[int(p.Position)] = int(p.DroidLost)
 		tbddroidbuilt[int(p.Position)] = int(p.DroidBuilt)
 		tbdstruct[int(p.Position)] = int(p.Struct)
 		tbdstructbuilt[int(p.Position)] = int(p.StructBuilt)
 		tbdstructlost[int(p.Position)] = int(p.StructLost)
+		tbdstructkilled[int(p.Position)] = int(p.StructKilled)
 		tbdrescount[int(p.Position)] = int(p.Rescount)
+		tbdsummexp[int(p.Position)] = int(p.SummExp)
+		tbdoilrigs[int(p.Position)] = int(p.OilRigs)
 		tbdusertype[int(p.Position)] = p.Usertype
 		var playerID, elo, elo2, eap, eal, eaw, euid int
 		perr := dbpool.QueryRow(context.Background(), `
@@ -380,8 +395,8 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		elodiff = append(elodiff, eee.EloDiff)
 	}
 	tag, derr := dbpool.Exec(context.Background(), `
-	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitloss = $6, unitslost = $7, unitbuilt = $8, structs = $9, structbuilt = $10, structurelost = $11, rescount = $12, usertype = $13, researchlog = $14, elodiff = $15
-	WHERE id = $16`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidloss, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, gid)
+	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitslost = $6, unitbuilt = $7, structs = $8, structbuilt = $9, structurelost = $10, rescount = $11, usertype = $12, researchlog = $13, elodiff = $14, structkilled = $15, summexp = $16, oilrigs = $17
+	WHERE id = $18`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, tbdstructkilled, tbdsummexp, tbdoilrigs, gid)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")
