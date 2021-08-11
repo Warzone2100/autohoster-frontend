@@ -19,7 +19,7 @@ type Elo struct {
 	Autowon    int `json:"autowon"`
 	Autolost   int `json:"autolost"`
 	Autoplayed int `json:"autoplayed"`
-	Userid     int `json:"f1"`
+	Userid     int `json:"userid"`
 }
 
 type EloGamePlayer struct {
@@ -192,7 +192,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 				SELECT
 					games.id as gid, gametime, alliancetype,
 					players, teams, usertype,
-					array_agg(to_json(p)::jsonb || to_json(row(coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1)))::jsonb)::text[] as pnames
+					array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames
 				FROM games
 				JOIN players as p ON p.id = any(games.players)
 				WHERE deleted = false AND hidden = false AND calculated = true AND finished = true

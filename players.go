@@ -102,7 +102,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		players, teams, colour, usertype,
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
-		array_agg(row_to_json(p))::text[] as pnames, kills, coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}')
+		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills, coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}')
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND $1 = any(games.players)

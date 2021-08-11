@@ -323,7 +323,7 @@ var presets = [
 				</td>
 				<!-- name -->
 				<td rowspan="3" class="rank-link">
-					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a> {{if avail "Userid" .}}{{if ne .Userid -1}}<text class="games-winner-name">✔</text>{{end}}{{end}} <br>
+					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a> {{if avail "Userid" .}}{{if and (ne .Userid -1) (ne .Userid 0)}}<text class="games-winner-name">✔</text>{{end}}{{end}} <br>
 					 {{.Elo}}
 					{{if avail "EloDiff" .}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}
 				</td>
