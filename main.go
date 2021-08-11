@@ -23,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/shirou/gopsutil/load"
 	"golang.org/x/oauth2"
 )
 
@@ -258,7 +259,8 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 	}
 }
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("index", w, r, map[string]interface{}{})
+	load, _ := load.Avg()
+	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load})
 }
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("about", w, r, map[string]interface{}{})
