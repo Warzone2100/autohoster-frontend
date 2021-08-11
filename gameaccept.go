@@ -260,6 +260,7 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 	//tbddroidloss := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbddroidhp := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstruct := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
@@ -269,6 +270,9 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 	tbdoilrigs := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	for _, p := range h.PlayerData {
 		if p.Name == "Autohoster" && p.Hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
+			continue
+		}
+		if p.Name == "" || p.Hash == "" {
 			continue
 		}
 		if p.Position < 0 || p.Position > 11 {
@@ -282,6 +286,7 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 		//tbddroidloss[int(p.Position)] = int(p.DroidLoss)
 		tbddroidlost[int(p.Position)] = int(p.DroidLost)
 		tbddroidbuilt[int(p.Position)] = int(p.DroidBuilt)
+		tbddroidhp[int(p.Position)] = int(p.DroidHp)
 		tbdstruct[int(p.Position)] = int(p.Struct)
 		tbdstructbuilt[int(p.Position)] = int(p.StructBuilt)
 		tbdstructlost[int(p.Position)] = int(p.StructLost)
@@ -291,9 +296,9 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 		tbdoilrigs[int(p.Position)] = int(p.OilRigs)
 	}
 	tag, derr := dbpool.Exec(context.Background(), `
-INSERT INTO frames (game, gametime, kills, power, score, droid, droidlost, droidbuilt, struct, structbuilt, structlost, rescount, structkilled, summexp, oilrigs)
+INSERT INTO frames (game, gametime, kills, power, score, droid, droidlost, droidbuilt, struct, structbuilt, structlost, rescount, structkilled, summexp, oilrigs, droidhp)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`, gid, h.GameTime,
-		tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdstructkilled, tbdsummexp, tbdoilrigs)
+		tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdstructkilled, tbdsummexp, tbdoilrigs, tbddroidhp)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")
@@ -338,6 +343,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	tbddroid := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbddroidbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	tbddroidhp := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstruct := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructbuilt := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	tbdstructlost := [11]int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
@@ -358,6 +364,9 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		if p.Name == "Autohoster" && p.Hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
 			continue
 		}
+		if p.Name == "" || p.Hash == "" {
+			continue
+		}
 		if p.Position < 0 || p.Position > 11 {
 			log.Printf("Index of array is not in limits! (%d) [%s] (%d)", p.Playnum, p.Name, p.Position)
 			continue
@@ -368,6 +377,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbddroid[int(p.Position)] = int(p.Droid)
 		tbddroidlost[int(p.Position)] = int(p.DroidLost)
 		tbddroidbuilt[int(p.Position)] = int(p.DroidBuilt)
+		tbddroidhp[int(p.Position)] = int(p.DroidHp)
 		tbdstruct[int(p.Position)] = int(p.Struct)
 		tbdstructbuilt[int(p.Position)] = int(p.StructBuilt)
 		tbdstructlost[int(p.Position)] = int(p.StructLost)
@@ -395,8 +405,8 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		elodiff = append(elodiff, eee.EloDiff)
 	}
 	tag, derr := dbpool.Exec(context.Background(), `
-	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitslost = $6, unitbuilt = $7, structs = $8, structbuilt = $9, structurelost = $10, rescount = $11, usertype = $12, researchlog = $13, elodiff = $14, structkilled = $15, summexp = $16, oilrigs = $17
-	WHERE id = $18`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, tbdstructkilled, tbdsummexp, tbdoilrigs, gid)
+	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitslost = $6, unitbuilt = $7, structs = $8, structbuilt = $9, structurelost = $10, rescount = $11, usertype = $12, researchlog = $13, elodiff = $14, structkilled = $15, summexp = $16, oilrigs = $17, unithp = $18
+	WHERE id = $19`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, tbdstructkilled, tbdsummexp, tbdoilrigs, tbddroidhp, gid)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")
