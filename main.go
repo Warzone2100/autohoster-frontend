@@ -315,7 +315,9 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	derr := dbpool.QueryRow(context.Background(), `SELECT elo, elo2, autoplayed, autowon, autolost, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1) FROM players WHERE hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			m.Elo = fmt.Sprintf("Unknown player")
+			if elo == "" {
+				m.Elo = fmt.Sprintf("Unknown player")
+			}
 		} else {
 			log.Print(derr)
 		}
