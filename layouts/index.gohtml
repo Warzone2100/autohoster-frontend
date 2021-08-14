@@ -33,6 +33,7 @@
 				</ul>
 			</p>
 			{{if avail "LoadAvg" .}}<p>Server load: {{.LoadAvg.Load1}} {{.LoadAvg.Load5}} {{.LoadAvg.Load15}}</p>{{end}}
+			{{if avail "VirtMem" .}}<p>Server RAM: {{FormatBytes .VirtMem.Used}}/{{FormatBytes .VirtMem.Total}} ({{FormatPercent .VirtMem.UsedPercent}})</p>{{end}}
 		</div>
 	</body>
 	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->

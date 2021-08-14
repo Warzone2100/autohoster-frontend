@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/v3/mem"
 	"golang.org/x/oauth2"
 )
 
@@ -104,6 +105,25 @@ var layoutFuncs = template.FuncMap{
 		}
 		return bnoden
 	},
+	"FormatBytes":   ByteCountIEC,
+	"FormatPercent": FormatPercent,
+}
+
+func FormatPercent(p float64) string {
+	return fmt.Sprintf("%.1f%%", p)
+}
+
+func ByteCountIEC(b uint64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%dB", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%ciB", float64(b)/float64(div), "KMGTPE"[exp])
 }
 
 func getWzProfile(id int, table string) map[string]interface{} {
@@ -260,7 +280,8 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 }
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	load, _ := load.Avg()
-	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load})
+	virtmem, _ := mem.VirtualMemory()
+	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem})
 }
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("about", w, r, map[string]interface{}{})
