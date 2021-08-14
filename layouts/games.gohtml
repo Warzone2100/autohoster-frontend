@@ -76,10 +76,10 @@
 						{{if $e.Finished}}
 						<a href="/games/{{$e.ID}}" class="btn btn-primary">More</a>
 						{{else}}
-						<button class="btn btn-primary" type="button" disabled>
+						<a href="/games/{{$e.ID}}" class="btn btn-primary" type="button">
 							<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
 							In game
-						</button>
+						</a>
 						{{end}}
 					</td>
 				</tr>
