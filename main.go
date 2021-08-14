@@ -51,8 +51,8 @@ var layoutFuncs = template.FuncMap{
 	"sub": func(a int, b int) int {
 		return a - b
 	},
-	"div": func(a int, b int) float64 {
-		return float64(a) / float64(b)
+	"div": func(a int, b int) int {
+		return a / b
 	},
 	"mult": func(a int, b int) int {
 		return a * b

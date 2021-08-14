@@ -313,11 +313,11 @@ var presets = [
 					{{if le .Autoplayed 4}}
 					<object class="rank rank-pacifier"></object>
 					{{else if eq .Autolost 0}}
-					{{else if (ge .Autowon 24) and gt (div .Autowon .Autolost) 12}}
+					{{else if and (ge .Autowon 24) (gt (div .Autowon .Autolost) 12)}}
 					<object class="rank rank-medalGold"></object>
-					{{else if (ge .Autowon 12) and gt (div .Autowon .Autolost) 6}}
+					{{else if and (ge .Autowon 12) (gt (div .Autowon .Autolost) 6)}}
 					<object class="rank rank-medalDouble"></object>
-					{{else if (ge .Autowon 6) and gt (div .Autowon .Autolost) 3}}
+					{{else if and (ge .Autowon 6) (gt (div .Autowon .Autolost) 3)}}
 					<object class="rank rank-medalSilver"></object>
 					{{end}}
 				</td>
