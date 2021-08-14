@@ -449,7 +449,7 @@
 					timeZone: "UTC"
 				});
 				let ResearchLog = JSON.parse(JsonData).filter((resObj) => {return (resObj.time > 100)});
-				ResearchLog.forEach(r => {r.player -= 1});
+				// ResearchLog.forEach(r => {r.player -= 1});
 				let Table = document.createElement("table");
 				Table.classList.add("table");
 				document.getElementById("Researchlog").appendChild(Table);
@@ -487,7 +487,7 @@
 					HeaderCellTime.appendChild(document.createTextNode(formatter.format(new Date(Research.time))))
 					ResRow.appendChild(HeaderCellTime);
 					
-					for(let Pad=0; Pad<Research.player; Pad++) {
+					for(let Pad=0; Pad<Research.position; Pad++) {
 						ResRow.appendChild(document.createElement("td"));
 					}
 					
@@ -502,7 +502,7 @@
 					}
 					ResRow.appendChild(HeaderCellName);
 					
-					for(let Pad=Research.player; Pad<dtempl.length; Pad++) {
+					for(let Pad=Research.position; Pad<dtempl.length; Pad++) {
 						ResRow.appendChild(document.createElement("td"));
 					}
 				});
