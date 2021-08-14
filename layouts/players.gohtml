@@ -46,7 +46,9 @@
 				<tbody>
 			{{range $pn, $p := .Players}}
 				<tr>
-					<td>{{$pn}}</td>
+					<td {{if eq (inc $pn) 1}}style="background: rgb(255,215,0); background: linear-gradient(90deg, rgba(255,215,0,0.5) 0%, rgba(255,215,0,0) 50%);"{{end}}
+						{{if eq (inc $pn) 2}}style="background: rgb(192,192,192); background: linear-gradient(90deg, rgba(192,192,192,0.5) 0%, rgba(192,192,192,0.0) 50%);"{{end}}
+						{{if eq (inc $pn) 3}}style="background: rgb(205,127,50); background: linear-gradient(90deg, rgba(205,127,50,0.5) 0%, rgba(205,127,50,0) 50%);"{{end}}>{{inc $pn}}</td>
 					<td title="{{$p.Hash}}">{{template "wzprofile" $p}}</td>
 					<td>{{$p.Elo2}}</td>
 					<td>{{$p.Elo}}</td>
