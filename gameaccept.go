@@ -297,7 +297,7 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	tag, derr := dbpool.Exec(context.Background(), `
 INSERT INTO frames (game, gametime, kills, power, score, droid, droidlost, droidbuilt, struct, structbuilt, structlost, rescount, structkilled, summexp, oilrigs, droidhp)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`, gid, h.GameTime,
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`, gid, h.GameTime,
 		tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdstructkilled, tbdsummexp, tbdoilrigs, tbddroidhp)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
