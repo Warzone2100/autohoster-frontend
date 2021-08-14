@@ -435,7 +435,9 @@
 			<canvas id="GraphCanvas"></canvas>
 			</div>
 			<div class="container" id="Researchlog">
+				{{if le .ID 1032}}
 				<div>Research log players are not matching players that made research!</div>
+				{{end}}
 				<div id="LoadReslogBtn" class="btn btn-primary" onclick="LoadResearchLog(); document.getElementById(`LoadReslogBtn`).style.display = `none`;">Load research log</div>
 				<div id="LoadingReslogText" style="display:none">Research log is loading, please wait...</div>
 			<script>
