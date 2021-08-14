@@ -19,6 +19,8 @@
 					<td>Any</td>
 					<td>Reason</td>
 					<td>Last Request</td>
+					<td>WZold</td>
+					<td>WZnew</td>
 				</tr>
 				{{range $i, $e := .Users}}
 				<tr>
@@ -49,6 +51,8 @@
 							<input type="submit" value="S">
 						</form></div></td>
 					<td>{{$e.last_host_request}}</td>
+					<td>{{$e.wzprofile}}</td>
+					<td>{{$e.wzprofile2}}</td>
 				</tr>
 				{{end}}
 			</table>
