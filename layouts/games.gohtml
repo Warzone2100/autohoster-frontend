@@ -288,8 +288,8 @@
 			var colours = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(32, 32, 32)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
 			var chart;
 			var dany = {};
-			var dfields =  ['kills', 'power', 'score', 'droid', 'droidlost', 'droidbuilt', 'struct', 'structbuilt', 'structlost', 'structkilled', 'summexp', 'oilrigs', 'rescount', 'kd'];
-			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio'];
+			var dfields =  ['kills', 'power', 'score', 'droid', 'droidlost', 'droidbuilt', 'droidhp', 'struct', 'structbuilt', 'structlost', 'structkilled', 'summexp', 'oilrigs', 'rescount', 'kd'];
+			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Units hp', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio'];
 			var chartDatasetName = dfields[0];
 			var dtempl = [
 {{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: colours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
