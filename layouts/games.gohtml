@@ -155,8 +155,7 @@
 						{{if eq $player.Usertype "winner"}}
 						<tr class="wz-color-background-{{$player.Colour}}">
 							<td title="Hash: {{$player.Hash}}">
-							<span class="wz-color-{{$player.Colour}}"></span>
-								{{$player.Name}}
+								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
 							<td>{{$player.EloDiff}}</td>
@@ -177,8 +176,7 @@
 						{{if eq $player.Usertype "loser"}}
 						<tr class="wz-color-background-{{$player.Colour}}">
 							<td title="Hash: {{$player.Hash}}">
-								<span class="wz-color-{{$player.Colour}}"></span>
-								{{$player.Name}}
+								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
 							<td>{{$player.EloDiff}}</td>
@@ -206,8 +204,7 @@
 						{{if eq $player.Usertype "fighter"}}
 						<tr class="wz-color-background-{{$player.Colour}}">
 							<td title="Hash: {{$player.Hash}}">
-								<span class="wz-color-{{$player.Colour}}"></span>
-								{{$player.Name}}
+								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}} - {{$player.Team}}</td>
 							<td>---</td>
