@@ -38,6 +38,9 @@
 						<div class="row">
 							<div class="col-sm-4"><h6 class="mb-0">Discord</h6></div>
 							<div class="col-sm-8">
+								{{if .Uesr.Discord.DiscordError}}
+									{{.Uesr.Discord.DiscordError}}
+								{{end}}
 								{{if .User.Discord.Token}}
 									<img class="discord-avatar-30" src="https://cdn.discordapp.com/avatars/{{.User.Discord.Data.id}}/{{.User.Discord.Data.avatar}}.png">
 									{{.User.Discord.Data.username}}#{{.User.Discord.Data.discriminator}}
