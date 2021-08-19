@@ -376,8 +376,8 @@ func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RequestHosters() (bool, string) {
-	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"hosters-online", nil)
+func MultihosterRequest(url string) (bool, string) {
+	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+url, nil)
 	if err != nil {
 		log.Print(err)
 		return false, "Error creating request"
@@ -397,52 +397,18 @@ func RequestHosters() (bool, string) {
 	}
 	bodyString := string(bodyBytes)
 	return true, bodyString
+}
+
+func RequestHosters() (bool, string) {
+	return MultihosterRequest("hosters-online")
 }
 
 func RequestVersions() (bool, string) {
-	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"wzversions", nil)
-	if err != nil {
-		log.Print(err)
-		return false, "Error creating request"
-	}
-	var netClient = &http.Client{
-		Timeout: time.Second * 2,
-	}
-	resp, err := netClient.Do(req)
-	if err != nil {
-		log.Print(err)
-		return false, "Error executing request"
-	}
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Print(err)
-		return false, "Error reading response"
-	}
-	bodyString := string(bodyBytes)
-	return true, bodyString
+	return MultihosterRequest("wzversions")
 }
 
 func RequestStatus() (bool, string) {
-	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"status", nil)
-	if err != nil {
-		log.Print(err)
-		return false, "Error creating request"
-	}
-	var netClient = &http.Client{
-		Timeout: time.Second * 2,
-	}
-	resp, err := netClient.Do(req)
-	if err != nil {
-		log.Print(err)
-		return false, "Error executing request"
-	}
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Print(err)
-		return false, "Error reading response"
-	}
-	bodyString := string(bodyBytes)
-	return true, bodyString
+	return MultihosterRequest("status")
 }
 
 func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, mods, ver string) (bool, string) {
