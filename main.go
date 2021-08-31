@@ -356,6 +356,9 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 			m.Dummy = true
 		} else {
 			m.Dummy = false
+			if dal == 0 {
+				dal = 1
+			}
 			if daw >= 24 && daw/dal > 12 {
 				m.Medal = 1
 			} else if daw >= 12 && daw/dal > 6 {
