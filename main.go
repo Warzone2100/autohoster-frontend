@@ -23,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/natefinch/lumberjack"
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/v3/mem"
 	"golang.org/x/oauth2"
@@ -33,6 +34,7 @@ var (
 	CommitHash = "0000000"
 	GoVersion  = "0.0"
 	GitTag     = "0.0"
+	BuildType  = "dev"
 )
 
 var layouts *template.Template
@@ -413,6 +415,11 @@ func customLogger(writer io.Writer, params handlers.LogFormatterParams) {
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.SetOutput(&lumberjack.Logger{
+		Filename: "./logs/" + BuildType + ".log",
+		MaxSize:  10,   // megabytes
+		Compress: true, // disabled by default
+	})
 	log.Println()
 	log.Println("TacticalPepe web server is starting up...")
 	log.Printf("Built %s, Ver %s (%s)\n", BuildTime, GitTag, CommitHash)

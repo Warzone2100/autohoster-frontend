@@ -30,6 +30,7 @@ require (
 	github.com/mdempsky/unconvert v0.0.0-20200228143138-95ecdbfc0b5f // indirect
 	github.com/mibk/dupl v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
+	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/opennota/check v0.0.0-20180911053232-0c771f5545ff // indirect
 	github.com/ravener/discord-oauth2 v0.0.0-20210409042811-96ad60db2cdb
 	github.com/securego/gosec v0.0.0-20200401082031-e946c8c39989 // indirect
