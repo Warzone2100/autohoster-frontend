@@ -519,6 +519,7 @@ func main() {
 	router.HandleFunc("/request", hostRequestHandler)
 	router.HandleFunc("/created-rooms", createdRoomsHandler)
 	router.HandleFunc("/wzlink", wzlinkHandler)
+	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
 	router.HandleFunc("/autohoster", autohosterControllHandler)
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)

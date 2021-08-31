@@ -1,0 +1,86 @@
+{{define "wzlink"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="404" property="og:title">
+		<meta content="wrong url man" property="og:description">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="container" style="max-width: 940px;">
+			<table class="table">
+				<thead>
+					<td colspan="3" class="text-center">
+						Warzone profiles link
+					</td>
+				</thead>
+				<tr>
+					<td>Warzone profile<br><small>(WZ 3.X.X)</small></td>
+					<td>
+						{{with .User.WzProfile}}
+							{{template "wzprofile" .}}
+						{{end}}
+					</td>
+					<td>
+						This profile is archived and can not be changed.
+					</td>
+				</tr>
+				<tr><hr></tr>
+				<tr>
+					<td>Warzone profile<br><small>(WZ 4.X.X+)</small></td>
+					{{with .User.WzProfile2}}
+						<td>
+							{{template "wzprofile" .}}
+						</td>
+						<td>
+							{{if $.AllowProfileMerge}}
+							You can merge other profiles into main one here: <a href="/wzlinkcheck">Link</a>
+							{{else}}
+							You can not merge profiles. Contact us for details.
+							{{end}}
+						</td>
+					{{else}}
+						<td>
+							<a href="/wzlinkcheck">Link</a>
+						</td>
+						<td>
+							You don't have any profile linked.
+						</td>
+					{{end}}
+				</tr>
+			</table>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
+{{define "wzlinkcheck"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="404" property="og:title">
+		<meta content="wrong url man" property="og:description">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="container" style="max-width: 940px;">
+			<table class="table">
+				<thead>
+					<td colspan="2" class="text-center">
+						Warzone profiles link confirm
+					</td>
+				</thead>
+				<tr>
+					<td>To link new profile send following message in any Autohoster room:</td>
+					<td><code>{{.WzConfirmCode}}</code></td>
+				</tr>
+			</table>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}

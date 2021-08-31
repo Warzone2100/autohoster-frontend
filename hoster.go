@@ -157,7 +157,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		basen, err := strconv.Atoi(r.PostFormValue("base"))
 		if err != nil {
 			basicLayoutLookupRespond("error400", w, r, map[string]interface{}{})
-			return;
+			return
 		}
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
 			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
@@ -181,15 +181,16 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
+func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
 		return
 	}
+	var allow_profile_merge bool
 	var profilenum int
 	var confirmcode string
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce(wzconfirmcode, '') FROM users WHERE username = $1`,
-		sessionManager.GetString(r.Context(), "User.Username")).Scan(&profilenum, &confirmcode)
+	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce(wzconfirmcode, ''), allow_profile_merge FROM users WHERE username = $1`,
+		sessionManager.GetString(r.Context(), "User.Username")).Scan(&profilenum, &confirmcode, &allow_profile_merge)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Heeee?"})
@@ -199,11 +200,176 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
 		return
 	}
-	if confirmcode == "" && profilenum != -1 {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-			"msgred": true, "msg": "Re-linking is not allowed. Linked to profile " + strconv.Itoa(profilenum),
-		})
+	if confirmcode != "" && (allow_profile_merge || profilenum == -1) {
+		var loghash, logname, logip string
+		derr := dbpool.QueryRow(context.Background(), `SELECT hash, ip::text, name FROM chatlog WHERE msg = $1 LIMIT 1`,
+			confirmcode).Scan(&loghash, &logip, &logname)
+		if derr != nil && derr != pgx.ErrNoRows {
+			log.Println(derr.Error())
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+			return
+		}
+		if derr != pgx.ErrNoRows {
+			var newwzid int
+			log.Printf("link [%s] [%s] [%s] [%s]", confirmcode, loghash, logname, logip)
+			derr = dbpool.QueryRow(context.Background(), `
+			INSERT INTO players as p (name, hash, asocip)
+			VALUES ($1::text, $2::text, ARRAY[$3::inet])
+			ON CONFLICT (hash) DO
+			UPDATE SET name = $1::text, asocip = array_sort_unique(p.asocip || ARRAY[$3::inet])
+			RETURNING id;`,
+				logname, loghash, logip).Scan(&newwzid)
+			if derr != nil {
+				log.Println(derr.Error())
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+				return
+			}
+			if profilenum == -1 {
+				tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
+					newwzid, sessionManager.GetString(r.Context(), "User.Username"))
+				if derr != nil {
+					log.Println(derr.Error())
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+					return
+				}
+				if tag.RowsAffected() != 1 {
+					log.Println(derr.Error())
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+					return
+				}
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+					"msg": "We successfully linked your account to warzone profile (" + strconv.Itoa(newwzid) + ") " + logname + " [" + loghash + "]",
+				})
+			} else {
+				if allow_profile_merge {
+					if newwzid == profilenum {
+						newmsg := "confirm-" + generateRandomString(18)
+						tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+							newmsg, sessionManager.GetString(r.Context(), "User.Username"))
+						if derr != nil {
+							log.Println(derr.Error())
+							basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+							return
+						}
+						if tag.RowsAffected() != 1 {
+							log.Println(derr.Error())
+							basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+							return
+						}
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+							"msg": template.HTML("You tried to merge same profile into existing one. That does nothing. New code: <code>" + newmsg + "</code>"),
+						})
+						return
+					}
+					tag, derr := dbpool.Exec(context.Background(), `UPDATE games SET players = array_replace(players, $1, $2) WHERE $1 = ANY(players)`,
+						newwzid, profilenum)
+					if derr != nil {
+						log.Println(derr.Error())
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+						return
+					}
+					tag2, derr2 := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '' WHERE username = $1`,
+						sessionManager.GetString(r.Context(), "User.Username"))
+					if derr2 != nil {
+						log.Println(derr.Error())
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+						return
+					}
+					if tag2.RowsAffected() != 1 {
+						log.Println(derr.Error())
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+						return
+					}
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+						"msg": template.HTML("We successfully merged new profile " + strconv.Itoa(newwzid) + " (" + logname + ") into " + strconv.Itoa(profilenum) + "<br>Games affected: " + strconv.Itoa(int(tag.RowsAffected()))),
+					})
+					return
+				} else {
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+						"msg": "You tried to merge new profile into existing one but it is not allowed.",
+					})
+					return
+				}
+			}
+		}
+
+	}
+	if profilenum == -1 {
+		if confirmcode == "" {
+			newmsg := "confirm-" + generateRandomString(18)
+			tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+				newmsg, sessionManager.GetString(r.Context(), "User.Username"))
+			if derr != nil {
+				log.Println(derr.Error())
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+				return
+			}
+			if tag.RowsAffected() != 1 {
+				log.Println(derr.Error())
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+				return
+			}
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+				"msg": template.HTML("We created new link code for you: <code>" + newmsg + "</code><br>Send it to any Autohoster room with profile you want to link selected."),
+			})
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+				"msg": template.HTML("Your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected."),
+			})
+		}
+	} else {
+		if allow_profile_merge {
+			if confirmcode == "" {
+				newmsg := "confirm-" + generateRandomString(18)
+				confirmcode = newmsg
+				tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+					newmsg, sessionManager.GetString(r.Context(), "User.Username"))
+				if derr != nil {
+					log.Println(derr.Error())
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+					return
+				}
+				if tag.RowsAffected() != 1 {
+					log.Println(derr.Error())
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+					return
+				}
+			}
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+				"msg": template.HTML("You are linked to profile " + strconv.Itoa(profilenum) + "<br>If you want to merge profiles into existing one your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected."),
+			})
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+				"msg": template.HTML("Sorry, you can not merge any profiles. Contact us to learn more about profile linkage."),
+			})
+		}
+	}
+}
+
+func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
+	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
+		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
 		return
+	}
+	var allow_profile_merge bool
+	var profilenum int
+	var confirmcode string
+	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce(wzconfirmcode, ''), allow_profile_merge FROM users WHERE username = $1`,
+		sessionManager.GetString(r.Context(), "User.Username")).Scan(&profilenum, &confirmcode, &allow_profile_merge)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Heeee?"})
+			w.Header().Set("Refresh", "1; /logout")
+			return
+		}
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+		return
+	}
+	basicLayoutLookupRespond("wzlink", w, r, map[string]interface{}{
+		"AllowProfileMerge": allow_profile_merge,
+	})
+	return
+	if confirmcode == "" && profilenum != -1 {
 	} else if confirmcode == "" && profilenum == -1 {
 		newmsg := "confirm-" + generateRandomString(18)
 		tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,

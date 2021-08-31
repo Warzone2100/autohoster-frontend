@@ -25,7 +25,8 @@
 					</svg>
 				</a>
 				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="profileDropdown">
-					<li><a class="dropdown-item {{ if eq .NavWhere "account" }} active {{ end }}" href="/account">Profile</a></li>
+					<li><a class="dropdown-item {{ if eq .NavWhere "account" }} active {{ end }}" href="/account">Account</a></li>
+					<li><a class="dropdown-item {{ if eq .NavWhere "wzlink" }} active {{ end }}" href="/wzlink">WZ Profiles</a></li>
 					<div class="dropdown-divider"></div>
 					<li><a class="dropdown-item {{ if eq .NavWhere "logout" }} active {{ end }}" href="/logout">Log out</a></li>
 				</ul>
