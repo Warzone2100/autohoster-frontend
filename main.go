@@ -537,6 +537,7 @@ func main() {
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
 	// router.HandleFunc("/api/watch", APIwsWatch)
 	router.HandleFunc("/api/reslog/{gid:[0-9]+}", APIgetResearchlogData)
+	router.HandleFunc("/api/gamecount/{interval}", APIgetDatesGraphData)
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 
 	router0 := sessionManager.LoadAndSave(router)
