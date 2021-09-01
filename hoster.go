@@ -240,6 +240,7 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
 					"msg": "We successfully linked your account to warzone profile (" + strconv.Itoa(newwzid) + ") " + logname + " [" + loghash + "]",
 				})
+				return
 			} else {
 				if allow_profile_merge {
 					if newwzid == profilenum {
