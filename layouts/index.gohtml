@@ -6,6 +6,9 @@
 		<meta content="Welp, that's a website" property="og:title">
 		<meta content="Index page - it has some useful info on it" property="og:description">
 		<meta content="https://tacticalpepe.me/" property="og:url">
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>
 	</head>
 	<body>
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
@@ -32,8 +35,78 @@
 					<li><a href="https://www.tinkoff.ru/sl/9vVZBTyHcPC">Tinkoff</a></li>
 				</ul>
 			</p>
-			{{if avail "LoadAvg" .}}<p>Server load: {{.LoadAvg.Load1}} {{.LoadAvg.Load5}} {{.LoadAvg.Load15}}</p>{{end}}
-			{{if avail "VirtMem" .}}<p>Server RAM: {{FormatBytes .VirtMem.Used}}/{{FormatBytes .VirtMem.Total}} ({{FormatPercent .VirtMem.UsedPercent}})</p>{{end}}
+			<table class="table">
+				<tr>
+					<td>
+						{{if avail "LoadAvg" .}}<p>Server load: {{.LoadAvg.Load1}} {{.LoadAvg.Load5}} {{.LoadAvg.Load15}}</p>{{end}}
+					</td><td>
+						{{if avail "VirtMem" .}}<p>Server RAM: {{FormatBytes .VirtMem.Used}}/{{FormatBytes .VirtMem.Total}} ({{FormatPercent .VirtMem.UsedPercent}})</p>{{end}}
+					</td>
+				</tr>
+			</table>
+			<!-- <div>
+				<div id="LoadGraphBtn" class="btn btn-primary" onclick="LoadGraph();document.getElementById(`LoadGraphBtn`).style.display = `none`;">Load graph</div>
+				<div id="LoadingGraphText" style="display:none">Loading graph, please wait...</div>
+			</div> -->
+			<div style="height:500px">
+				<canvas id="GraphCanvas"></canvas>
+			</div>
+			<script>
+			window.onload = function () {
+				LoadGraph();
+			}
+			function PlotData(JsonData) {
+				const resp = JSON.parse(JsonData);
+				let data = {};
+				resp.forEach((i) => {
+					Object.assign(data, i)
+				});
+				var ctx = document.getElementById('GraphCanvas').getContext('2d');
+				var labels = Object.keys(resp);
+				chart = new Chart(ctx, {
+					type: 'line', parsing: false, normalized: true,
+					data: {datasets: [{
+						label: 'Games count',
+						data: data,
+						backgroundColor: 'rgba(0, 119, 204, 1)'
+					}]},
+					options: {spanGaps: true, showLine: true,
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Games count', position: 'top'},
+							zoom: {
+								pan: {enabled: true, mode: 'x'},
+								zoom: {
+									wheel: {enabled: true},
+									pinch: {enabled: true},
+									mode: 'x',
+								}
+							}
+						}, radius: 0,
+						scales: {
+						}
+					}
+				});
+			}
+			
+				// x: {title: {display: true, text: 'time'}},
+				// y : {stacked: false,
+				// 	title: {display: true, text: 'Value'}
+				// }
+			function LoadGraph() {
+				// document.getElementById(`LoadingGraphText`).style.display = `block`;
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						PlotData(xhr.response);
+						// document.getElementById(`LoadingGraphText`).style.display = `none`;
+					}
+				}
+				xhr.open('GET', window.location.origin+'/api/gamecount/day', true);
+				xhr.send(null);
+			}
+			</script>
 		</div>
 	</body>
 	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
