@@ -92,18 +92,18 @@ func sendgridConfirmcode(email string, code string) bool {
 		}
 	],
 	"from": {
-		"email": "pepe@tacticalpepe.me",
+		"email": "no-reply@wz2100-autohost.net",
 		"name": "Account Registration"
 	},
 	"subject": "Welcome to Tactical Pepe website",
 	"content": [
 		{
 			"type": "text/plain",
-		 	"value": "Welcome to Warzone 2100 subdivision. To confirm your email address follow this link: https://tacticalpepe.me/activate?code=%s"
+		 	"value": "Welcome to Warzone 2100 subdivision. To confirm your email address follow this link: https://wz2100-autohost.net/activate?code=%s"
 		},
 		{
 			"type":"text/html",
-			"value":"<html><h3>Welcome to Warzone 2100 subdivision.</h3><p>To confirm your email address follow link below.</p><p><a href=\"https://tacticalpepe.me/activate?code=%s\">Activate account</a></p></html>"
+			"value":"<html><h3>Welcome to Warzone 2100 subdivision.</h3><p>To confirm your email address follow link below.</p><p><a href=\"https://wz2100-autohost.net/activate?code=%s\">Activate account</a></p></html>"
 		}
 	]
 }`, email, code, code)

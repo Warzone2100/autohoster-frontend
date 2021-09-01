@@ -14,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var DiscordRedirectUrl = "https://tacticalpepe.me/oauth/discord"
+var DiscordRedirectUrl = "https://wz2100-autohost.net/oauth/discord"
 
 var discordOauthConfig = &oauth2.Config{
 	RedirectURL:  DiscordRedirectUrl,

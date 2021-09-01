@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var VKRedirectUrl = "https://tacticalpepe.me/oauth/vk"
+var VKRedirectUrl = "https://wz2100-autohost.net/oauth/vk"
 
 func VKGetUrl(state string) string {
 	return "https://oauth.vk.com/authorize?client_id=" + os.Getenv("VKCLIENTID") + "&display=popup&redirect_uri=" + VKRedirectUrl + "&scope=offline&response_type=code&v=5.131&state=" + state
