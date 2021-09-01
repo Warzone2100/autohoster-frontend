@@ -95,7 +95,7 @@ func sendgridConfirmcode(email string, code string) bool {
 		"email": "no-reply@wz2100-autohost.net",
 		"name": "Account Registration"
 	},
-	"subject": "Welcome to Tactical Pepe website",
+	"subject": "Welcome to Warzone 2100 Autohoster website",
 	"content": [
 		{
 			"type": "text/plain",
