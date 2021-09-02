@@ -96,6 +96,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	pp.ID = pid
 	rows, derr := dbpool.Query(context.Background(), `
 	SELECT
 		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
