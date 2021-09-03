@@ -419,11 +419,6 @@ func customLogger(writer io.Writer, params handlers.LogFormatterParams) {
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.SetOutput(&lumberjack.Logger{
-		Filename: "./logs/" + BuildType + ".log",
-		MaxSize:  10,   // megabytes
-		Compress: true, // disabled by default
-	})
 	log.Println()
 	log.Println("TacticalPepe web server is starting up...")
 	log.Printf("Built %s, Ver %s (%s)\n", BuildTime, GitTag, CommitHash)
@@ -439,6 +434,21 @@ func main() {
 		port = "3000"
 	}
 	DiscordVerifyEnv()
+
+	logsLocation := "./logs/" + BuildType + ".log"
+	if os.Getenv("TPWSLOGFILE") != "" {
+		logsLocation = os.Getenv("LOGFILE")
+	}
+	log.SetOutput(&lumberjack.Logger{
+		Filename: logsLocation,
+		MaxSize:  10,   // megabytes
+		Compress: true, // disabled by default
+	})
+
+	log.Println()
+	log.Println("TacticalPepe web server is starting up...")
+	log.Printf("Built %s, Ver %s (%s)\n", BuildTime, GitTag, CommitHash)
+	log.Println()
 
 	log.Println("Loading layouts")
 	layouts, err = template.New("main").Funcs(layoutFuncs).ParseGlob("layouts/*.gohtml")
