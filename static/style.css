@@ -31,37 +31,31 @@
   height: 16px;
   background-position: 0 0;
 }
-
 .rank-medalGold {
   width: 16px;
   height: 16px;
   background-position: -16px 0;
 }
-
 .rank-medalSilver {
   width: 16px;
   height: 16px;
   background-position: 0 -16px;
 }
-
 .rank-pacifier {
   width: 16px;
   height: 16px;
   background-position: -16px -16px;
 }
-
 .rank-starBronze {
   width: 11px;
   height: 11px;
   background-position: -32px 0;
 }
-
 .rank-starGold {
   width: 11px;
   height: 11px;
   background-position: -32px -11px;
 }
-
 .rank-starSilver {
   width: 11px;
   height: 11px;
@@ -84,15 +78,14 @@
 .games-winner-name {
   color: green;
 }
-.games-winner-name {
-  color: green;
-}
 .games-loser-name {
   color: red;
 }
-.games-loser-name {
-  color: red;
+[data-theme="dark"] .games-winner-name {
+  color: lightgreen;
 }
+
+
 .wz-color-background-0 { background-color: rgba(16, 112, 16, 0.15);}
 .wz-color-background-1 { background-color: rgba(255, 176, 53, 0.15);}
 .wz-color-background-2 { background-color: rgba(144, 144, 144, 0.15);}
@@ -109,6 +102,7 @@
 .wz-color-background-13 { background-color: rgba(64, 0, 0, 0.15);}
 .wz-color-background-14 { background-color: rgba(16, 0, 64, 0.15);}
 .wz-color-background-15 { background-color: rgba(64, 96, 0, 0.15);}
+[data-theme="dark"] .wz-color-background-3 { background-color: rgba(128, 128, 128, 0.15);}
 
 .wz-color-0 { background-color: rgba(16, 112, 16, 1);    width: 12px;     height: 12px; display: inline-block; }
 .wz-color-1 { background-color: rgba(255, 176, 53, 1);    width: 12px;     height: 12px; display: inline-block; }
@@ -126,6 +120,7 @@
 .wz-color-13 { background-color: rgba(64, 0, 0, 1);    width: 12px;     height: 12px; display: inline-block; }
 .wz-color-14 { background-color: rgba(16, 0, 64, 1);    width: 12px;     height: 12px; display: inline-block; }
 .wz-color-15 { background-color: rgba(64, 96, 0, 1);    width: 12px;     height: 12px; display: inline-block; }
+[data-theme="dark"] .wz-color-3 { background-color: rgba(32, 32, 32, 1);    width: 12px;     height: 12px; display: inline-block; }
 
 
 
@@ -141,16 +136,19 @@
 	width: 35px;
 	height: 24px;
 	background-position: -38px -27px;
+  border-radius: 20%;
 }
 .icons-alliance1 {
 	width: 35px;
 	height: 24px;
 	background-position: -38px -1px;
+  border-radius: 20%;
 }
 .icons-alliance2 {
   width: 35px;
   height: 24px;
   background-position: -1px -1px;
+  border-radius: 20%;
 }
 
 
@@ -158,16 +156,19 @@
   width: 35px;
   height: 24px;
   background-position: -1px -53px;
+  border-radius: 20%;
 }
 .icons-base1 {
   width: 35px;
   height: 24px;
   background-position: -38px -53px;
+  border-radius: 20%;
 }
 .icons-base2 {
 	width: 35px;
 	height: 24px;
 	background-position: -1px -27px;
+  border-radius: 20%;
 }
 
 
@@ -175,11 +176,13 @@
 	width: 35px;
 	height: 24px;
 	background-position: -75px -27px;
+  border-radius: 20%;
 }
 .icons-scav0 {
   width: 35px;
   height: 24px;
   background-position: -75px -1px;
+  border-radius: 20%;
 }
 
 
@@ -196,4 +199,29 @@
 .hostsettings-radio:disabled + img {
 	filter: opacity(40%);
   background-image: url(/static/icons.png);
+}
+
+
+[data-theme="dark"] body {
+  background-color: #222 !important;
+  color: #ddd;
+}
+[data-theme="dark"] .card {
+  background-color: #333 !important;
+  color: #ddd;
+}
+[data-theme="dark"] .table {
+  color: #ddd;
+}
+[data-theme="dark"] .graphContainer {
+  background-color: #aaa;
+  border-radius: 50px
+}
+[data-theme="dark"] input {
+  background-color: #555 !important;
+  color: #ddd !important;
+}
+[data-theme="dark"] select {
+  background-color: #555 !important;
+  color: #ddd !important;
 }
