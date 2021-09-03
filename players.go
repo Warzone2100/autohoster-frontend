@@ -56,7 +56,7 @@ func PlayersListHandler(w http.ResponseWriter, r *http.Request) {
 	rows, derr := dbpool.Query(context.Background(), `
 	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1)
 	FROM players
-	WHERE autoplayed > 0
+	WHERE autoplayed > 2
 	ORDER BY `+sortby+` `+sortdir)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
