@@ -27,7 +27,7 @@
 					<td>{{$e.id}}</td>
 					<td>{{$e.username}}</td>
 					<td>{{$e.fname}} {{$e.lname}}</td>
-					<td>{{$e.email}}</td>
+					<td>{{$e.email}}<br>{{$e.email_confirmed}}<br>{{strcut $e.emailconfirmcode 16}}</td>
 					<td><div class="{{if $e.allow_preset_request}}text-success{{else}}text-danger{{end}} d-inline-flex">
 						{{if $e.allow_preset_request}}Yes{{else}}No{{end}}
 						<form style="padding-left: 4px;" method="POST" action="/users" target="_self">
