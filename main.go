@@ -424,7 +424,6 @@ func main() {
 	log.Printf("Built %s, Ver %s (%s)\n", BuildTime, GitTag, CommitHash)
 	log.Println()
 	rand.Seed(time.Now().UTC().UnixNano())
-	log.Println("Loading enviroment")
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading .env file")
@@ -455,13 +454,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Creating watcher")
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
-	log.Println("Staring watcher")
 	go func() {
 		for {
 			select {
