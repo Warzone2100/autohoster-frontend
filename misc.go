@@ -123,3 +123,48 @@ func sendgridConfirmcode(email string, code string) bool {
 	log.Println("response Body:", string(body))
 	return resp.Status == "200 Success" || resp.Status == "202 Accepted"
 }
+
+func sendgridRecoverRequest(email string, code string) bool {
+	sendstr := heredoc.Docf(`
+{
+	"personalizations": [
+		{
+			"to": [
+				{
+					"email":"%s"
+				}
+			]
+		}
+	],
+	"from": {
+		"email": "no-reply@wz2100-autohost.net",
+		"name": "Autohoster"
+	},
+	"subject": "Password recovery",
+	"content": [
+		{
+			"type": "text/plain",
+		 	"value": "Hello, to reset your password please follow this link: https://wz2100-autohost.net/recover?code=%s\nIf this was not you and you think someone is trying to gain access to your account please contact us."
+		},
+		{
+			"type":"text/html",
+			"value":"<html><h3>Password reset</h3><p>To reset your password follow link below.</p><p><a href=\"https://wz2100-autohost.net/recover?code=%s\">Set new password</a></p><p>If this was not you and you think someone is trying to gain access to your account please contact us.</p></html>"
+		}
+	]
+}`, email, code, code)
+	req, _ := http.NewRequest("POST", "https://api.sendgrid.com/v3/mail/send", bytes.NewBuffer([]byte(sendstr)))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("SENDGRID_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	defer resp.Body.Close()
+	log.Println("response Status:", resp.Status)
+	log.Println("response Headers:", resp.Header)
+	body, _ := ioutil.ReadAll(resp.Body)
+	log.Println("response Body:", string(body))
+	return resp.Status == "200 Success" || resp.Status == "202 Accepted"
+}

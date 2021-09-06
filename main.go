@@ -523,6 +523,7 @@ func main() {
 	router.HandleFunc("/account", accountHandler)
 	router.HandleFunc("/users", usersHandler)
 	router.HandleFunc("/activate", emailconfHandler)
+	router.HandleFunc("/recover", recoverPasswordHandler)
 	router.HandleFunc("/oauth/discord", DiscordCallbackHandler)
 	router.HandleFunc("/oauth/vk", VKCallbackHandler)
 

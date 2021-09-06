@@ -67,11 +67,11 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		type LastAttemptS struct {
-			Fname string
-			Lname string
+			Fname    string
+			Lname    string
 			Username string
 			Password string
-			Email string
+			Email    string
 		}
 		la := LastAttemptS{r.PostFormValue("fname"), r.PostFormValue("lname"), r.PostFormValue("username"), r.PostFormValue("password"), r.PostFormValue("email")}
 		if !validateUsername(r.PostFormValue("username")) {
@@ -170,4 +170,102 @@ func emailconfHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Email confirmed.", "msggreen": true})
+}
+func recoverPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		err := r.ParseForm()
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Printf("Error reading form: %v", err)
+			return
+		}
+		if r.PostFormValue("reset") == "yes" {
+			err := r.ParseForm()
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				log.Printf("Error reading form: %v", err)
+				return
+			}
+			log.Printf("code [%v]", r.PostFormValue("code"))
+			log.Printf("password [%v]", r.PostFormValue("password"))
+			log.Printf("password-confirm [%v]", r.PostFormValue("password-confirm"))
+			log.Printf("reset [%v]", r.PostFormValue("reset"))
+			if r.PostFormValue("code") == "resetcomplete" || r.PostFormValue("code") == "" || r.PostFormValue("password") == "" {
+				basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverError": true})
+				return
+			}
+			if r.PostFormValue("password") != r.PostFormValue("password-confirm") {
+				basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverDetailedError": "Passwords don't match"})
+				return
+			}
+			if !validatePassword(r.PostFormValue("password")) {
+				basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverDetailedError": "Password must be between 6 and 25 symbols in length"})
+				return
+			}
+			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET password = $1, emailconfirmcode = 'resetcomplete' WHERE emailconfirmcode = $2", hashPassword(r.PostFormValue("password")), r.PostFormValue("code"))
+			if derr != nil {
+				basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverError": true})
+				log.Print(derr)
+				return
+			}
+			if tag.RowsAffected() != 1 {
+				basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverError": true})
+				log.Print("No such recovery code")
+				return
+			}
+			log.Print("Password recovery attempt SUCCESS")
+			basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverComplete": true})
+			w.Header().Set("Refresh", "5; /login")
+		} else {
+			if !validateEmail(r.PostFormValue("email")) {
+				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
+				return
+			}
+			numEmails := 0
+			numEmailsErr := dbpool.QueryRow(context.Background(), "SELECT COUNT(*) FROM users WHERE email = $1 AND coalesce(extract(epoch from email_confirmed), 0) != 0", r.PostFormValue("email")).Scan(&numEmails)
+			if numEmailsErr != nil {
+				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
+				log.Print(numEmailsErr)
+				return
+			}
+			if numEmails != 1 {
+				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
+				return
+			}
+			reqemailcode := generateRandomString(50)
+			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET emailconfirmcode = $1 WHERE email = $2", reqemailcode, r.PostFormValue("email"))
+			if derr != nil {
+				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
+				log.Print(derr)
+				return
+			}
+			if tag.RowsAffected() != 1 {
+				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
+				return
+			}
+			log.Print("Password recovery attempt [%v]", r.PostFormValue("email"))
+			sendgridRecoverRequest(r.PostFormValue("email"), reqemailcode)
+			basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverComplete": true, "Email": r.PostFormValue("email")})
+		}
+	} else {
+		keys, ok := r.URL.Query()["code"]
+		if !ok || len(keys[0]) < 1 {
+			basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{})
+			log.Print("No code")
+			return
+		}
+		numEmails := 0
+		numEmailsErr := dbpool.QueryRow(context.Background(), "SELECT COUNT(*) FROM users WHERE emailconfirmcode = $1", keys[0]).Scan(&numEmails)
+		if numEmailsErr != nil {
+			basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
+			log.Print(numEmailsErr)
+			return
+		}
+		if numEmails != 1 {
+			basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
+			log.Print("No email", numEmails)
+			return
+		}
+		basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoveryCode": keys[0]})
+	}
 }
