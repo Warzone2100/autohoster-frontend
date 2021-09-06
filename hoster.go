@@ -547,7 +547,7 @@ func MultihosterRequest(url string) (bool, string) {
 	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+url, nil)
 	if err != nil {
 		log.Print(err)
-		return false, "Error creating request"
+		return false, err.Error()
 	}
 	var netClient = &http.Client{
 		Timeout: time.Second * 2,
@@ -555,12 +555,12 @@ func MultihosterRequest(url string) (bool, string) {
 	resp, err := netClient.Do(req)
 	if err != nil {
 		log.Print(err)
-		return false, "Error executing request"
+		return false, err.Error()
 	}
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
-		return false, "Error reading response"
+		return false, err.Error()
 	}
 	bodyString := string(bodyBytes)
 	return true, bodyString
