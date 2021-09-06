@@ -41,6 +41,9 @@ var layouts *template.Template
 var sessionManager *scs.SessionManager
 var dbpool *pgxpool.Pool
 var layoutFuncs = template.FuncMap{
+	"noescape": func(s string) template.HTML {
+		return template.HTML(s)
+	},
 	"inc": func(i int) int {
 		return i + 1
 	},
