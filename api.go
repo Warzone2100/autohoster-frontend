@@ -10,6 +10,16 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+func APItryReachMultihoster(w http.ResponseWriter, r *http.Request) {
+	s, m := RequestStatus()
+	io.WriteString(w, m)
+	if s {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
+}
+
 func APIgetGraphData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		log.Printf("Wrong method on graph api [%s]", r.Method)
