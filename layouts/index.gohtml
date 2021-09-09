@@ -41,6 +41,8 @@
 						{{if avail "LoadAvg" .}}<p>Server load: {{.LoadAvg.Load1}} {{.LoadAvg.Load5}} {{.LoadAvg.Load15}}</p>{{end}}
 					</td><td>
 						{{if avail "VirtMem" .}}<p>Server RAM: {{FormatBytes .VirtMem.Used}}/{{FormatBytes .VirtMem.Total}} ({{FormatPercent .VirtMem.UsedPercent}})</p>{{end}}
+					</td><td>
+						{{if avail "Uptime" .}}<p>Server uptime: {{.Uptime}}</p>{{end}}
 					</td>
 				</tr>
 			</table>

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	_ "strconv"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/natefinch/lumberjack"
+	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/v3/mem"
 	"golang.org/x/oauth2"
@@ -287,7 +289,9 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	load, _ := load.Avg()
 	virtmem, _ := mem.VirtualMemory()
-	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem})
+	uptime, _ := host.Uptime()
+	uptimetime, _ := time.ParseDuration(strconv.Itoa(int(uptime)) + "s")
+	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem, "Uptime": uptimetime})
 }
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("about", w, r, map[string]interface{}{})
