@@ -61,7 +61,9 @@
 				const resp = JSON.parse(JsonData);
 				let data = {};
 				resp.forEach((i) => {
-					Object.assign(data, i)
+					const date = Object.keys(i)[0].split(" ")[0];
+					const count = Object.values(i)[0];
+					Object.assign(data, {[date]: count })
 				});
 				var ctx = document.getElementById('GraphCanvas').getContext('2d');
 				var labels = Object.keys(resp);
