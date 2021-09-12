@@ -149,6 +149,10 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Wrong method on game creating [%s]", r.Method)
 		return
 	}
+	if r.Header.Get("CF-Connecting-IP") != "" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 	h := JSONgame{}
 	err := decodeJSONBody(w, r, &h)
 	if err != nil {
@@ -237,6 +241,10 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Wrong method on game creating [%s]", r.Method)
 		return
 	}
+	if r.Header.Get("CF-Connecting-IP") != "" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 	params := mux.Vars(r)
 	gid := params["gid"]
 	h := JSONgame{}
@@ -319,6 +327,10 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		log.Printf("Wrong method on game creating [%s]", r.Method)
+		return
+	}
+	if r.Header.Get("CF-Connecting-IP") != "" {
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	params := mux.Vars(r)
