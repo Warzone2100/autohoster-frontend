@@ -537,6 +537,7 @@ func main() {
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
 	router.HandleFunc("/autohoster", autohosterControllHandler)
+	router.HandleFunc("/preset-edit", PresetEditorHandler)
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
