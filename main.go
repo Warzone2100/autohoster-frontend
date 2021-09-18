@@ -296,6 +296,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("about", w, r, map[string]interface{}{})
 }
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	basicLayoutLookupRespond("stats", w, r, map[string]interface{}{})
+}
 func legalHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("legal", w, r, map[string]interface{}{})
 }
@@ -547,6 +550,7 @@ func main() {
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
 	router.HandleFunc("/players", PlayersListHandler)
 	router.HandleFunc("/players/{id:[0-9]+}", PlayersHandler)
+	router.HandleFunc("/stats", statsHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
@@ -557,6 +561,8 @@ func main() {
 	router.HandleFunc("/api/reslog/{gid:[0-9]+}", APIgetResearchlogData)
 	router.HandleFunc("/api/gamecount/{interval}", APIgetDatesGraphData)
 	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster)
+	router.HandleFunc("/api/dayavg", APIgetDayAverageByHour)
+	router.HandleFunc("/api/mapcount", APIgetMapNameCount)
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 
 	router0 := sessionManager.LoadAndSave(router)

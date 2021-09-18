@@ -1,0 +1,118 @@
+{{define "stats"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="container px-4 py-5 my-5 text-center">
+			<h3>Autohoster statistics</h3>
+			<div class="graphContainerGamesPerHour" style="height:500px">
+				<canvas id="GraphCanvasGamesPerHour"></canvas>
+			</div>
+			<div class="graphContainerMapCount" style="height:500px">
+				<canvas id="GraphCanvasMapCount"></canvas>
+			</div>
+			<script>
+			window.onload = function () {
+				LoadGraphGamesPerHour();
+				LoadGraphMapCount();
+			}
+			function PlotDataGamesPerHour(JsonData) {
+				const resp = JSON.parse(JsonData);
+				var ctx = document.getElementById('GraphCanvasGamesPerHour').getContext('2d');
+				var labels = Object.keys(resp);
+				chart = new Chart(ctx, {
+					type: 'line', parsing: false, normalized: true,
+					data: {datasets: [{
+						label: 'Count',
+						data: resp,
+						borderColor: 'rgba(0, 119, 204, 1)',
+						backgroundColor: 'rgba(0, 119, 204, 1)'
+					}]},
+					options: {spanGaps: true, showLine: true,
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Game count by hour', position: 'top'},
+							zoom: {
+								pan: {enabled: true, mode: 'x'},
+								zoom: {
+									wheel: {enabled: true},
+									pinch: {enabled: true},
+									mode: 'x',
+								}
+							}
+						}, radius: 4,
+						scales: {
+						}
+					}
+				});
+			}
+			function LoadGraphGamesPerHour() {
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						PlotDataGamesPerHour(xhr.response);
+					}
+				}
+				xhr.open('GET', window.location.origin+'/api/dayavg', true);
+				xhr.send(null);
+			}
+			function PlotDataMapCount(JsonData) {
+				let resp = JSON.parse(JsonData);
+				var ctx = document.getElementById('GraphCanvasMapCount').getContext('2d');
+				var labels = Object.keys(resp);
+				labels.sort((a, b) => {return resp[b] - resp[a]})
+				let data = [];
+				for(let a in labels) {
+					data.push({x: labels[a], y: resp[labels[a]]});
+				}
+				chart = new Chart(ctx, {
+					type: 'bar', parsing: false, normalized: true,
+					data: {datasets: [{
+						label: 'Maps',
+						data: data,
+						borderColor: 'rgba(0, 119, 204, 1)',
+						backgroundColor: 'rgba(0, 119, 204, 1)'
+					}]},
+					options: {spanGaps: true, showLine: true,
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Count of maps', position: 'top'},
+							zoom: {
+								pan: {enabled: true, mode: 'x'},
+								zoom: {
+									wheel: {enabled: true},
+									pinch: {enabled: true},
+									mode: 'x',
+								}
+							}
+						}, radius: 4,
+						scales: {
+						}
+					}
+				});
+			}
+			function LoadGraphMapCount() {
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						PlotDataMapCount(xhr.response);
+					}
+				}
+				xhr.open('GET', window.location.origin+'/api/mapcount', true);
+				xhr.send(null);
+			}
+			</script>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
