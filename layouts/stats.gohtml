@@ -11,6 +11,7 @@
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
 		<div class="container px-4 py-5 my-5 text-center">
+			{{if ne .User.WzProfile2.ID -1}}
 			<h3>Autohoster statistics</h3>
 			<div class="graphContainerGamesPerHour" style="height:500px">
 				<canvas id="GraphCanvasGamesPerHour"></canvas>
@@ -111,6 +112,9 @@
 				xhr.send(null);
 			}
 			</script>
+			{{else}}
+			<h4>Please link Warzone profile in order to see this statistics</h4>
+			{{end}}
 		</div>
 	</body>
 	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
