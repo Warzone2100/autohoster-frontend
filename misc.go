@@ -13,6 +13,43 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func respondWithUnauthorized(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusUnauthorized)
+	basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]interface{}{})
+}
+
+func respondWithForbidden(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusForbidden)
+	basicLayoutLookupRespond(templateErrorForbidden, w, r, map[string]interface{}{})
+}
+
+func respondWithNotImplemented(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+	basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msg": "Not implemented"})
+}
+
+func checkFormParse(w http.ResponseWriter, r *http.Request) bool {
+	err := r.ParseForm()
+	if err != nil {
+		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msgred": true, "msg": "Form parse error: " + err.Error()})
+	}
+	return err == nil
+}
+
+func checkRespondDatabaseErrorAny(w http.ResponseWriter, r *http.Request, derr error) bool {
+	if derr != nil {
+		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+	}
+	return derr == nil
+}
+
+func checkRespondGenericErrorAny(w http.ResponseWriter, r *http.Request, derr error) bool {
+	if derr != nil {
+		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msgred": true, "msg": "Error: " + derr.Error()})
+	}
+	return derr == nil
+}
+
 func myNotFoundHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := r.Header.Get("CF-Connecting-IP")

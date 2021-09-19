@@ -64,6 +64,9 @@ var layoutFuncs = template.FuncMap{
 	"mult": func(a int, b int) int {
 		return a * b
 	},
+	"rem": func(a int, b int) int {
+		return a % b
+	},
 	"allianceToClass": func(a float64) float64 {
 		if a == 3 {
 			return 1
@@ -265,26 +268,6 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 		"User":           usermap,
 	})
 	return a
-}
-func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Request, p interface{}) {
-	in := layouts.Lookup(page)
-	if in != nil {
-		m, mk := p.(map[string]interface{})
-		if mk == false {
-			log.Println("Basic respond got parameters interface of wrong type")
-		}
-		m["NavWhere"] = page
-		sessionAppendUser(r, &m)
-		w.Header().Set("Server", "TacticalPepe webserver "+CommitHash)
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-		err := in.Execute(w, m)
-		if err != nil {
-			log.Println(err)
-		}
-	} else {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-	}
 }
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	load, _ := load.Avg()
@@ -540,7 +523,7 @@ func main() {
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
 	router.HandleFunc("/autohoster", autohosterControllHandler)
-	router.HandleFunc("/preset-edit", PresetEditorHandler)
+	router.HandleFunc("/preset-edit", presetEditorHandler)
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
