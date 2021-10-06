@@ -8,16 +8,20 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+const (
+	templateLogin             = "login"
+	templateLoginFormUsername = "username"
+	templateLoginFormPassword = "password"
+)
+
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		err := r.ParseForm()
-		if err != nil {
-			basicLayoutLookupRespond("login", w, r, map[string]interface{}{"LoginError": true, "LoginDetailedError": "Database query error: " + err.Error()})
+	if r.Method == http.MethodPost {
+		if !checkFormParse(w, r) {
 			return
 		}
-		log.Printf("Login attempt: [%s]", r.PostFormValue("username"))
-		if !validateUsername(r.PostFormValue("username")) || !validatePassword(r.PostFormValue("password")) {
-			basicLayoutLookupRespond("login", w, r, map[string]interface{}{"LoginError": true})
+		log.Printf("Login attempt: [%s]", r.PostFormValue(templateLoginFormUsername))
+		if !validateUsername(r.PostFormValue(templateLoginFormUsername)) || !validatePassword(r.PostFormValue(templateLoginFormPassword)) {
+			basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginError": true})
 			return
 		}
 		var passdb string
@@ -25,10 +29,10 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		derr := dbpool.QueryRow(context.Background(), "SELECT password, id FROM users WHERE username = $1", r.PostFormValue("username")).Scan(&passdb, &iddb)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
-				basicLayoutLookupRespond("login", w, r, map[string]interface{}{"LoginError": true})
+				basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginError": true})
 				log.Printf("No such user")
 			} else {
-				basicLayoutLookupRespond("login", w, r, map[string]interface{}{"LoginError": true, "LoginDetailedError": "Database query error: " + derr.Error()})
+				basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginError": true, "LoginDetailedError": "Database query error: " + derr.Error()})
 				log.Printf("DB err: " + derr.Error())
 			}
 			return
@@ -38,16 +42,16 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			sessionManager.Put(r.Context(), "User.Id", iddb)
 			sessionManager.Put(r.Context(), "UserAuthorized", "True")
 			w.Header().Set("Refresh", "1; /account")
-			basicLayoutLookupRespond("login", w, r, map[string]interface{}{"LoginComplete": true, "User": map[string]interface{}{"Username": r.PostFormValue("username")}})
+			basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginComplete": true, "User": map[string]interface{}{"Username": r.PostFormValue("username")}})
 			log.Printf("Log in success: [%s]", r.PostFormValue("username"))
 		} else {
 			basicLayoutLookupRespond("login", w, r, map[string]interface{}{"LoginError": true})
 		}
 	} else {
 		if r.Header.Get("CF-Visitor") != "{\"scheme\":\"https\"}" {
-			basicLayoutLookupRespond("login", w, r, map[string]interface{}{"WarningUnsafe": true})
+			basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"WarningUnsafe": true})
 		} else {
-			basicLayoutLookupRespond("login", w, r, map[string]interface{}{})
+			basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{})
 		}
 	}
 }
@@ -60,7 +64,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("logout", w, r, map[string]interface{}{})
 }
 func registerHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+	if r.Method == http.MethodPost {
 		err := r.ParseForm()
 		if err != nil {
 			log.Printf("Error reading form: %v\n", err)
