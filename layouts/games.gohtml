@@ -413,9 +413,12 @@
 				dfields.forEach((item, i) => {
 					let b = document.createElement("option")
 					b.classList.add("option");
-					b.onclick = function() {ChangeToName(item)};
 					b.innerHTML = dfieldsT[i];
+					b.value = item;
 					sel.append(b);
+				});
+				sel.addEventListener('change', (event) => {
+					ChangeToName(event.target.value)
 				});
 				document.getElementById('Switchbuttons').append(sel);
 				document.getElementById(`GraphTogglesDiv`).style.display = `block`;
