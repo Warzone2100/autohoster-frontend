@@ -65,6 +65,24 @@
 					const count = Object.values(i)[0];
 					Object.assign(data, {[date]: count })
 				});
+				let avgData = {};
+				let avgPast = 7;
+				for(let i = avgPast; i < resp.length; i++) {
+					// console.log(i, resp[i]);
+					let avgv = 0;
+					let avgc = avgPast;
+					for(let j = 0; j < avgPast; j++) {
+						avgv += Object.values(resp[i-j])[0]
+					}
+					const date = Object.keys(resp[i])[0].split(" ")[0];
+					Object.assign(avgData, {[date]: avgv/avgc })
+					// console.log(i, date, avgv/avgc);
+				}
+				// resp.forEach((i) => {
+				// 	const date = Object.keys(i)[0].split(" ")[0];
+				// 	const count = Object.values(i)[0];
+				// 	Object.assign(data, {[date]: count })
+				// });
 				var ctx = document.getElementById('GraphCanvas').getContext('2d');
 				var labels = Object.keys(resp);
 				chart = new Chart(ctx, {
@@ -72,8 +90,15 @@
 					data: {datasets: [{
 						label: 'Games count',
 						data: data,
+						borderColor: 'rgba(0, 119, 204, 0.3)',
+						backgroundColor: 'rgba(0, 119, 204, 0.3)'
+					},
+					{
+						label: 'Games 7 day average',
+						data: avgData,
 						borderColor: 'rgba(0, 119, 204, 1)',
-						backgroundColor: 'rgba(0, 119, 204, 1)'
+						backgroundColor: 'rgba(0, 119, 204, 1)',
+						tension: 0.4
 					}]},
 					options: {spanGaps: true, showLine: true,
 						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
@@ -88,7 +113,7 @@
 									mode: 'x',
 								}
 							}
-						}, radius: 4,
+						}, radius: 1,
 						scales: {
 						}
 					}
