@@ -161,6 +161,12 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
+	var gamesTotal int
+	derr := dbpool.QueryRow(context.Background(), `SELECT count(*) FROM games WHERE hidden = false AND deleted = false;`).Scan(&gamesTotal)
+	if derr != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+		return
+	}
 	rows, derr := dbpool.Query(context.Background(), `
 	SELECT
 		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
@@ -228,7 +234,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 			if g.Finished {
 				g.Players[slot].Usertype = plusertype[slot]
 				g.Players[slot].Kills = dskills[slot]
-				if(plusertype[slot] == "winner" || plusertype[slot] == "loser") {
+				if plusertype[slot] == "winner" || plusertype[slot] == "loser" {
 					g.Players[slot].EloDiff = dselodiff[slot]
 				}
 			} else {
@@ -239,7 +245,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		// spew.Dump(g)
 		gms = append(gms, g)
 	}
-	basicLayoutLookupRespond("games2", w, r, map[string]interface{}{"Games": gms})
+	basicLayoutLookupRespond("games2", w, r, map[string]interface{}{"Games": gms, "GamesCount": gamesTotal})
 }
 
 func GameTimeToString(t float64) string {
