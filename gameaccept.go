@@ -122,11 +122,12 @@ type JSONgameCore struct {
 	AlliancesType  float64 `json:"alliancesType"`
 	BaseType       float64 `json:"baseType"`
 	PowerType      float64 `json:"powerType"`
-	Scavengers     bool    `json:"scavengers"`
+	Scavengers     float64 `json:"scavengers"`
 	IdleTime       float64 `json:"idleTime"`
 	StartDate      float64 `json:"startDate"`
 	EndDate        float64 `json:"endDate"`
 	GameLimit      float64 `json:"gameLimit"`
+	GameDir        string  `json:"gamedir"`
 }
 
 type JSONgame struct {
@@ -215,9 +216,9 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 	starttime := ParseMilliTimestamp(int64(h.Game.StartDate))
 	log.Println(starttime.Format("2006-01-02 15:04:05"))
 	derr = tx.QueryRow(context.Background(), `INSERT INTO games
-		(timestarted, gametime, players, teams, colour, mapname, maphash, powerlevel, baselevel, scavs, alliancetype) VALUES
-		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`, starttime.Format("2006-01-02 15:04:05"), h.GameTime, tdbplayers, tdbteams, tdbcolour,
-		h.Game.MapName, h.Game.MapHash, h.Game.PowerType, h.Game.BaseType, h.Game.Scavengers, h.Game.AlliancesType).Scan(&gameid)
+		(timestarted, gametime, players, teams, colour, mapname, maphash, powerlevel, baselevel, scavs, alliancetype, version, gamedir) VALUES
+		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`, starttime.Format("2006-01-02 15:04:05"), h.GameTime, tdbplayers, tdbteams, tdbcolour,
+		h.Game.MapName, h.Game.MapHash, h.Game.PowerType, h.Game.BaseType, h.Game.Scavengers != 0, h.Game.AlliancesType, h.Game.Version, h.Game.GameDir).Scan(&gameid)
 	if derr != nil {
 		log.Printf("Error [%s]", derr.Error())
 		io.WriteString(w, "-1")
