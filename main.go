@@ -546,6 +546,7 @@ func main() {
 	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster)
 	router.HandleFunc("/api/dayavg", APIgetDayAverageByHour)
 	router.HandleFunc("/api/mapcount", APIgetMapNameCount)
+	router.HandleFunc("/api/replay/{gid:[0-9]+}", APIgetReplayFile)
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 
 	router0 := sessionManager.LoadAndSave(router)

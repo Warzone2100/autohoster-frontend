@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
@@ -140,4 +143,63 @@ func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	io.WriteString(w, string(j))
 	w.WriteHeader(http.StatusOK)
+}
+
+func APIgetReplayFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		log.Printf("Wrong method on graph api [%s]", r.Method)
+		return
+	}
+	params := mux.Vars(r)
+	gid := params["gid"]
+	dir := "0"
+	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(gamedir) FROM games WHERE id = $1;`, gid).Scan(&dir)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(derr.Error())
+		return
+	}
+	if dir == "-1" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	log.Print(dir)
+	replaydir := os.Getenv("MULTIHOSTER_GAMEDIRBASE") + dir + "replay/multiplay/"
+	files, err := ioutil.ReadDir(replaydir)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	for _, f := range files {
+		// log.Println(f.Name())
+		if strings.HasSuffix(f.Name(), ".wzrp") {
+			h, err := os.Open(replaydir + f.Name())
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				log.Print(derr.Error())
+				return
+			}
+			var header [4]byte
+			n, err := io.ReadFull(h, header[:])
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				log.Print(derr.Error())
+				return
+			}
+			h.Close()
+			if n == 4 && string(header[:]) == "WZrp" {
+				w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+				w.Header().Set("Content-Disposition", "attachment; filename=\"autohoster-game-"+gid+".wzrp\"")
+				http.ServeFile(w, r, replaydir+f.Name())
+				return
+			}
+		}
+	}
+	w.WriteHeader(http.StatusNotFound)
+	return
 }

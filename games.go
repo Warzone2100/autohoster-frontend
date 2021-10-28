@@ -53,6 +53,7 @@ type DbGamePreview struct {
 	Scavengers  bool
 	Alliances   int
 	Researchlog string
+	Gamedir     string
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +68,8 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
 		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames,
-		score, kills, power, units, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, coalesce(researchlog, '{}'), coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}')
+		score, kills, power, units, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, coalesce(researchlog, '{}'), coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
+		coalesce(gamedir)
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND games.id = $1
@@ -102,7 +104,8 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog, &dselodiff)
+			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog, &dselodiff,
+			&g.Gamedir)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
