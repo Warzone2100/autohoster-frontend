@@ -121,12 +121,23 @@
 					</p>
 					{{if ne .Gamedir "-1"}}
 					<p>
+						{{if $.UserAuthorized}}
 						<a class="btn btn-primary" href="/api/replay/{{.ID}}">
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-down-circle" viewBox="0 0 16 16">
 								<path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V4.5z"/>
 							</svg>
 							Replay
 						</a>
+						{{else}}
+						<a class="btn btn-primary" href="/login">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-down-circle" viewBox="0 0 16 16">
+								<path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V4.5z"/>
+							</svg>
+							Replay
+						</a>
+						<br>
+						<small>Please login to download replay</small>
+						{{end}}
 					</p>
 					{{else}}
 					<p>No replay avaliable</p>
@@ -301,9 +312,66 @@
 			var dfields =  ['kills', 'power', 'score', 'droid', 'droidlost', 'droidbuilt', 'droidhp', 'struct', 'structbuilt', 'structlost', 'structkilled', 'summexp', 'oilrigs', 'rescount', 'kd'];
 			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Units hp', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio'];
 			var chartDatasetName = dfields[0];
-			var dtempl = [
-{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: colours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
+			var dtempl = [{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}
+				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: colours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
 {{end}}{{end}}{{end}}			];
+			function PlotClassData(JsonData) {
+				const resp = JSON.parse(JsonData);
+				let ctx = document.getElementById('ClassificationGraphCanvas').getContext('2d');
+				let md = JSON.parse(JSON.stringify(dtempl));
+				let l = [];
+				Object.keys(resp).forEach((i) => {
+					Object.keys(resp[i]).forEach((j) => {
+						if(!l.includes(j)) {
+							l.push(j)
+						}
+					});
+				});
+				for(let i = 0; i < md.length; i++) {
+					let nn = [];
+					l.forEach((k) => {
+						let nv = 0;
+						if(Object.keys(resp[md[i].gamePosition]).includes(k)) {
+							nv = resp[md[i].gamePosition][k];
+						}
+						nn.push(nv)
+					});
+					md[i].data = nn;
+				}
+				console.log(md);
+				console.log(l);
+				chart = new Chart(ctx, {
+					type: 'radar', parsing: false, normalized: true,
+					data: {labels: l, datasets: md},
+					options: {spanGaps: true, showLine: true,
+						animation: {duration: 20}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Game {{.ID}}', position: 'top'},
+							subtitle: {display: true, text: 'Research classification'},
+							zoom: {
+								pan: {enabled: true, mode: 'x'},
+								zoom: {
+									wheel: {enabled: true},
+									pinch: {enabled: true},
+									mode: 'x',
+								}
+							}
+						}, radius: 3
+					}
+				});
+			}
+			function LoadClassificationGraph() {
+				document.getElementById(`ClassificationGraphContainingDiv`).style.display = `block`;
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						PlotClassData(xhr.response);
+					}
+				}
+				xhr.open('GET', window.location.origin+'/api/classify/game/{{.ID}}', true);
+				xhr.send(null);
+			}
 			function ChartUpdateStyle() {
 				if (chartDatasetName == 'kd' || chartDatasetName == 'rescount'){
 					chart.options.scales.y.stacked = false;
@@ -361,8 +429,8 @@
 			}
 			function PlotData(JsonData) {
 				const resp = JSON.parse(JsonData).sort((f, s) => { return f.gametime - s.gametime });
-				var ctx = document.getElementById('GraphCanvas').getContext('2d');
-				var l = [];
+				let ctx = document.getElementById('GraphCanvas').getContext('2d');
+				let l = [];
 				dfields.forEach((v) => {
 					dany[v] = JSON.parse(JSON.stringify(dtempl));
 				});
@@ -454,6 +522,12 @@
 			</script>
 			<div class="container graphContainer" id="GraphContainingDiv" style="height:500px;display:none">
 			<canvas id="GraphCanvas"></canvas>
+			</div>
+			<div class="container">
+				<button class="btn btn-primary" id="LoadClassGraphBtn" onclick="document.getElementById(`LoadClassGraphBtn`).style.display = `none`;LoadClassificationGraph();">Load research classification</button>
+				<div class="container graphContainer" id="ClassificationGraphContainingDiv" style="height:500px;width:500px;display:none">
+				<canvas id="ClassificationGraphCanvas"></canvas>
+				</div>
 			</div>
 			<div class="container" id="Researchlog">
 				{{if le .ID 1032}}

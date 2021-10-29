@@ -539,8 +539,9 @@ func main() {
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
 	router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
 
-	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
 	// router.HandleFunc("/api/watch", APIwsWatch)
+	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
+	router.HandleFunc("/api/classify/game/{gid:[0-9]+}", APIgetClassChartGame)
 	router.HandleFunc("/api/reslog/{gid:[0-9]+}", APIgetResearchlogData)
 	router.HandleFunc("/api/gamecount/{interval}", APIgetDatesGraphData)
 	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster)

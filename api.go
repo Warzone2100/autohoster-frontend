@@ -26,7 +26,7 @@ func APItryReachMultihoster(w http.ResponseWriter, r *http.Request) {
 
 func APIgetGraphData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		log.Printf("Wrong method on graph api [%s]", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	params := mux.Vars(r)
@@ -50,7 +50,7 @@ func APIgetGraphData(w http.ResponseWriter, r *http.Request) {
 
 func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		log.Printf("Wrong method on graph api [%s]", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	params := mux.Vars(r)
@@ -76,7 +76,7 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) {
 
 func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		log.Printf("Wrong method on graph api [%s]", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	rows, derr := dbpool.Query(context.Background(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
@@ -111,7 +111,7 @@ func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) {
 
 func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		log.Printf("Wrong method on graph api [%s]", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	rows, derr := dbpool.Query(context.Background(), `select mapname, count(*) as c from games group by mapname order by c desc`)
@@ -147,7 +147,11 @@ func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) {
 
 func APIgetReplayFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		log.Printf("Wrong method on graph api [%s]", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if !checkUserAuthorized(r) {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	params := mux.Vars(r)
@@ -181,14 +185,14 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) {
 			h, err := os.Open(replaydir + f.Name())
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				log.Print(derr.Error())
+				log.Print(err.Error())
 				return
 			}
 			var header [4]byte
 			n, err := io.ReadFull(h, header[:])
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				log.Print(derr.Error())
+				log.Print(err.Error())
 				return
 			}
 			h.Close()
@@ -201,5 +205,86 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusNotFound)
+	return
+}
+
+func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	params := mux.Vars(r)
+	gid := params["gid"]
+	reslog := "0"
+	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog) FROM games WHERE id = $1;`, gid).Scan(&reslog)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(derr.Error())
+		return
+	}
+	if reslog == "-1" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	ret := map[int]map[string]int{}
+	cf, err := os.ReadFile(os.Getenv("CLASSIFICATIONJSON"))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	var c []map[string]string
+	err = json.Unmarshal(cf, &c)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	type resEntry struct {
+		Name     string  `json:"name"`
+		Position float64 `json:"position"`
+		Time     float64 `json:"time"`
+	}
+	var resl []resEntry
+	err = json.Unmarshal([]byte(reslog), &resl)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	cl := map[string]string{}
+	for _, b := range c {
+		cl[b["name"]] = b["Subclass"]
+	}
+	for _, b := range resl {
+		j, f := cl[b.Name]
+		if f {
+			_, ff := ret[int(b.Position)]
+			if !ff {
+				ret[int(b.Position)] = map[string]int{}
+			}
+			_, ff = ret[int(b.Position)][j]
+			if ff {
+				ret[int(b.Position)][j]++
+			} else {
+				ret[int(b.Position)][j] = 1
+			}
+		}
+	}
+	ans, err := json.Marshal(ret)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	io.WriteString(w, string(ans))
+	io.WriteString(w, string("\n"))
+	w.WriteHeader(http.StatusOK)
 	return
 }
