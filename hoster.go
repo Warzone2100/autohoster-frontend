@@ -536,8 +536,14 @@ func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s, reqres := RequestHosters()
+	var rooms []interface{}
+	err := json.Unmarshal([]byte(reqres), &rooms)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "JSON error: " + err.Error()})
+		return
+	}
 	if s {
-		basicLayoutLookupRespond("multihoster", w, r, map[string]interface{}{"MultihosterStatus": reqres})
+		basicLayoutLookupRespond("rooms", w, r, map[string]interface{}{"Rooms": rooms})
 	} else {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
 	}

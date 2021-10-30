@@ -52,6 +52,9 @@ var layoutFuncs = template.FuncMap{
 	"dec": func(i int) int {
 		return i - 1
 	},
+	"decf64": func(i float64) float64 {
+		return i - 1
+	},
 	"sum": func(a int, b int) int {
 		return a + b
 	},
@@ -59,6 +62,9 @@ var layoutFuncs = template.FuncMap{
 		return a - b
 	},
 	"div": func(a int, b int) int {
+		return a / b
+	},
+	"divf64": func(a float64, b float64) float64 {
 		return a / b
 	},
 	"mult": func(a int, b int) int {
@@ -87,6 +93,9 @@ var layoutFuncs = template.FuncMap{
 		} else {
 			return 1
 		}
+	},
+	"f64tostring": func(a float64) string {
+		return fmt.Sprintf("%.2f", a)
 	},
 	"avail": func(name string, data interface{}) bool {
 		v := reflect.ValueOf(data)

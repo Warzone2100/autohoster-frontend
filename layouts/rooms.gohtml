@@ -1,0 +1,82 @@
+{{define "rooms"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="Autohosted rooms" property="og:title">
+		<meta content="Rooms currently served by Autohoster" property="og:description">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5">
+			<div class="container">
+				<!-- <pre>{{.Rooms}}</pre> -->
+				{{range $k, $el := .Rooms}}
+				{{if eq $el.status "Waiting players"}}
+				<div class="callout callout-primary">
+				{{else if eq $el.status "In game"}}
+				<div class="callout callout-success">
+				{{else}}
+				<div class="callout callout-default">
+				{{end}}
+					<div class="row">
+						<div class="col">
+							<p>Lobby GID: {{$el.lobbygid}}</p>
+							<p>Database GID: {{$el.dbgid}}</p>
+							<p>Queue: {{$el.plan.queue}}
+							<p>{{/*$el.plan.power*/}}
+								<img class="icons icons-base{{decf64 $el.plan.base}}">
+								<img class="icons icons-scav{{$el.plan.scavangers}}">
+								<img class="icons icons-alliance{{allianceToClass $el.plan.alliances}}">
+							</p>
+						</div>
+						<div class="col">
+							<p>{{$el.status}}</p>
+							<p>Game name: {{$el.plan.gamename}}</p>
+							<p>IP: <code>wz2100-autohost.net:{{$el.plan.port}}</code></p>
+							<p>Version: {{$el.plan.version}}</p>
+						</div>
+						<div class="col">
+							<p>{{$el.plan.mapname}} ({{$el.plan.maxplayers}})</p>
+							<img src="https://wz2100.euphobos.ru/maps/preview/{{$el.plan.maphash}}.png">
+						</div>
+					</div>
+					{{if $el.report}}
+					<div class="row">
+						<div class="col">
+							<p>Game time: {{GameTimeToString $el.report.gameTime}}</p>
+							<p>Players: {{len $el.report.playerData}}</p>
+						</div>
+						{{range $p, $pl := $el.report.playerData}}
+						<div class="col alert wz-color-background-{{$pl.colour}}">
+							<div class="row">
+								<div class="col">
+									<p>Name: <text class="">{{$pl.name}}</text></p>
+									<p>Droids: {{$pl.droid}}</p>
+									<p>Kills: {{$pl.kills}}</p>
+									<p>Score: {{$pl.score}}</p>
+								</div>
+								<div class="col">
+									<p>Team: {{$pl.team}}</p>
+									<p>Droid hp: {{f64tostring $pl.hp}}</p>
+									<p>Research: {{$pl.researchComplete}}</p>
+									<p>K/D: {{f64tostring (divf64 $pl.droidLost $pl.droidBuilt)}}</p>
+								</div>
+							</div>
+						</div>
+						{{else}}
+						<p>wut?</p>
+						{{end}}
+					</div>
+					{{end}}
+				</div>
+				{{else}}
+				<p>No rooms created.</p>
+				{{end}}
+			</div>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
