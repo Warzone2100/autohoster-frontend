@@ -61,7 +61,7 @@
 									<p>Team: {{$pl.team}}</p>
 									<p>Droid hp: {{f64tostring $pl.hp}}</p>
 									<p>Research: {{$pl.researchComplete}}</p>
-									<p>K/D: {{f64tostring (divf64 $pl.droidLost $pl.droidBuilt)}}</p>
+									<p>K/D: {{f64tostring (divf64 $pl.kills $pl.droidLost)}}</p>
 								</div>
 							</div>
 						</div>
