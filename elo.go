@@ -38,6 +38,9 @@ type EloGame struct {
 }
 
 func CalcElo(G *EloGame, P map[int]*Elo) {
+	for _, p := range G.Players {
+		P[p.ID].Autoplayed++
+	}
 	Team1ID := []int{}
 	Team2ID := []int{}
 	if G.IsFFA == false {
@@ -148,7 +151,6 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			}
 			P[p.ID].Autowon++
 			G.Players[pi].EloDiff = Additive
-			P[p.ID].Autoplayed++
 			log.Printf(" === %d applying additive %d uid %d", pi, Additive, P[p.ID].Userid)
 		} else if p.Usertype == "loser" {
 			P[p.ID].Elo -= Additive
@@ -164,8 +166,6 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			P[p.ID].Autolost++
 			G.Players[pi].EloDiff -= Additive
 			G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
-
-			P[p.ID].Autoplayed++
 		}
 	}
 }
