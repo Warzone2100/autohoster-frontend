@@ -41,6 +41,16 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	for _, p := range G.Players {
 		P[p.ID].Autoplayed++
 	}
+	if G.Players[0].ID == G.Players[1].ID && len(G.Players) == 2 {
+		P[G.Players[0].ID].Elo -= 40
+		P[G.Players[0].ID].Autolost += 2
+		G.Players[0].EloDiff = -20
+		G.Players[1].EloDiff = -20
+		if P[G.Players[0].ID].Userid != -1 && P[G.Players[0].ID].Userid != 0 {
+			P[G.Players[0].ID].Elo2 -= 40
+		}
+		return
+	}
 	Team1ID := []int{}
 	Team2ID := []int{}
 	if G.IsFFA == false {
