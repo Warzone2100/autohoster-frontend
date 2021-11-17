@@ -54,6 +54,8 @@ type DbGamePreview struct {
 	Alliances   int
 	Researchlog string
 	Gamedir     string
+	Hidden      bool
+	Calculated      bool
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -170,16 +172,21 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
 		return
 	}
+	wherecase := "WHERE deleted = false AND hidden = false"
+	if sessionGetUsername(r) == "Flex seal" {
+		wherecase = ""
+	}
 	rows, derr := dbpool.Query(context.Background(), `
 	SELECT
 		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
 		players, teams, colour, usertype,
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
-		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills, coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}')
+		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills, coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
+		hidden, calculated
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
-	WHERE deleted = false AND hidden = false
+	`+wherecase+`
 	GROUP BY gid
 	ORDER BY timestarted DESC
 	LIMIT 100;`)
@@ -205,7 +212,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dskills, &dselodiff)
+			&dskills, &dselodiff, &g.Hidden, &g.Calculated)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return

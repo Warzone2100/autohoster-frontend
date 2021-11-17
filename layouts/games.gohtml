@@ -23,7 +23,7 @@
 				</tr>
 				{{range $i, $e := .Games}}
 				<tr>
-					<td>{{$e.ID}}</td>
+					<td>{{$e.ID}} {{if $e.Hidden}}<text style="color:red">H</text>{{end}} {{if not $e.Calculated}}<text style="color:red">C</text>{{end}}</td>
 					<td>{{$e.TimeStarted}}{{if $e.Finished}}<br>({{GameTimeToStringI $e.GameTime}}){{end}}</td>
 					<td>
 						{{$e.MapName}}<br>
