@@ -128,6 +128,7 @@ type JSONgameCore struct {
 	EndDate        float64 `json:"endDate"`
 	GameLimit      float64 `json:"gameLimit"`
 	GameDir        string  `json:"gamedir"`
+	DebugTriggered bool    `json:"debugtriggered"`
 }
 
 type JSONgame struct {
@@ -412,14 +413,17 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		pls[playerID] = &Elo{ID: playerID, Elo: elo, Elo2: elo2, Autoplayed: eap, Autolost: eal, Autowon: eaw, Userid: euid}
 	}
 	tbdreslog, _ := json.Marshal(h.ResearchComplete)
-	CalcElo(&eg, pls)
+	calculating := !h.Game.DebugTriggered
+	if calculating {
+		CalcElo(&eg, pls)
+	}
 	var elodiff []int
 	for _, eee := range eg.Players {
 		elodiff = append(elodiff, eee.EloDiff)
 	}
 	tag, derr := dbpool.Exec(context.Background(), `
-	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitslost = $6, unitbuilt = $7, structs = $8, structbuilt = $9, structurelost = $10, rescount = $11, usertype = $12, researchlog = $13, elodiff = $14, structkilled = $15, summexp = $16, oilrigs = $17, unithp = $18
-	WHERE id = $19`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, tbdstructkilled, tbdsummexp, tbdoilrigs, tbddroidhp, gid)
+	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitslost = $6, unitbuilt = $7, structs = $8, structbuilt = $9, structurelost = $10, rescount = $11, usertype = $12, researchlog = $13, elodiff = $14, structkilled = $15, summexp = $16, oilrigs = $17, unithp = $18, calculated = $19, debugtriggered = $20
+	WHERE id = $21`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, tbdstructkilled, tbdsummexp, tbdoilrigs, tbddroidhp, calculating, h.Game.DebugTriggered, gid)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")
@@ -432,21 +436,23 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	for _, p := range pls {
-		log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
-			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
-		if derr != nil {
-			log.Printf("sql error [%s]", derr.Error())
-			io.WriteString(w, "err")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		if tag.RowsAffected() != 1 {
-			log.Printf("Database insert error, rows affected [%s]", string(tag))
-			io.WriteString(w, "err")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+	if calculating {
+		for _, p := range pls {
+			log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
+			tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
+				p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
+			if derr != nil {
+				log.Printf("sql error [%s]", derr.Error())
+				io.WriteString(w, "err")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if tag.RowsAffected() != 1 {
+				log.Printf("Database insert error, rows affected [%s]", string(tag))
+				io.WriteString(w, "err")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 	io.WriteString(w, "ok")
