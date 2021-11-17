@@ -11,7 +11,7 @@ import (
 )
 
 func resstatHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkUserAuthorized(r) || sessionGetUsername(r) != "Flex seal" {
+	if !checkUserAuthorized(r) {
 		basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]interface{}{})
 		return
 	}
