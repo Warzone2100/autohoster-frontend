@@ -36,11 +36,20 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		sqver = reqver[0]
 	}
-	rows, derr := dbpool.Query(context.Background(), `
+	var rows pgx.Rows
+	if sqver == "any" {
+		rows, derr = dbpool.Query(context.Background(), `
 		SELECT
-			games.id, players, researchlog
+		games.id, players, researchlog
+		FROM games
+		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false`, sqbase)
+	} else {
+		rows, derr = dbpool.Query(context.Background(), `
+		SELECT
+		games.id, players, researchlog
 		FROM games
 		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND version = $2`, sqbase, sqver)
+	}
 	if derr != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
 		return
