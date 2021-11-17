@@ -40,22 +40,23 @@ type DbGamePlayerPreview struct {
 	Userid        int `json:"userid"`
 }
 type DbGamePreview struct {
-	ID          int
-	Finished    bool
-	TimeStarted string
-	TimeEnded   string
-	GameTime    int
-	MapName     string
-	MapHash     string
-	Players     [11]DbGamePlayerPreview
-	BaseLevel   int
-	PowerLevel  int
-	Scavengers  bool
-	Alliances   int
-	Researchlog string
-	Gamedir     string
-	Hidden      bool
-	Calculated      bool
+	ID             int
+	Finished       bool
+	TimeStarted    string
+	TimeEnded      string
+	GameTime       int
+	MapName        string
+	MapHash        string
+	Players        [11]DbGamePlayerPreview
+	BaseLevel      int
+	PowerLevel     int
+	Scavengers     bool
+	Alliances      int
+	Researchlog    string
+	Gamedir        string
+	Hidden         bool
+	Calculated     bool
+	DebugTriggered bool
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +72,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		baselevel, powerlevel, scavs, alliancetype,
 		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames,
 		score, kills, power, units, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, coalesce(researchlog, '{}'), coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-		coalesce(gamedir)
+		coalesce(gamedir), calculated, hidden, debugtriggered
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND games.id = $1
@@ -86,7 +87,9 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		// return g, derr
 	}
 	defer rows.Close()
+	count := 0
 	for rows.Next() {
+		count++
 		var plid []int
 		var plteam []int
 		var plcolour []int
@@ -107,7 +110,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
 			&dsscore, &dskills, &dspower, &dsdroid, &dsdroidlost, &dsdroidbuilt, &dsstruct, &dsstructbuilt, &dsstructlost, &dsrescount, &g.Researchlog, &dselodiff,
-			&g.Gamedir)
+			&g.Gamedir, &g.Calculated, &g.Hidden, &g.DebugTriggered)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
@@ -162,7 +165,11 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// return g, nil
-	basicLayoutLookupRespond("gamedetails2", w, r, map[string]interface{}{"Game": g})
+	if count == 0 {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Game not found"})
+	} else {
+		basicLayoutLookupRespond("gamedetails2", w, r, map[string]interface{}{"Game": g})
+	}
 }
 
 func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +190,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
 		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills, coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-		hidden, calculated
+		hidden, calculated, debugtriggered
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	`+wherecase+`
@@ -212,7 +219,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dskills, &dselodiff, &g.Hidden, &g.Calculated)
+			&dskills, &dselodiff, &g.Hidden, &g.Calculated, &g.DebugTriggered)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return

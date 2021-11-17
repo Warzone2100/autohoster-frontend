@@ -24,7 +24,7 @@
 				</tr>
 				{{range $i, $e := .Games}}
 				<tr>
-					<td>{{$e.ID}} {{if $e.Hidden}}<text style="color:red">H</text>{{end}} {{if not $e.Calculated}}<text style="color:red">C</text>{{end}}</td>
+					<td>{{$e.ID}} {{if $e.Hidden}}<text style="color:red">H</text>{{end}} {{if not $e.Calculated}}<text style="color:red">C</text>{{end}} {{if $e.DebugTriggered}}<text class="rainbow">D</text>{{end}}</td>
 					<td>{{$e.TimeStarted}}{{if $e.Finished}}<br>({{GameTimeToStringI $e.GameTime}}){{end}}</td>
 					<td>
 						{{$e.MapName}}<br>
@@ -114,7 +114,7 @@
 			{{with .Game}}
 			<div class="row">
 				<div class="col-sm">
-					<h4>Game {{.ID}}</h4>
+					<h3>Game {{.ID}}</h4>
 					<p>Map: {{.MapName}} ({{.MapHash}})</p>
 					<p>When: {{.TimeStarted}} ({{GameTimeToStringI .GameTime}})</p>
 					<p>Settings:
@@ -122,6 +122,11 @@
 						<img class="icons icons-alliance{{allianceToClassI .Alliances}}">
 						<img class="icons icons-scav{{boolto10 .Scavengers}}">
 					</p>
+					{{if .DebugTriggered}}
+					<p>
+						<h5 class="rainbow">Debug enabled</h5>
+					</p>
+					{{end}}
 					{{if ne .Gamedir "-1"}}
 					<p>
 						{{if $.UserAuthorized}}
