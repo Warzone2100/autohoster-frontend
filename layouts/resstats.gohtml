@@ -1,0 +1,88 @@
+{{define "resstat"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<meta content="Warzone 2100 research statistics" property="og:title">
+		<meta content="Top players by researching topics" property="og:description">
+		<meta content="https://wz2100-autohost.net/resstat" property="og:url">
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5">
+			<div class="container">
+				<h3>Autorating research statistics</h3>
+				<form method="GET" target="_self">
+					<div class="row">
+						<div class="col">
+							<div class="row g-3 align-items-center">
+								<div class="col-auto">
+									<label class="col-form-label">Game version: </label>
+								</div>
+								<div class="col-auto">
+									<select class="form-select form-select-sm" name="gamever">
+										{{range $i, $j := .Versions}}
+										<option value="{{$j}}">{{$j}}</option>
+										{{end}}
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="col">
+							<div class="row g-3 align-items-center">
+								<p>
+								<label>
+									<text class="label-radio">Base:</text>
+									<input id="base-0-radio" type="radio" class="hostsettings-radio" name="base" value="0">
+									<img class="icons icons-base0">
+								</label>
+								<label>
+									<input id="base-1-radio" type="radio" class="hostsettings-radio" name="base" value="1" checked required>
+									<img class="icons icons-base1">
+								</label>
+								<label>
+									<input id="base-2-radio" type="radio" class="hostsettings-radio" name="base" value="2">
+									<img class="icons icons-base2">
+								</label>
+								</p>
+							</div>
+						</div>
+						<!-- <div class="col">
+							<label for="Iresid" class="col-form-label">Research ID: </label>
+							<input class="form-control form-control-sm" name="resid" id="Iresid">
+						</div> -->
+						<div class="col">
+							<div class="row g-3 align-items-center">
+								<input type="submit" class="btn btn-primary">
+							</div>
+						</div>
+					</div>
+				</form>
+				<p>
+					Showing for version {{.Selver}} and <img class="icons icons-base{{.Selbase}}">
+				</p>
+				<table class="table">
+					<tr>
+						<th>Research id</th>
+						<th>Player name</th>
+						<th>Game id</th>
+						<th>Time best</th>
+					</tr>
+				{{range $k, $el := .Best}}
+					<tr>
+						<td>{{$k}}</td>
+						<td>{{template "wzprofile" $el.Player}}</td>
+						<td><a href="/games/{{$el.Gameid}}">{{$el.Gameid}}</a></td>
+						<td>{{GameTimeToStringI $el.Time}}</td>
+					</tr>
+				{{else}}
+					<tr><td colspan="99">No research found in database?! (bug)</td></tr>
+				{{end}}
+				</table>
+			</div>
+		</div>
+	</body>
+	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
+</html>
+{{end}}
