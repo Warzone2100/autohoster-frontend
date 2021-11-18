@@ -37,6 +37,10 @@ type EloGame struct {
 	Players  []EloGamePlayer
 }
 
+func EloDiff(K, e1, e2 int) float64 {
+	return float64(K) * (1 / (1 + math.Pow(float64(10), float64(e1-e2)/float64(400))))
+}
+
 func CalcElo(G *EloGame, P map[int]*Elo) {
 	for _, p := range G.Players {
 		P[p.ID].Autoplayed++
@@ -126,19 +130,13 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			return
 		}
 	}
-
+	_ = Team1Won
+	_ = Team2Won
 	Team1EloAvg := Team1EloSum / len(Team1ID)
 	Team2EloAvg := Team2EloSum / len(Team2ID)
-	log.Printf("Processing game %d", G.ID)
-	log.Printf("Team won: %v %v", Team2Won, Team1Won)
-	log.Printf("Team avg: %v %v", Team1EloAvg, Team2EloAvg)
-	K := float64(20)
-	Chance1 := 1 / (1 + math.Pow(float64(10), float64(Team1EloAvg-Team2EloAvg)/float64(400)))
-	Chance2 := 1 / (1 + math.Pow(float64(10), float64(Team2EloAvg-Team1EloAvg)/float64(400)))
-	log.Printf("Chances: %v %v", Chance1, Chance2)
-	diff1 := int(math.Round(K * Chance1))
-	diff2 := int(math.Round(K * Chance2))
-	log.Printf("diff: %v %v", diff1, diff2)
+	K := 20
+	diff1 := int(EloDiff(K, Team1EloAvg, Team2EloAvg))
+	diff2 := int(EloDiff(K, Team2EloAvg, Team1EloAvg))
 	var Additive int
 	var Timeitive int
 	if G.Players[0].Usertype == "winner" {
@@ -155,30 +153,47 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			break
 		}
 	}
+	var RAdditive int
+	var RTimeitive int
+	if calcelo2 {
+		Team1RatingSum := 0
+		Team2RatingSum := 0
+		for _, p := range Team1ID {
+			Team1RatingSum += P[p].Elo2
+		}
+		for _, p := range Team2ID {
+			Team2RatingSum += P[p].Elo2
+		}
+		Team1RatingAvg := Team1RatingSum / len(Team1ID)
+		Team2RatingAvg := Team2RatingSum / len(Team2ID)
+		rdiff1 := int(EloDiff(K, Team1RatingAvg, Team2RatingAvg))
+		rdiff2 := int(EloDiff(K, Team2RatingAvg, Team1RatingAvg))
+		if G.Players[0].Usertype == "winner" {
+			RAdditive = rdiff1
+			RTimeitive = rdiff2
+		} else {
+			RAdditive = rdiff2
+			RTimeitive = rdiff1
+		}
+	}
 	for pi, p := range G.Players {
-		log.Printf("Applying elo to player %d [%s]", pi, p.Usertype)
 		if p.Usertype == "winner" {
 			P[p.ID].Elo += Additive
 			if calcelo2 {
-				P[p.ID].Elo2 += Additive
+				P[p.ID].Elo2 += RAdditive
 			}
 			P[p.ID].Autowon++
 			G.Players[pi].EloDiff = Additive
-			log.Printf(" === %d applying additive %d uid %d", pi, Additive, P[p.ID].Userid)
 		} else if p.Usertype == "loser" {
 			P[p.ID].Elo -= Additive
-			if calcelo2 {
-				P[p.ID].Elo2 -= Additive
-			}
 			P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			if calcelo2 {
-				P[p.ID].Elo2 += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+				P[p.ID].Elo2 -= RAdditive
+				P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			}
-			log.Printf(" === %d applying additive %d", pi, Additive)
-			log.Printf(" === %d applying time bonus (%d/60) = %d :: (%d/60000) = %d [[[%d]]]", pi, Timeitive, (float64(Timeitive) / float64(60)), float64(G.GameTime), (float64(G.GameTime) / float64(60000)), math.Round((float64(Timeitive)/float64(60))*(float64(G.GameTime)/float64(60000)-5)))
 			P[p.ID].Autolost++
-			G.Players[pi].EloDiff -= Additive
-			G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+			G.Players[pi].EloDiff -= RAdditive
+			G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 		}
 	}
 }
