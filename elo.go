@@ -182,16 +182,10 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			P[p.ID].Elo += Additive
 			if calcelo2 {
 				P[p.ID].Elo2 += RAdditive
-<<<<<<< Updated upstream
-			}
-			P[p.ID].Autowon++
-			G.Players[pi].EloDiff = Additive
-=======
 				G.Players[pi].EloDiff = RAdditive
 			} else {
 				G.Players[pi].EloDiff = Additive
 			}
->>>>>>> Stashed changes
 		} else if p.Usertype == "loser" {
 			P[p.ID].Autolost++
 			P[p.ID].Elo -= Additive
@@ -199,19 +193,12 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			if calcelo2 {
 				P[p.ID].Elo2 -= RAdditive
 				P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
-<<<<<<< Updated upstream
-			}
-			P[p.ID].Autolost++
-			G.Players[pi].EloDiff -= RAdditive
-			G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
-=======
 				G.Players[pi].EloDiff = -RAdditive
 				G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			} else {
 				G.Players[pi].EloDiff = -Additive
 				G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			}
->>>>>>> Stashed changes
 		}
 	}
 }
