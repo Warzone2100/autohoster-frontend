@@ -178,22 +178,40 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	}
 	for pi, p := range G.Players {
 		if p.Usertype == "winner" {
+			P[p.ID].Autowon++
 			P[p.ID].Elo += Additive
 			if calcelo2 {
 				P[p.ID].Elo2 += RAdditive
+<<<<<<< Updated upstream
 			}
 			P[p.ID].Autowon++
 			G.Players[pi].EloDiff = Additive
+=======
+				G.Players[pi].EloDiff = RAdditive
+			} else {
+				G.Players[pi].EloDiff = Additive
+			}
+>>>>>>> Stashed changes
 		} else if p.Usertype == "loser" {
+			P[p.ID].Autolost++
 			P[p.ID].Elo -= Additive
 			P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			if calcelo2 {
 				P[p.ID].Elo2 -= RAdditive
 				P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+<<<<<<< Updated upstream
 			}
 			P[p.ID].Autolost++
 			G.Players[pi].EloDiff -= RAdditive
 			G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+=======
+				G.Players[pi].EloDiff = -RAdditive
+				G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+			} else {
+				G.Players[pi].EloDiff = -Additive
+				G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+			}
+>>>>>>> Stashed changes
 		}
 	}
 }
@@ -276,7 +294,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 	CalcEloForAll(Games, Players)
 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + spew.Sdump(Players) + spew.Sdump(Games) + "</pre>")})
 	for _, p := range Players {
-		log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
+		// log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
 		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
 			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
 		if derr != nil {
@@ -293,7 +311,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		for _, p := range g.Players {
 			elodiffs = append(elodiffs, p.EloDiff)
 		}
-		log.Printf("Updating game %d: elodiff %v ", g.ID, elodiffs)
+		// log.Printf("Updating game %d: elodiff %v ", g.ID, elodiffs)
 		tag, derr := dbpool.Exec(context.Background(), "UPDATE games SET elodiff = $1 WHERE id = $2",
 			elodiffs, g.ID)
 		if derr != nil {
