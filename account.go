@@ -105,7 +105,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		reqlname := r.PostFormValue("lname")
 		reqemailcode := generateRandomString(50)
 
-		log.Printf("Register attempt: [%s] [%s] [%s]", requname, reqemail)
+		log.Printf("Register attempt: [%s] [%s]", requname, reqemail)
 
 		dberr := func(e error) {
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database call error: " + e.Error(), "LastAttempt": la})
@@ -133,7 +133,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if sendgridConfirmcode(reqemail, reqemailcode) == false {
+		if !sendgridConfirmcode(reqemail, reqemailcode) {
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Can't verify email. Contact administrator.", "LastAttempt": la})
 			return
 		}
@@ -148,7 +148,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		basicLayoutLookupRespond("register", w, r, map[string]interface{}{"SuccessRegister": true})
-		log.Printf("Register attempt success: [%s] [%s] [%s]", requname, reqemail)
+		log.Printf("Register attempt success: [%s] [%s]", requname, reqemail)
 	} else {
 		if r.Header.Get("CF-Visitor") != "{\"scheme\":\"https\"}" {
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"WarningUnsafe": true})
@@ -247,7 +247,7 @@ func recoverPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
 				return
 			}
-			log.Print("Password recovery attempt [%v]", r.PostFormValue("email"))
+			log.Printf("Password recovery attempt [%s]", r.PostFormValue("email"))
 			sendgridRecoverRequest(r.PostFormValue("email"), reqemailcode)
 			basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverComplete": true, "Email": r.PostFormValue("email")})
 		}
