@@ -421,10 +421,6 @@ func customLogger(writer io.Writer, params handlers.LogFormatterParams) {
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.Println()
-	log.Println("TacticalPepe web server is starting up...")
-	log.Printf("Built %s, Ver %s (%s)\n", BuildTime, GitTag, CommitHash)
-	log.Println()
 	rand.Seed(time.Now().UTC().UnixNano())
 	err := godotenv.Load()
 	if err != nil {
@@ -440,11 +436,11 @@ func main() {
 	if os.Getenv("TPWSLOGFILE") != "" {
 		logsLocation = os.Getenv("LOGFILE")
 	}
-	log.SetOutput(&lumberjack.Logger{
+	log.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
 		Filename: logsLocation,
 		MaxSize:  10,   // megabytes
 		Compress: true, // disabled by default
-	})
+	}))
 
 	log.Println()
 	log.Println("TacticalPepe web server is starting up...")
