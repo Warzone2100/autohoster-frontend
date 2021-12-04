@@ -4,8 +4,8 @@ go 1.13
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/alexedwards/scs/pgxstore v0.0.0-20210904201103-9ffa4cfa9323
-	github.com/alexedwards/scs/v2 v2.4.0
+	github.com/alexedwards/scs/pgxstore v0.0.0-20211203064041-370cc303b69f
+	github.com/alexedwards/scs/v2 v2.5.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1
@@ -15,17 +15,18 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/imdario/mergo v0.3.12
-	github.com/jackc/pgx/v4 v4.13.0
-	github.com/joho/godotenv v1.3.0
+	github.com/jackc/pgx/v4 v4.14.1
+	github.com/jackc/puddle v1.2.1 // indirect
+	github.com/joho/godotenv v1.4.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/ravener/discord-oauth2 v0.0.0-20210409042811-96ad60db2cdb
-	github.com/shirou/gopsutil v3.21.8+incompatible
-	github.com/shirou/gopsutil/v3 v3.21.8
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
-	golang.org/x/net v0.0.0-20210908191846-a5e095526f91 // indirect
-	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
-	golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0 // indirect
+	github.com/ravener/discord-oauth2 v0.0.0-20210928130214-d7697a35c387
+	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/shirou/gopsutil/v3 v3.21.11
+	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
+	golang.org/x/net v0.0.0-20211203184738-4852103109b8 // indirect
+	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
+	golang.org/x/sys v0.0.0-20211204120058-94396e421777 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
