@@ -79,8 +79,7 @@ func VKCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if sessionManager.Get(r.Context(), "User.VK.State") != r.FormValue("state") {
 		log.Println("Code missmatch")
-		var st string
-		st = sessionManager.GetString(r.Context(), "User.VK.State")
+		st := sessionManager.GetString(r.Context(), "User.VK.State")
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "State missmatch " + st})
 		return
 	}

@@ -36,6 +36,7 @@ func checkFormParse(w http.ResponseWriter, r *http.Request) bool {
 	return err == nil
 }
 
+//lint:ignore U1000 for future
 func checkRespondDatabaseErrorAny(w http.ResponseWriter, r *http.Request, derr error) bool {
 	if derr != nil {
 		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})

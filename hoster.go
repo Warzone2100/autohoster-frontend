@@ -151,6 +151,10 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			mixmod += "bal"
 		}
 		alliancen, err := strconv.Atoi(r.PostFormValue("alliances"))
+		if err != nil {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Malformed alliances field: " + err.Error()})
+			return
+		}
 		if alliancen > 0 {
 			alliancen++
 		}
@@ -369,78 +373,78 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("wzlink", w, r, map[string]interface{}{
 		"AllowProfileMerge": allow_profile_merge,
 	})
-	return
-	if confirmcode == "" && profilenum != -1 {
-	} else if confirmcode == "" && profilenum == -1 {
-		newmsg := "confirm-" + generateRandomString(18)
-		tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
-			newmsg, sessionManager.GetString(r.Context(), "User.Username"))
-		if derr != nil {
-			log.Println(derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
-			return
-		}
-		if tag.RowsAffected() != 1 {
-			log.Println(derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
-			return
-		}
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-			"msg": "You are not linked to any profile. We generated a link key for you. Send \"" + newmsg + "\" to any autohoster room to link selected profile.",
-		})
-	} else if confirmcode != "" && profilenum == -1 {
-		var loghash string
-		var logname string
-		var logip string
-		derr := dbpool.QueryRow(context.Background(), `SELECT hash, ip::text, name FROM chatlog WHERE msg = $1 LIMIT 1`,
-			confirmcode).Scan(&loghash, &logip, &logname)
-		if derr != nil && derr != pgx.ErrNoRows {
-			log.Println(derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
-			return
-		}
-		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": "You are not linked to any profile. Send \"" + confirmcode + "\" to any autohoster room to link selected profile.",
-			})
-			return
-		}
-		var newwzid int
-		log.Printf("link [%s] [%s] [%s] [%s]", confirmcode, loghash, logname, logip)
-		derr = dbpool.QueryRow(context.Background(), `
-			INSERT INTO players as p (name, hash, asocip)
-			VALUES ($1::text, $2::text, ARRAY[$3::inet])
-			ON CONFLICT (hash) DO
-				UPDATE SET name = $1::text, asocip = array_sort_unique(p.asocip || ARRAY[$3::inet])
-			RETURNING id;`,
-			logname, loghash, logip).Scan(&newwzid)
-		if derr != nil {
-			log.Println(derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
-			return
-		}
-		tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
-			newwzid, sessionManager.GetString(r.Context(), "User.Username"))
-		if derr != nil {
-			log.Println(derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
-			return
-		}
-		if tag.RowsAffected() != 1 {
-			log.Println(derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
-			return
-		}
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-			"msg": "We successfully linked your account to warzone profile (" + strconv.Itoa(newwzid) + ") " + logname + " [" + loghash + "]",
-		})
-		return
-	} else {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-			"msg": "id " + strconv.Itoa(profilenum) + " code [" + confirmcode + "]",
-		})
-		return
-	}
+
+	// if confirmcode == "" && profilenum != -1 {
+	// } else if confirmcode == "" && profilenum == -1 {
+	// 	newmsg := "confirm-" + generateRandomString(18)
+	// 	tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+	// 		newmsg, sessionManager.GetString(r.Context(), "User.Username"))
+	// 	if derr != nil {
+	// 		log.Println(derr.Error())
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		return
+	// 	}
+	// 	if tag.RowsAffected() != 1 {
+	// 		log.Println(derr.Error())
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+	// 		return
+	// 	}
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 		"msg": "You are not linked to any profile. We generated a link key for you. Send \"" + newmsg + "\" to any autohoster room to link selected profile.",
+	// 	})
+	// } else if confirmcode != "" && profilenum == -1 {
+	// 	var loghash string
+	// 	var logname string
+	// 	var logip string
+	// 	derr := dbpool.QueryRow(context.Background(), `SELECT hash, ip::text, name FROM chatlog WHERE msg = $1 LIMIT 1`,
+	// 		confirmcode).Scan(&loghash, &logip, &logname)
+	// 	if derr != nil && derr != pgx.ErrNoRows {
+	// 		log.Println(derr.Error())
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		return
+	// 	}
+	// 	if derr == pgx.ErrNoRows {
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 			"msg": "You are not linked to any profile. Send \"" + confirmcode + "\" to any autohoster room to link selected profile.",
+	// 		})
+	// 		return
+	// 	}
+	// 	var newwzid int
+	// 	log.Printf("link [%s] [%s] [%s] [%s]", confirmcode, loghash, logname, logip)
+	// 	derr = dbpool.QueryRow(context.Background(), `
+	// 		INSERT INTO players as p (name, hash, asocip)
+	// 		VALUES ($1::text, $2::text, ARRAY[$3::inet])
+	// 		ON CONFLICT (hash) DO
+	// 			UPDATE SET name = $1::text, asocip = array_sort_unique(p.asocip || ARRAY[$3::inet])
+	// 		RETURNING id;`,
+	// 		logname, loghash, logip).Scan(&newwzid)
+	// 	if derr != nil {
+	// 		log.Println(derr.Error())
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		return
+	// 	}
+	// 	tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
+	// 		newwzid, sessionManager.GetString(r.Context(), "User.Username"))
+	// 	if derr != nil {
+	// 		log.Println(derr.Error())
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		return
+	// 	}
+	// 	if tag.RowsAffected() != 1 {
+	// 		log.Println(derr.Error())
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+	// 		return
+	// 	}
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 		"msg": "We successfully linked your account to warzone profile (" + strconv.Itoa(newwzid) + ") " + logname + " [" + loghash + "]",
+	// 	})
+	// 	return
+	// } else {
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 		"msg": "id " + strconv.Itoa(profilenum) + " code [" + confirmcode + "]",
+	// 	})
+	// 	return
+	// }
 }
 
 func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
@@ -459,6 +463,15 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 	derr := dbpool.QueryRow(context.Background(),
 		`SELECT allow_host_request, allow_preset_request, norequest_reason FROM users WHERE username = $1`,
 		sessionManager.GetString(r.Context(), "User.Username")).Scan(&allow_any, &allow_presets, &norequest_reason)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Unauthorized?!"})
+			sessionManager.Destroy(r.Context())
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+		}
+		return
+	}
 	if !(allow_any || allow_presets) {
 		basicLayoutLookupRespond("errornorequest", w, r, map[string]interface{}{"ForbiddenReason": norequest_reason})
 		return

@@ -204,7 +204,7 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if p.Position < 0 || p.Position > 11 {
-			log.Printf("Index of array is not in limits! (%d) [%s] (%d)", p.Playnum, p.Name, p.Position)
+			log.Printf("Index of array is not in limits! (%d) [%s] (%d)", int(p.Playnum), p.Name, int(p.Position))
 			continue
 		}
 		tdbplayers[int(p.Position)] = playerID
@@ -235,7 +235,6 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	io.WriteString(w, strconv.Itoa(gameid))
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
@@ -286,7 +285,7 @@ func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if p.Position < 0 || p.Position > 11 {
-			log.Printf("Index of array is not in limits! (%d) [%s] (%d)", p.Playnum, p.Name, p.Position)
+			log.Printf("Index of array is not in limits! (%d) [%s] (%d)", int(p.Playnum), p.Name, int(p.Position))
 			continue
 		}
 		tbdkills[int(p.Position)] = int(p.Kills)
@@ -323,7 +322,6 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 	}
 	io.WriteString(w, "ok")
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
@@ -382,7 +380,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if p.Position < 0 || p.Position > 11 {
-			log.Printf("Index of array is not in limits! (%d) [%s] (%d)", p.Playnum, p.Name, p.Position)
+			log.Printf("Index of array is not in limits! (%d) [%s] (%d)", int(p.Playnum), p.Name, int(p.Position))
 			continue
 		}
 		tbdkills[int(p.Position)] = int(p.Kills)
@@ -457,5 +455,4 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	io.WriteString(w, "ok")
 	w.WriteHeader(http.StatusOK)
-	return
 }

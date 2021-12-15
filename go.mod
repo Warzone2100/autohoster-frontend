@@ -13,7 +13,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/gorilla/websocket v1.4.2
 	github.com/imdario/mergo v0.3.12
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/jackc/puddle v1.2.1 // indirect

@@ -272,6 +272,7 @@ func GameTimeToStringI(t int) string {
 	return (time.Duration(t/1000) * time.Second).String()
 }
 
+//lint:ignore U1000 for later
 func GameTimeInterToString(t interface{}) string {
 	tt, k := t.(float64)
 	if k {
@@ -281,9 +282,12 @@ func GameTimeInterToString(t interface{}) string {
 	}
 }
 
+//lint:ignore U1000 for later
 func SecondsToString(t float64) string {
 	return (time.Duration(int(t)) * time.Second).String()
 }
+
+//lint:ignore U1000 for later
 func SecondsInterToString(t interface{}) string {
 	tt, k := t.(float64)
 	if k {

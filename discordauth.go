@@ -25,12 +25,12 @@ var discordOauthConfig = &oauth2.Config{
 	Endpoint: discord.Endpoint,
 }
 
-type DiscordUser struct {
-	ID            string `json:"id"`
-	Avatar        string `json:"avatar"`
-	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
-}
+// type DiscordUser struct {
+// 	ID            string `json:"id"`
+// 	Avatar        string `json:"avatar"`
+// 	Username      string `json:"username"`
+// 	Discriminator string `json:"discriminator"`
+// }
 
 func DiscordVerifyEnv() {
 	discordOauthConfig.ClientID = os.Getenv("DISCORDCLIENTID")
@@ -77,14 +77,13 @@ func DiscordCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
 	if sessionManager.Get(r.Context(), "User.Discord.State") != r.FormValue("state") {
 		log.Println("Code missmatch")
-		var st string
-		st = sessionManager.GetString(r.Context(), "User.Discord.State")
+		st := sessionManager.GetString(r.Context(), "User.Discord.State")
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "State missmatch " + st})
 		return
 	}
 	token, err := discordOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
-		log.Println("Code exchange failed with error %s\n", err.Error())
+		log.Printf("Code exchange failed with error %s\n", err.Error())
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Code exchange failed with error: " + err.Error()})
 		return
 	}

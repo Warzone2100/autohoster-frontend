@@ -47,10 +47,7 @@ type LobbyRoomPretty struct {
 }
 
 func btoi(a uint32) bool {
-	if a != 0 {
-		return true
-	}
-	return false
+	return a != 0
 }
 
 func LobbyLookup() map[string]interface{} {

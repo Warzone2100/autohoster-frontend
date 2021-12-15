@@ -88,7 +88,7 @@ var layoutFuncs = template.FuncMap{
 		}
 	},
 	"boolto10": func(a bool) int {
-		if a == false {
+		if !a {
 			return 0
 		} else {
 			return 1
@@ -251,8 +251,7 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 			sessvk = VKGetUInfo(sessvktoken)
 		}
 	}
-	var usermap map[string]interface{}
-	usermap = map[string]interface{}{
+	usermap := map[string]interface{}{
 		"Username":   sessuname,
 		"Id":         sessid,
 		"Fname":      sessfname,
@@ -298,7 +297,7 @@ func autohosterControllHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("autohoster-controll", w, r, map[string]interface{}{})
 }
 func robotsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "User-agent: *\nDisallow: /\n\n")
+	fmt.Fprint(w, "User-agent: *\nDisallow: /\n\n\n")
 }
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./static/favicon.ico")
@@ -401,6 +400,7 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, string(j))
 }
 
+//lint:ignore U1000 used
 type statusRespWr struct {
 	http.ResponseWriter
 	status int
@@ -444,7 +444,7 @@ func main() {
 
 	log.Println()
 	log.Println("TacticalPepe web server is starting up...")
-	log.Printf("Built %s, Ver %s (%s)\n", BuildTime, GitTag, CommitHash)
+	log.Printf("Built %s, Ver %s (%s) Go %s\n", BuildTime, GitTag, CommitHash, GoVersion)
 	log.Println()
 
 	log.Println("Loading layouts")

@@ -206,7 +206,6 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusNotFound)
-	return
 }
 
 func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) {
@@ -287,7 +286,6 @@ func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(ans))
 	io.WriteString(w, string("\n"))
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) {

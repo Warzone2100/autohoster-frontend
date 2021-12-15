@@ -60,7 +60,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	}
 	Team1ID := []int{}
 	Team2ID := []int{}
-	if G.IsFFA == false {
+	if !G.IsFFA {
 		for _, p := range G.Players {
 			if p.Team == 0 {
 				Team1ID = append(Team1ID, p.ID)
@@ -215,7 +215,7 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 		p.Autolost = 0
 		p.Autoplayed = 0
 	}
-	for gamei, _ := range G {
+	for gamei := range G {
 		CalcElo(G[gamei], P)
 	}
 }
