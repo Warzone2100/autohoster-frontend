@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -287,4 +288,23 @@ func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string("\n"))
 	w.WriteHeader(http.StatusOK)
 	return
+}
+
+func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	params := mux.Vars(r)
+	phash := params["hash"]
+	badplayed := 0
+	derr := dbpool.QueryRow(context.Background(), `SELECT COUNT(id) FROM games WHERE (SELECT id FROM players WHERE hash = $1) = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now();`, phash).Scan(&badplayed)
+	if derr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(derr.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, fmt.Sprint(badplayed))
+	log.Println(badplayed)
 }
