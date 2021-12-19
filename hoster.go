@@ -543,6 +543,7 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+//lint:ignore U1000 for dedicated rooms page
 func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})

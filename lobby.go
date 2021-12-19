@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -150,5 +151,10 @@ func LobbyLookup() map[string]interface{} {
 }
 
 func lobbyHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("lobby", w, r, LobbyLookup())
+	s, reqres := RequestHosters()
+	var rooms []interface{}
+	if s {
+		json.Unmarshal([]byte(reqres), &rooms)
+	}
+	basicLayoutLookupRespond("lobby", w, r, map[string]interface{}{"Lobby": LobbyLookup(), "Hoster": rooms})
 }

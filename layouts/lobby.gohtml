@@ -24,7 +24,7 @@
 						<th>Version</th>
 						<th>Extra</th>
 					</tr>
-				{{range $k, $el := .Rooms}}
+				{{range $k, $el := .Lobby.Rooms}}
 					<tr>
 						<td>{{$el.GameID}}</td>
 						<td>{{$el.CurrentPlayers}}/{{$el.MaxPlayers}}</td>
@@ -38,7 +38,12 @@
 					<tr><td colspan="99">No rooms in lobby</td></tr>
 				{{end}}
 				</table>
-				<pre>{{.Motd}}</pre>
+				<pre>{{.Lobby.Motd}}</pre>
+				<div class="text-start">
+				{{range $k, $el := .Hoster}}
+					{{template "roomAutohoster" $el}}
+				{{end}}
+				</div>
 			</div>
 		</div>
 	</body>

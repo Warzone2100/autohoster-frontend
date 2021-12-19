@@ -126,6 +126,19 @@ var layoutFuncs = template.FuncMap{
 	},
 	"FormatBytes":   ByteCountIEC,
 	"FormatPercent": FormatPercent,
+	"tostr": func(val interface{}) string {
+		v := reflect.ValueOf(val)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		if d, ok := val.(uint32); ok {
+			return fmt.Sprint(d)
+		}
+		if d, ok := val.(float64); ok {
+			return fmt.Sprint(d)
+		}
+		return "snan"
+	},
 }
 
 func FormatPercent(p float64) string {
@@ -524,7 +537,6 @@ func main() {
 
 	router.HandleFunc("/hoster", hosterHandler)
 	router.HandleFunc("/request", hostRequestHandler)
-	router.HandleFunc("/created-rooms", createdRoomsHandler)
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
 	router.HandleFunc("/autohoster", autohosterControllHandler)
