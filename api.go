@@ -306,3 +306,38 @@ func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, fmt.Sprint(badplayed))
 	log.Println(badplayed)
 }
+
+func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	rows, derr := dbpool.Query(context.Background(), `select hash from players join users on players.id = users.wzprofile2 where users.allow_preset_request = true;`)
+	if derr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(derr.Error())
+		return
+	}
+	defer rows.Close()
+	re := []string{}
+	for rows.Next() {
+		var h string
+		err := rows.Scan(&h)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Print(err.Error())
+			return
+		}
+		re = append(re, h)
+	}
+	j, err := json.Marshal(re)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	io.WriteString(w, string(j))
+	w.WriteHeader(http.StatusOK)
+}

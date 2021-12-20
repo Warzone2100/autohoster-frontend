@@ -567,6 +567,7 @@ func main() {
 	router.HandleFunc("/api/mapcount", APIgetMapNameCount)
 	router.HandleFunc("/api/replay/{gid:[0-9]+}", APIgetReplayFile)
 	router.HandleFunc("/api/allowjoining/{hash:[0-9a-z]+}", APIgetPlayerAllowedJoining)
+	router.HandleFunc("/api/approvedhashes", APIgetAllowedModerators)
 
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 
