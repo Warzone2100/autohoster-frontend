@@ -296,7 +296,7 @@ func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	phash := params["hash"]
 	badplayed := 0
-	derr := dbpool.QueryRow(context.Background(), `SELECT COUNT(id) FROM games WHERE (SELECT id FROM players WHERE hash = $1) = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now();`, phash).Scan(&badplayed)
+	derr := dbpool.QueryRow(context.Background(), `SELECT COUNT(id) FROM games WHERE (SELECT id FROM players WHERE hash = $1) = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true;`, phash).Scan(&badplayed)
 	if derr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Print(derr.Error())
