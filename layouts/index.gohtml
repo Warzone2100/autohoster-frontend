@@ -55,9 +55,6 @@
 				<canvas id="GraphCanvas"></canvas>
 			</div>
 			<script>
-			window.onload = function () {
-				LoadGraph();
-			}
 			function PlotData(JsonData) {
 				const resp = JSON.parse(JsonData);
 				let data = {};
@@ -137,6 +134,9 @@
 				xhr.open('GET', window.location.origin+'/api/gamecount/day', true);
 				xhr.send(null);
 			}
+			document.addEventListener("DOMContentLoaded", function () {
+				LoadGraph();
+			});
 			</script>
 		</div>
 	</body>
