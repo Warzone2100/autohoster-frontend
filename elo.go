@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"math"
@@ -41,11 +42,13 @@ func EloDiff(K, e1, e2 int) float64 {
 	return float64(K) * (1 / (1 + math.Pow(float64(10), float64(e1-e2)/float64(400))))
 }
 
-func CalcElo(G *EloGame, P map[int]*Elo) {
+func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
+	calclog += fmt.Sprintf("Processing game %d\n", G.ID)
 	for _, p := range G.Players {
 		P[p.ID].Autoplayed++
 	}
 	if len(G.Players) == 1 {
+		calclog += "Only one player found, ignoring\n"
 		return
 	}
 	if len(G.Players) == 2 && G.Players[0].ID == G.Players[1].ID {
@@ -56,6 +59,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 		if P[G.Players[0].ID].Userid != -1 && P[G.Players[0].ID].Userid != 0 {
 			P[G.Players[0].ID].Elo2 -= 40
 		}
+		calclog += "Duel with only one profile detected, bonk applied\n"
 		return
 	}
 	Team1ID := []int{}
@@ -79,6 +83,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			Team1ID = append(Team1ID, G.Players[0].ID)
 			Team2ID = append(Team2ID, G.Players[1].ID)
 		} else {
+			calclog += "FFA game with not 2 players?!\n"
 			log.Printf("FFA game with not 2 players: %d", G.ID)
 			return
 		}
@@ -95,6 +100,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	for _, p := range Team2ID {
 		Team2EloSum += P[p].Elo
 	}
+	calclog += fmt.Sprintf("Elo sum: %d %d\n", Team1EloSum, Team2EloSum)
 	Team1Won := 0
 	Team2Won := 0
 	if G.Players[0].Usertype == "winner" {
@@ -134,9 +140,11 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 	_ = Team2Won
 	Team1EloAvg := Team1EloSum / len(Team1ID)
 	Team2EloAvg := Team2EloSum / len(Team2ID)
+	calclog += fmt.Sprintf("Elo avg: %d %d\n", Team1EloAvg, Team2EloAvg)
 	K := 20
 	diff1 := int(EloDiff(K, Team1EloAvg, Team2EloAvg))
 	diff2 := int(EloDiff(K, Team2EloAvg, Team1EloAvg))
+	calclog += fmt.Sprintf("Elo diff: %d %d\n", diff1, diff2)
 	var Additive int
 	var Timeitive int
 	if G.Players[0].Usertype == "winner" {
@@ -146,6 +154,8 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 		Additive = diff2
 		Timeitive = diff1
 	}
+	calclog += fmt.Sprintf("Additive: %d\n", Additive)
+	calclog += fmt.Sprintf("Timeitive: %d\n", Timeitive)
 	calcelo2 := true
 	for _, p := range G.Players {
 		if P[p.ID].Userid == -1 || P[p.ID].Userid == 0 {
@@ -153,6 +163,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			break
 		}
 	}
+	calclog += fmt.Sprintf("Elo 2: %s\n", spew.Sprint(calcelo2))
 	var RAdditive int
 	var RTimeitive int
 	if calcelo2 {
@@ -164,10 +175,13 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 		for _, p := range Team2ID {
 			Team2RatingSum += P[p].Elo2
 		}
+		calclog += fmt.Sprintf("Rating sum: %d %d\n", Team1RatingSum, Team2RatingSum)
 		Team1RatingAvg := Team1RatingSum / len(Team1ID)
 		Team2RatingAvg := Team2RatingSum / len(Team2ID)
+		calclog += fmt.Sprintf("Rating avg: %d %d\n", Team1RatingAvg, Team2RatingAvg)
 		rdiff1 := int(EloDiff(K, Team1RatingAvg, Team2RatingAvg))
 		rdiff2 := int(EloDiff(K, Team2RatingAvg, Team1RatingAvg))
+		calclog += fmt.Sprintf("Rating diff: %d %d\n", rdiff1, rdiff2)
 		if G.Players[0].Usertype == "winner" {
 			RAdditive = rdiff1
 			RTimeitive = rdiff2
@@ -175,16 +189,21 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 			RAdditive = rdiff2
 			RTimeitive = rdiff1
 		}
+		calclog += fmt.Sprintf("Rating additive: %d\n", RAdditive)
+		calclog += fmt.Sprintf("Rating timitive: %d\n", RTimeitive)
 	}
 	for pi, p := range G.Players {
+		calclog += fmt.Sprintf("Updating player %d (id %d)\n", pi, p.ID)
 		if p.Usertype == "winner" {
 			P[p.ID].Autowon++
 			P[p.ID].Elo += Additive
 			if calcelo2 {
 				P[p.ID].Elo2 += RAdditive
 				G.Players[pi].EloDiff = RAdditive
+				calclog += fmt.Sprintf("Player %d won %d elo and %d rating\n", pi, Additive, RAdditive)
 			} else {
 				G.Players[pi].EloDiff = Additive
+				calclog += fmt.Sprintf("Player %d won %d elo\n", pi, Additive)
 			}
 		} else if p.Usertype == "loser" {
 			P[p.ID].Autolost++
@@ -195,15 +214,20 @@ func CalcElo(G *EloGame, P map[int]*Elo) {
 				P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 				G.Players[pi].EloDiff = -RAdditive
 				G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+				calclog += fmt.Sprintf("Player %d lost %d elo (compensated %d timitive) and %d rating (compensated %d timitive)\n", pi,
+					Additive, int(math.Round((float64(Timeitive)/float64(60))*(float64(G.GameTime)/(float64(90000)-10)))), RAdditive, int(math.Round((float64(RTimeitive)/float64(60))*(float64(G.GameTime)/(float64(90000)-10)))))
 			} else {
 				G.Players[pi].EloDiff = -Additive
 				G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+				calclog += fmt.Sprintf("Player %d lost %d elo (compensated %d timitive)\n", pi,
+					Additive, int(math.Round((float64(Timeitive)/float64(60))*(float64(G.GameTime)/(float64(90000)-10)))))
 			}
 		}
 	}
+	return calclog
 }
 
-func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
+func CalcEloForAll(G []*EloGame, P map[int]*Elo) (calclog string) {
 	for _, p := range P {
 		p.Elo = 1400
 		if p.Userid != -1 && p.Userid != 0 {
@@ -216,8 +240,9 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) {
 		p.Autoplayed = 0
 	}
 	for gamei := range G {
-		CalcElo(G[gamei], P)
+		calclog += CalcElo(G[gamei], P)
 	}
+	return calclog
 }
 
 func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
@@ -277,9 +302,8 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		Games = append(Games, &g)
 	}
-	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + spew.Sdump(Players) + spew.Sdump(Games) + "</pre>")})
-	CalcEloForAll(Games, Players)
-	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + spew.Sdump(Players) + spew.Sdump(Games) + "</pre>")})
+	calclog := CalcEloForAll(Games, Players)
+	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + calclog + "</pre>")})
 	for _, p := range Players {
 		// log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
 		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
