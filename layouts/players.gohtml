@@ -79,6 +79,7 @@
 		<meta content="{{.Player.Name}}" property="og:title">
 		<meta content="Won {{.Player.Autowon}} Lost {{.Player.Autolost}} Played {{.Player.Autoplayed}} Elo {{.Player.Elo}} Rating {{.Player.Elo2}}" property="og:description">
 		<meta content="https://wz2100-autohost.net/players/{{.Player.ID}}" property="og:url">
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<title>Autohoster player {{.Player.Name}}</title>
 	</head>
 	<body>
@@ -86,6 +87,16 @@
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 container">
 			<h3 style="padding-bottom:18px">{{template "wzprofile" .Player}}</h3>
+			<button id="BtnRequestGraphs" class="btn btn-primary" onclick="LoadClassificationGraph()">Load research classification</button>
+			<div id="ClassificationGraphContainingDiv" style="display:none;">
+				<table><tr>
+				<td style="height:400px;"><canvas id="ClassificationGraphCanvas"></td>
+				<td style="height:400px;"><canvas id="ClassificationGraphCanvas2"></td>
+				<td style="height:400px;"><canvas id="ClassificationGraphCanvas3"></td>
+				<td style="height:400px;"><canvas id="ClassificationGraphCanvas4"></td>
+				</tr></table>
+			</div>
+			</table>
 			<table class="table"><tr>
 			<td>Hash: {{.Player.Hash}}<td>
 			<td>Lost: {{.Player.Autolost}}<td></tr><tr>
@@ -168,6 +179,55 @@
 				{{end}}
 			</table>
 		</div>
+		<script>
+		function PlotClassData(JsonData, ctx, title, subtitle) {
+			const resp = JSON.parse(JsonData);
+			if(Object.keys(resp).length == 0) {
+				return
+			}
+			chart2 = new Chart(ctx, {
+				type: 'radar', parsing: false, normalized: true,
+				data: {
+					labels: Object.keys(resp),
+					datasets: [{data: Object.values(resp), fill: true, label: '{{.Player.Name}}', borderColor: '#0d6efd'}]
+				},
+				options: {spanGaps: true, showLine: true,
+					animation: {duration: 20}, responsive: true, maintainAspectRatio: false,
+					plugins: {
+						legend: {position: 'top'},
+						title: {display: true, text: title, position: 'top'},
+						subtitle: {display: true, text: subtitle}
+					}, radius: 3
+				}
+			});
+		}
+		function doXHR(method, url, fn) {
+			var xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 4 && xhr.status === 200) {
+					fn(xhr.response);
+				}
+			}
+			xhr.open(method, url, true);
+			xhr.send(null);
+		}
+		function LoadClassificationGraph() {
+			document.getElementById(`ClassificationGraphContainingDiv`).style.display = `block`;
+			document.getElementById(`BtnRequestGraphs`).style.display = `none`;
+			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/1', function(resp) {
+				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - duels');
+			});
+			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/2', function(resp) {
+				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas2').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - 2x2+ noshared');
+			});
+			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/3', function(resp) {
+				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas3').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - duels last 100 games');
+			});
+			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/4', function(resp) {
+				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas4').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - 2x2+ noshared last 100 games');
+			});
+		}
+		</script>
 	</body>
 	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </html>

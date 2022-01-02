@@ -9,8 +9,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
@@ -339,5 +341,177 @@ func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	io.WriteString(w, string(j))
+	w.WriteHeader(http.StatusOK)
+}
+
+type resEntry struct {
+	Name     string  `json:"name"`
+	Position float64 `json:"position"`
+	Time     float64 `json:"time"`
+}
+
+func LoadClassification() (ret []map[string]string, err error) {
+	var content []byte
+	content, err = os.ReadFile(os.Getenv("CLASSIFICATIONJSON"))
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(content, &ret)
+	return
+}
+
+// CountClassification in: classification, research out: position[research[time]]
+func CountClassification(c []map[string]string, resl []resEntry) (ret map[int]map[string]int) {
+	cl := map[string]string{}
+	ret = map[int]map[string]int{}
+	for _, b := range c {
+		cl[b["name"]] = b["Subclass"]
+	}
+	for _, b := range resl {
+		j, f := cl[b.Name]
+		if f {
+			_, ff := ret[int(b.Position)]
+			if !ff {
+				ret[int(b.Position)] = map[string]int{}
+			}
+			_, ff = ret[int(b.Position)][j]
+			if ff {
+				ret[int(b.Position)][j]++
+			} else {
+				ret[int(b.Position)][j] = 1
+			}
+		}
+	}
+	return
+}
+
+func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	params := mux.Vars(r)
+	pid, err := strconv.Atoi(params["pid"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	filteri, err := strconv.Atoi(params["category"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	filter := ""
+	filter2 := ""
+	if filteri == 1 {
+		// filter = " AND array_length(players, 1) = 2 "
+	} else if filteri == 2 {
+		filter = " AND array_length(players, 1) >= 2 AND alliancetype != 2 "
+	} else if filteri == 3 {
+		filter2 = " LIMIT 100 "
+		// filter = " AND array_length(players, 1) = 2 "
+	} else if filteri == 4 {
+		filter2 = " LIMIT 100 "
+		filter = " AND array_length(players, 1) >= 2 AND alliancetype != 2 "
+	}
+	rows, derr := dbpool.Query(context.Background(),
+		`SELECT coalesce(id, -1), coalesce(researchlog, ''), coalesce(players) 
+		FROM games 
+		WHERE 
+			$1 = any(players) `+filter+`
+			AND finished = true 
+			AND calculated = true 
+			AND hidden = false 
+			AND deleted = false 
+			AND id > 2000
+		ORDER BY id desc
+		`+filter2, pid)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(derr.Error())
+		return
+	}
+	defer rows.Close()
+	rowcount := 0
+	researches := []string{}
+	players := []int{}
+	gids := []int{}
+	for rows.Next() {
+		rowcount++
+		var h string
+		var p []int
+		var gid int
+		err := rows.Scan(&gid, &h, &p)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Print(err.Error())
+			return
+		}
+		playerfound := false
+		playersreallen := 0
+		for i, j := range p {
+			if j != -1 {
+				playersreallen++
+			}
+			if j == pid {
+				players = append(players, i)
+				playerfound = true
+				break
+			}
+		}
+		if (filteri == 1 || filteri == 3) && playersreallen > 2 {
+			continue
+		}
+		if !playerfound {
+			log.Printf("Can not find player %d in game %d THIS MUST NOT HAPPEN", pid, gid)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		researches = append(researches, h)
+		gids = append(gids, gid)
+	}
+	if rowcount == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	classif, err := LoadClassification()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	ret := map[string]int{}
+	for i, j := range researches {
+		var resl []resEntry
+		err = json.Unmarshal([]byte(j), &resl)
+		if err != nil {
+			log.Print(err.Error())
+			log.Printf("Gid: %d", gids[i])
+			log.Print(spew.Sdump(j))
+			continue
+		}
+		cl := CountClassification(classif, resl)
+		for v, c := range cl[players[i]] {
+			if val, ok := ret[v]; ok {
+				ret[v] = val + c
+			} else {
+				ret[v] = c
+			}
+		}
+	}
+	ans, err := json.Marshal(ret)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	io.WriteString(w, string(ans))
+	io.WriteString(w, string("\n"))
 	w.WriteHeader(http.StatusOK)
 }

@@ -571,6 +571,7 @@ func main() {
 	// router.HandleFunc("/api/watch", APIwsWatch)
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
 	router.HandleFunc("/api/classify/game/{gid:[0-9]+}", APIgetClassChartGame)
+	router.HandleFunc("/api/classify/player/{pid:[0-9]+}/{category:[0-9]+}", APIgetClassChartPlayer)
 	router.HandleFunc("/api/reslog/{gid:[0-9]+}", APIgetResearchlogData)
 	router.HandleFunc("/api/gamecount/{interval}", APIgetDatesGraphData)
 	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster)
