@@ -342,6 +342,10 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	if hash == "7bade06ad15023640093ced192db5082641b625f74a72193142453a9ad742d93" {
 		elo = "Dirty manque cheater"
 	}
+	ad, adok := r.URL.Query()["ad"]
+	if adok && len(ad[0]) >= 1 && string(ad[0][0]) == "true" {
+		elo = "Play with me in Autohoster"
+	}
 	type Ra struct {
 		Dummy      bool   `json:"dummy"`
 		Autohoster bool   `json:"autohoster"`
