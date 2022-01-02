@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+
+	//lint:ignore ST1019 warning
 	"strconv"
 	_ "strconv"
 	"time"
@@ -354,7 +356,7 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if elo == "" {
-				m.Elo = fmt.Sprintf("Unknown player")
+				m.Elo = "Unknown player"
 			}
 		} else {
 			log.Print(derr)
@@ -461,7 +463,12 @@ func main() {
 	log.Println()
 
 	log.Println("Loading layouts")
-	layouts, err = template.New("main").Funcs(layoutFuncs).ParseGlob("layouts/*.gohtml")
+	layoutsDir := "layouts/"
+	if dirstat, err := os.Stat("layouts-" + BuildType); !os.IsNotExist(err) && dirstat.IsDir() {
+		layoutsDir = "layouts-" + BuildType + "/"
+		log.Println("Using build-specific layouts directory (" + layoutsDir + ")")
+	}
+	layouts, err = template.New("main").Funcs(layoutFuncs).ParseGlob(layoutsDir + "*.gohtml")
 	if err != nil {
 		panic(err)
 	}
@@ -480,7 +487,7 @@ func main() {
 				log.Println("event:", event)
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					log.Println("Updating templates")
-					nlayouts, err := template.New("main").Funcs(layoutFuncs).ParseGlob("layouts/*.gohtml")
+					nlayouts, err := template.New("main").Funcs(layoutFuncs).ParseGlob(layoutsDir + "*.gohtml")
 					if err != nil {
 						log.Println("Error while parsing templates:", err.Error())
 					} else {
@@ -495,7 +502,7 @@ func main() {
 			}
 		}
 	}()
-	err = watcher.Add("layouts/")
+	err = watcher.Add(layoutsDir)
 	if err != nil {
 		log.Fatal(err)
 	}
