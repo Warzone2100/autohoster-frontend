@@ -368,6 +368,9 @@ func CountClassification(c []map[string]string, resl []resEntry) (ret map[int]ma
 		cl[b["name"]] = b["Subclass"]
 	}
 	for _, b := range resl {
+		if b.Time < 10 {
+			continue
+		}
 		j, f := cl[b.Name]
 		if f {
 			_, ff := ret[int(b.Position)]
