@@ -172,7 +172,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
 		}
-		w.Header().Set("Refresh", "10; /created-rooms")
+		w.Header().Set("Refresh", "10; /lobby")
 	} else {
 		s, reqres := RequestStatus()
 		if s {
