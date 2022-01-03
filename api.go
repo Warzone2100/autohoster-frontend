@@ -232,24 +232,11 @@ func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	ret := map[int]map[string]int{}
-	cf, err := os.ReadFile(os.Getenv("CLASSIFICATIONJSON"))
+	c, err := LoadClassification()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Print(err.Error())
 		return
-	}
-	var c []map[string]string
-	err = json.Unmarshal(cf, &c)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	type resEntry struct {
-		Name     string  `json:"name"`
-		Position float64 `json:"position"`
-		Time     float64 `json:"time"`
 	}
 	var resl []resEntry
 	err = json.Unmarshal([]byte(reslog), &resl)
@@ -258,26 +245,7 @@ func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) {
 		log.Print(err.Error())
 		return
 	}
-	cl := map[string]string{}
-	for _, b := range c {
-		cl[b["name"]] = b["Subclass"]
-	}
-	for _, b := range resl {
-		j, f := cl[b.Name]
-		if f {
-			_, ff := ret[int(b.Position)]
-			if !ff {
-				ret[int(b.Position)] = map[string]int{}
-			}
-			_, ff = ret[int(b.Position)][j]
-			if ff {
-				ret[int(b.Position)][j]++
-			} else {
-				ret[int(b.Position)][j] = 1
-			}
-		}
-	}
-	ans, err := json.Marshal(ret)
+	ans, err := json.Marshal(CountClassification(c, resl))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Print(err.Error())
