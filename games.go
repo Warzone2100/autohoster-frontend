@@ -183,6 +183,11 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 	if sessionGetUsername(r) == "Flex seal" {
 		wherecase = ""
 	}
+	limiter := "LIMIT 100"
+	limiterparam, limiterparamok := r.URL.Query()["all"]
+	if limiterparamok && len(limiterparam[0]) >= 1 && string(limiterparam[0][0]) == "true" {
+		limiter = ""
+	}
 	rows, derr := dbpool.Query(context.Background(), `
 	SELECT
 		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
@@ -196,7 +201,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 	`+wherecase+`
 	GROUP BY gid
 	ORDER BY timestarted DESC
-	LIMIT 100;`)
+	`+limiter+`;`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
