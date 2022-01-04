@@ -185,7 +185,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	limiter := "LIMIT 100"
 	limiterparam, limiterparamok := r.URL.Query()["all"]
-	if limiterparamok && len(limiterparam[0]) >= 1 && string(limiterparam[0][0]) == "true" {
+	if limiterparamok && len(limiterparam) >= 1 && limiterparam[0] == "true" {
 		limiter = ""
 	}
 	rows, derr := dbpool.Query(context.Background(), `
