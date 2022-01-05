@@ -256,7 +256,7 @@ func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
 			if g.Finished {
 				g.Players[slot].Usertype = plusertype[slot]
 				g.Players[slot].Kills = dskills[slot]
-				if plusertype[slot] == "winner" || plusertype[slot] == "loser" {
+				if plusertype[slot] == "winner" || plusertype[slot] == "loser" && len(dselodiff) < slot && len(g.Players) < slot {
 					g.Players[slot].EloDiff = dselodiff[slot]
 				}
 			} else {
