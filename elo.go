@@ -44,6 +44,10 @@ func EloDiff(K, e1, e2 int) float64 {
 
 func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 	calclog += fmt.Sprintf("Processing game %d\n", G.ID)
+	if G.GameTime < 1000*60*2 {
+		calclog += "Game is too fast to be calculated"
+		return
+	}
 	for _, p := range G.Players {
 		P[p.ID].Autoplayed++
 	}
@@ -52,14 +56,14 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 		return
 	}
 	if len(G.Players) == 2 && G.Players[0].ID == G.Players[1].ID {
-		P[G.Players[0].ID].Elo -= 40
-		P[G.Players[0].ID].Autolost += 2
-		G.Players[0].EloDiff = -20
-		G.Players[1].EloDiff = -20
-		if P[G.Players[0].ID].Userid != -1 && P[G.Players[0].ID].Userid != 0 {
-			P[G.Players[0].ID].Elo2 -= 40
-		}
-		calclog += "Duel with only one profile detected, bonk applied\n"
+		// P[G.Players[0].ID].Elo -= 40
+		// P[G.Players[0].ID].Autolost += 2
+		// G.Players[0].EloDiff = -20
+		// G.Players[1].EloDiff = -20
+		// if P[G.Players[0].ID].Userid != -1 && P[G.Players[0].ID].Userid != 0 {
+		// 	P[G.Players[0].ID].Elo2 -= 40
+		// }
+		calclog += "Duel with only one profile detected, bonk does not apply\n"
 		return
 	}
 	Team1ID := []int{}
@@ -91,6 +95,14 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 	if len(Team1ID) != len(Team2ID) {
 		log.Printf("Incorrect length: %d", G.ID)
 		return
+	}
+	for _, nid := range Team1ID {
+		for _, nnid := range Team2ID {
+			if nid == nnid {
+				calclog += "Game is sus, one player in both teams?!"
+				return
+			}
+		}
 	}
 	Team1EloSum := 0
 	Team2EloSum := 0
@@ -208,19 +220,17 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 		} else if p.Usertype == "loser" {
 			P[p.ID].Autolost++
 			P[p.ID].Elo -= Additive
-			P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+			// P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			if calcelo2 {
 				P[p.ID].Elo2 -= RAdditive
-				P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+				// P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 				G.Players[pi].EloDiff = -RAdditive
-				G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
-				calclog += fmt.Sprintf("Player %d lost %d elo (compensated %d timitive) and %d rating (compensated %d timitive)\n", pi,
-					Additive, int(math.Round((float64(Timeitive)/float64(60))*(float64(G.GameTime)/(float64(90000)-10)))), RAdditive, int(math.Round((float64(RTimeitive)/float64(60))*(float64(G.GameTime)/(float64(90000)-10)))))
+				// G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+				calclog += fmt.Sprintf("Player %d lost %d elo and %d rating\n", pi, Additive, RAdditive)
 			} else {
 				G.Players[pi].EloDiff = -Additive
-				G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
-				calclog += fmt.Sprintf("Player %d lost %d elo (compensated %d timitive)\n", pi,
-					Additive, int(math.Round((float64(Timeitive)/float64(60))*(float64(G.GameTime)/(float64(90000)-10)))))
+				// G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
+				calclog += fmt.Sprintf("Player %d lost %d elo\n", pi, Additive)
 			}
 		}
 	}
