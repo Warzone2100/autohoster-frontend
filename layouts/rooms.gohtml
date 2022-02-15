@@ -43,12 +43,18 @@
 				<img class="icons icons-scav{{$el.plan.scavangers}}">
 				<img class="icons icons-alliance{{allianceToClass $el.plan.alliances}}">
 			</p>
+			{{if $el.report}}
+			<p>Game time: {{GameTimeToString $el.report.gameTime}}</p>
+			{{end}}
 		</div>
 		<div class="col">
 			<p>{{$el.status}}</p>
 			<p>Game name: {{$el.plan.gamename}}</p>
 			<p>IP: <code>host.wz2100-autohost.net:{{$el.plan.port}}</code></p>
 			<p>Version: {{$el.plan.version}}</p>
+			{{if $el.report}}
+			<p>Players: {{len $el.report.playerData}}</p>
+			{{end}}
 		</div>
 		<div class="col">
 			<p>{{$el.plan.mapname}} ({{$el.plan.maxplayers}})</p>
@@ -56,12 +62,15 @@
 		</div>
 	</div>
 	{{if $el.report}}
-	<div class="row">
-		<div class="col">
-			<p>Game time: {{GameTimeToString $el.report.gameTime}}</p>
-			<p>Players: {{len $el.report.playerData}}</p>
-		</div>
+	{{$prevt := "0"}}
+	{{$prevc := 0}}
+	<div class="row" style="margin-top: 1rem;">
 		{{range $p, $pl := $el.report.playerData}}
+		{{if and (gt $prevc 4) (ne $prevt (tostr $pl.team))}}
+		</div><div class="row">
+		{{end}}
+		{{$prevt = (tostr $pl.team)}}
+		{{$prevc = inc $prevc}}
 		<div class="col alert wz-color-background-{{$pl.colour}}">
 			<div class="row">
 				<div class="col">
