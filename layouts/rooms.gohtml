@@ -81,7 +81,7 @@
 				</div>
 				<div class="col">
 					<p>Team: {{$pl.team}}</p>
-					<p>Droid hp: {{f64tostring $pl.hp}}</p>
+					<p>Droid hp: {{strcut (tostr $pl.hp) 7}}</p>
 					<p>Research: {{$pl.researchComplete}}</p>
 					<p>K/D: {{f64tostring (divf64 $pl.kills $pl.droidLost)}}</p>
 				</div>
