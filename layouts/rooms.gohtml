@@ -66,7 +66,7 @@
 	{{$prevc := 0}}
 	<div class="row" style="margin-top: 1rem;">
 		{{range $p, $pl := $el.report.playerData}}
-		{{if and (gt $prevc 4) (ne $prevt (tostr $pl.team))}}
+		{{if and (gt $prevc 3) (ne $prevt (tostr $pl.team))}}
 		</div><div class="row">
 		{{end}}
 		{{$prevt = (tostr $pl.team)}}
