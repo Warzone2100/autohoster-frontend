@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"html/template"
 	"log"
 	"net/http"
 )
@@ -30,4 +32,17 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 	} else {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
+}
+
+func basicLayoutLookupExecuteAnonymus(in *template.Template, p interface{}) string {
+	m, mk := p.(map[string]interface{})
+	if !mk {
+		log.Println("Basic respond got parameters interface of wrong type")
+	}
+	var tpl bytes.Buffer
+	err := in.Execute(&tpl, m)
+	if err != nil {
+		log.Println(err)
+	}
+	return tpl.String()
 }

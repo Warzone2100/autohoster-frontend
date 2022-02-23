@@ -7,14 +7,52 @@
 		<meta content="List of games, mostly good quality but some are just unplayable" property="og:description">
 		<meta content="https://wz2100-autohost.net/lobby" property="og:url">
 		<title>Warzone 2100 lobby</title>
+		<style>
+		.blob {
+			background: grey;
+			border-radius: 50%;
+			margin: 5px;
+			height: 15px;
+			width: 15px;
+			display: inline-block;
+			box-shadow: 0 0 0 0 rgba(255, 0, 0, 1);
+			transform: scale(1);
+			vertical-align: super;
+			cursor: pointer;
+		}
+		.blob-animate {
+			animation: pulse 0.5s ease-in-out;
+		}
+		@keyframes pulse {
+			0% {
+				transform: scale(0.95);
+				box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+			}
+			70% {
+				transform: scale(1);
+				box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+			}
+			100% {
+				transform: scale(0.95);
+				box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+			}
+		}
+		@keyframes idle { 100% {} }
+		</style>
 	</head>
 	<body>
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 text-center">
 			<div class="container">
-				<h3>Warzone 2100 Lobby</h3>
-				<table class="table">
+				<h3>Warzone 2100 Lobby
+				{{if .UserAuthorized}}
+				<div class="blob" id="LiveBlob" data-bs-toggle="tooltip" data-bs-placement="right" title="Click to toggle live refresh of lobby"></div>
+				{{else}}
+				<div class="blob" id="LiveBlob" data-bs-toggle="tooltip" data-bs-placement="right" title="Log in to receive live lobby updates"></div>
+				{{end}}
+				</h3>
+				<table class="table" id="LobbyTable">
 					<tr>
 						<th>GID</th>
 						<th>Players</th>
@@ -32,20 +70,99 @@
 						<td>{{$el.MapName}}</td>
 						<td>{{$el.HostName}}</td>
 						<td>{{$el.Version}}</td>
-						<td>{{if $el.Pure}}Map-mod{{else}}{{end}}</td>
+						<td>{{if $el.Pure}}Map-mod {{end}}{{if $el.Private}}Private{{end}}</td>
 					</tr>
 				{{else}}
 					<tr><td colspan="99">No rooms in lobby</td></tr>
 				{{end}}
 				</table>
-				<pre>{{.Lobby.Motd}}</pre>
-				<div class="text-start">
+				<pre id="LobbyMOTD">{{.Lobby.Motd}}</pre>
+				<div class="text-start" id="AutohosterRooms">
 				{{range $k, $el := .Hoster}}
 					{{template "roomAutohoster" $el}}
 				{{end}}
 				</div>
 			</div>
 		</div>
+		{{if .UserAuthorized}}
+		<script>
+		function color(c) {
+			document.getElementById("LiveBlob").style.background = c
+		}
+		color("yellow")
+		lobbytable = document.getElementById("LobbyTable")
+		lobbymotd = document.getElementById("LobbyMOTD")
+		wsurl = "wss://"+window.document.domain+"/api/ws/lobby"
+		ws = new WebSocket(wsurl)
+		function parsewsmessage(event) {
+			let msg = JSON.parse(event.data);
+			if(msg.type == "LobbyUpdate") {
+				lobbymotd.textContent = msg.data.Motd
+				let filled = 1
+				msg.data.Rooms.sort(function(a, b) {
+					return a.GameID-b.GameID;
+				});
+				msg.data.Rooms.forEach(function(e) {
+					let r = null
+					if(filled >= lobbytable.children[0].childElementCount) {
+						r = document.createElement("tr")
+						r.appendChild(document.createElement("td"))
+						r.appendChild(document.createElement("td"))
+						r.appendChild(document.createElement("td"))
+						r.appendChild(document.createElement("td"))
+						r.appendChild(document.createElement("td"))
+						r.appendChild(document.createElement("td"))
+						r.appendChild(document.createElement("td"))
+						lobbytable.children[0].appendChild(r)
+					} else {
+						r = lobbytable.children[0].children[filled]
+					}
+					r.children[0].innerText = e.GameID
+					r.children[1].innerText = e.CurrentPlayers+"/"+e.MaxPlayers
+					r.children[2].innerText = e.GameName
+					r.children[3].innerText = e.MapName
+					r.children[4].innerText = e.HostName
+					r.children[5].innerText = e.Version
+					r.children[6].innerText = (e.Private?"Private ":"")+(e.Pure?"Map-mod ":"")
+					filled++
+				})
+				let cont = lobbytable.children[0].children
+				while(filled < lobbytable.children[0].childElementCount) {
+					cont[filled].parentNode.removeChild(cont[filled])
+				}
+				document.getElementById("LiveBlob").classList.add('blob-animate');
+				setTimeout(() => {
+					document.getElementById("LiveBlob").classList.remove('blob-animate');
+				}, 500);
+			} else {
+				console.log(msg)
+			}
+		}
+		ws.onmessage = parsewsmessage
+		ws.onopen = function() {color("red")}
+		ws.onclose = function() {color("grey")}
+		document.getElementById("LiveBlob").onclick = function() {
+			if(ws == null) {
+				color("yellow")
+				document.getElementById("LiveBlob").style.background = "yellow"
+				ws = new WebSocket(wsurl)
+				ws.onmessage = parsewsmessage
+				ws.onopen = function() {color("red")}
+				ws.onclose = function() {color("grey")}
+			} else {
+				ws.close()
+				ws = null
+				color("grey")
+			}
+		}
+		</script>
+		{{end}}
+		<script>
+		var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+		var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+			return new bootstrap.Tooltip(tooltipTriggerEl)
+		})
+		</script>
 	</body>
 	<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7ec885fe35c644aca7c6ae861471372a"}'></script><!-- End Cloudflare Web Analytics -->
 </html>

@@ -41,6 +41,11 @@ var (
 	BuildType  = "dev"
 )
 
+var (
+	LobbyWSHub *WSHub
+	GamesWSHub *WSHub
+)
+
 var layouts *template.Template
 var sessionManager *scs.SessionManager
 var dbpool *pgxpool.Pool
@@ -525,6 +530,15 @@ func main() {
 	sessionManager.Lifetime = 14 * 24 * time.Hour
 	defer store.StopCleanup()
 
+	log.Println("Starting websocket hubs")
+	LobbyWSHub = NewWSHub()
+	GamesWSHub = NewWSHub()
+	go LobbyWSHub.Run()
+	go GamesWSHub.Run()
+
+	log.Println("Starting lobby pooler")
+	go lobbyPooler()
+
 	log.Println("Adding routes")
 	router := mux.NewRouter()
 	router.NotFoundHandler = myNotFoundHandler()
@@ -555,9 +569,7 @@ func main() {
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
-	// router.HandleFunc("/games", listGamesHandler)
 	router.HandleFunc("/games", listDbGamesHandler)
-	// router.HandleFunc("/gamedetails/{id:[0-9]+}", gameViewHandler)
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
 	router.HandleFunc("/players", PlayersListHandler)
 	router.HandleFunc("/players/{id:[0-9]+}", PlayersHandler)
@@ -568,7 +580,12 @@ func main() {
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
 	router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
 
-	// router.HandleFunc("/api/watch", APIwsWatch)
+	router.HandleFunc("/api/ws/lobby", func(w http.ResponseWriter, r *http.Request) {
+		APIWSHub(LobbyWSHub, w, r)
+	})
+	router.HandleFunc("/api/ws/games", func(w http.ResponseWriter, r *http.Request) {
+		APIWSHub(GamesWSHub, w, r)
+	})
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIgetGraphData)
 	router.HandleFunc("/api/classify/game/{gid:[0-9]+}", APIgetClassChartGame)
 	router.HandleFunc("/api/classify/player/{pid:[0-9]+}/{category:[0-9]+}", APIgetClassChartPlayer)

@@ -234,6 +234,7 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	io.WriteString(w, strconv.Itoa(gameid))
 	w.WriteHeader(http.StatusOK)
+	// WSLobbyNewAutohosterRoom(h, gameid)
 }
 
 func GameAcceptFrameHandler(w http.ResponseWriter, r *http.Request) {
@@ -321,6 +322,11 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 	}
 	io.WriteString(w, "ok")
 	w.WriteHeader(http.StatusOK)
+	// gidn, err := strconv.Atoi(gid)
+	// if err != nil {
+	// 	return
+	// }
+	// WSLobbyUpdateAutohosterRoom(h, gidn)
 }
 
 func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
@@ -454,4 +460,5 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	io.WriteString(w, "ok")
 	w.WriteHeader(http.StatusOK)
+	// WSLobbyEndAutohosterRoom(gidnum)
 }

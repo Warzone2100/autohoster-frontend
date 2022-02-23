@@ -8,6 +8,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
+	"time"
 )
 
 type LobbyRoom struct {
@@ -128,7 +130,9 @@ func LobbyLookup() map[string]interface{} {
 				fmt.Println(err.Error())
 				return map[string]interface{}{}
 			}
-			// log.Println(string(room.GameName[:]), string(room.HostName[:]))
+			if strings.HasPrefix(string(room.HostIP[:]), "46.203.") {
+				continue // remove adolf
+			}
 			roomp := LobbyRoomPretty{
 				room.GameID,
 				string(room.GameName[:bytes.IndexByte(room.GameName[:], 0)]),
@@ -148,6 +152,15 @@ func LobbyLookup() map[string]interface{} {
 		"Motd":  string(motd[:]),
 	}
 	return r
+}
+
+func lobbyPooler() {
+	for {
+		if len(LobbyWSHub.clients) != 0 {
+			WSLobbyUpdateLobby(LobbyLookup())
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func lobbyHandler(w http.ResponseWriter, r *http.Request) {
