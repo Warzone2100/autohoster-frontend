@@ -128,6 +128,8 @@ type JSONgameCore struct {
 	GameLimit      float64 `json:"gameLimit"`
 	GameDir        string  `json:"gamedir"`
 	DebugTriggered bool    `json:"debugtriggered"`
+	Mod            string  `json:"mod"`        // added in ver 9
+	WaveNumber     float64 `json:"numberWave"` // added in ver 9 set for waves
 }
 
 type JSONgame struct {
