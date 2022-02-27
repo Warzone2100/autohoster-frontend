@@ -11,12 +11,35 @@ function initDarkModeTheme() {
 	const systemPrefersDarkMode = localStorage.getItem('darkSwitch') === null && window.matchMedia("(prefers-color-scheme: dark)").matches;
 	if (localStorage.getItem('darkSwitch') === 'dark' || systemPrefersDarkMode) {
 		console.log("User has dark theme enabled")
-		document.all[0].setAttribute('data-theme', 'dark');
+		document.documentElement.dataset["theme"] = "dark";
 	} else {
 		console.log("User has dark theme disabled")
-		document.all[0].setAttribute('data-theme', 'light');
+		document.documentElement.dataset["theme"] = "light";
 	}
 }
+initDarkModeTheme();
+function switchTheme() {
+    let darkSwitch = document.getElementById("darkSwitch");
+    if (darkSwitch.checked) {
+        document.documentElement.dataset["theme"] = "dark";
+        localStorage.setItem("darkSwitch", "dark");
+		console.log("Dark mode toggled on");
+    } else {
+        document.documentElement.dataset["theme"] = "light";
+        localStorage.setItem("darkSwitch", "light");
+		console.log("Dark mode toggled off");
+    }
+}
+window.addEventListener("load", function () {
+    let darkSwitch = document.getElementById("darkSwitch");
+    if (darkSwitch) {
+        darkSwitch.checked = document.documentElement.dataset["theme"] === "dark";
+        darkSwitch.addEventListener("click", function () {
+            switchTheme();
+        });
+    } else {
+        console.log("Failed to add darkSwitch event!");
+    }
+});
 </script>
-<script type="text/javascript">initDarkModeTheme();</script>
 {{end}}
