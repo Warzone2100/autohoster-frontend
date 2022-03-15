@@ -82,10 +82,10 @@
 				// 	Object.assign(data, {[date]: count })
 				// });
 				var ctx = document.getElementById('GraphCanvas').getContext('2d');
-				var labels = Object.keys(resp);
+				var labels = Object.keys(data);
 				chart = new Chart(ctx, {
 					type: 'line', parsing: false, normalized: true,
-					data: {datasets: [{
+					data: {labels: labels, datasets: [{
 						label: 'Games count',
 						data: data,
 						borderColor: 'rgba(0, 119, 204, 0.3)',

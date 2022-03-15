@@ -17,12 +17,16 @@
 			<div class="graphContainerGamesPerHour" style="height:500px">
 				<canvas id="GraphCanvasGamesPerHour"></canvas>
 			</div>
+			<div class="graphContainerUniquePlayersPerDay" style="height:500px">
+				<canvas id="GraphCanvasUniquePlayersPerDay"></canvas>
+			</div>
 			<div class="graphContainerMapCount" style="height:500px">
 				<canvas id="GraphCanvasMapCount"></canvas>
 			</div>
 			<script>
 			window.onload = function () {
 				LoadGraphGamesPerHour();
+				LoadGraphUniquePlayersPerDay();
 				LoadGraphMapCount();
 			}
 			function PlotDataGamesPerHour(JsonData) {
@@ -31,7 +35,7 @@
 				var labels = Object.keys(resp);
 				chart = new Chart(ctx, {
 					type: 'line', parsing: false, normalized: true,
-					data: {datasets: [{
+					data: {labels: labels, datasets: [{
 						label: 'Count',
 						data: resp,
 						borderColor: 'rgba(0, 119, 204, 1)',
@@ -66,6 +70,51 @@
 				xhr.open('GET', window.location.origin+'/api/dayavg', true);
 				xhr.send(null);
 			}
+			function PlotDataUniquePlayersPerDay(JsonData) {
+				const resp = JSON.parse(JsonData);
+				var ctx = document.getElementById('GraphCanvasUniquePlayersPerDay').getContext('2d');
+				var labels = Object.keys(resp);
+				chart = new Chart(ctx, {
+					type: 'line', parsing: false, normalized: true,
+					data: {labels: labels, datasets: [{
+						label: 'Count',
+						data: resp,
+						borderColor: 'rgba(0, 119, 204, 1)',
+						backgroundColor: 'rgba(0, 119, 204, 1)'
+					}]},
+					options: {spanGaps: true, showLine: true,
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Unique players played by day', position: 'top'},
+							zoom: {
+								pan: {enabled: true, mode: 'x'},
+								zoom: {
+									wheel: {enabled: true},
+									pinch: {enabled: true},
+									mode: 'x',
+								}
+							}
+						}, radius: 0,
+						scales: {
+							x: {title: {display: true, text: 'time'}},
+							y : {stacked: false,
+								title: {display: true, text: 'Value'}
+							}
+						}
+					}
+				});
+			}
+			function LoadGraphUniquePlayersPerDay() {
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						PlotDataUniquePlayersPerDay(xhr.response);
+					}
+				}
+				xhr.open('GET', window.location.origin+'/api/playersavg', true);
+				xhr.send(null);
+			}
 			function PlotDataMapCount(JsonData) {
 				let resp = JSON.parse(JsonData);
 				var ctx = document.getElementById('GraphCanvasMapCount').getContext('2d');
@@ -77,7 +126,7 @@
 				}
 				chart = new Chart(ctx, {
 					type: 'bar', parsing: false, normalized: true,
-					data: {datasets: [{
+					data: {labels: labels, datasets: [{
 						label: 'Maps',
 						data: data,
 						borderColor: 'rgba(0, 119, 204, 1)',

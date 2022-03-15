@@ -528,13 +528,21 @@
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
 					if (xhr.readyState === 4 && xhr.status === 200) {
+						document.getElementById(`LoadingGraphText`).innerHTML = "Rendering graph...";
 						PlotData(xhr.response);
 						document.getElementById(`LoadingGraphText`).style.display = `none`;
 					}
 				}
+				xhr.addEventListener('loadstart', function(e) {
+					document.getElementById(`LoadingGraphText`).innerHTML = "Loading graph, please wait... (connected, waiting for data...)";
+				});
+				xhr.addEventListener('progress', function(e) {
+					document.getElementById(`LoadingGraphText`).innerHTML = "Loading graph, please wait... (loaded "+e.loaded+" bytes)";
+				});
 				// fuck you cors
 				xhr.open('GET', window.location.origin+'/api/graph/{{.ID}}', true);
 				xhr.send(null);
+				document.getElementById(`LoadingGraphText`).innerHTML = "Loading graph, please wait... (connecting...)";
 			}
 			window.onload = function () {
 				dtempl.sort((f, s) => { return f.gamePosition - s.gamePosition });

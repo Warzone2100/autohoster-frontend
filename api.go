@@ -28,10 +28,6 @@ func APItryReachMultihoster(w http.ResponseWriter, r *http.Request) {
 }
 
 func APIgetGraphData(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j string
@@ -47,15 +43,12 @@ func APIgetGraphData(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Length", strconv.Itoa(len(j)))
 	io.WriteString(w, j)
 	w.WriteHeader(http.StatusOK)
 }
 
 func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
 	params := mux.Vars(r)
 	interval := params["interval"]
 	var j string
@@ -78,10 +71,6 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) {
 }
 
 func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
 	rows, derr := dbpool.Query(context.Background(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
 	if derr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -109,6 +98,49 @@ func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	io.WriteString(w, string(j))
+	w.WriteHeader(http.StatusOK)
+}
+
+func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) {
+	rows, derr := dbpool.Query(context.Background(),
+		`SELECT
+			b::TEXT,
+			(SELECT COUNT(c) FROM
+				(SELECT DISTINCT UNNEST(players)
+					FROM games
+					WHERE date_trunc('day', timestarted) = date_trunc('day', b)) AS c)
+		FROM generate_series((select min(timestarted) from games), now(), '1 day'::INTERVAL) AS b;`)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(derr.Error())
+		return
+	}
+	defer rows.Close()
+	re := make(map[string]int)
+	for rows.Next() {
+		var d string
+		var c int
+		err := rows.Scan(&d, &c)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Print(err.Error())
+			return
+		}
+		re[d] = c
+	}
+	j, err := json.Marshal(re)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Write(j)
 	w.WriteHeader(http.StatusOK)
 }
 
