@@ -8,14 +8,18 @@
 		</a>
 		<div class="navbar-nav me-auto">
 			<a class="nav-link {{ if eq .NavWhere "index" }} active {{ end }}" href="/">Home</a>
-			<a class="nav-link {{ if eq .NavWhere "games2" }} active {{ end }}" href="/games">Recent games</a>
-			<a class="nav-link {{ if eq .NavWhere "players" }} active {{ end }}" href="/players">Player leaderboard</a>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Autorating</a>
+				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="profileDropdown">
+					<li><a class="dropdown-item {{ if eq .NavWhere "players" }} active {{ end }}" href="/players">Player leaderboard</a></li>
+					<li><a class="dropdown-item {{ if eq .NavWhere "games2" }} active {{ end }}" href="/games">Recent games</a></li>
+					<li><a class="dropdown-item {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/about">About</a></li>
+					<div class="dropdown-divider"></div>
+					<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item {{ if eq .NavWhere "resstat" }} active {{ end }}" href="/resstat">Research leaderboard</a></li>
+					<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item" href="/request"><div class="{{if not .UserAuthorized}}disabled{{end}} btn btn-primary {{ if eq .NavWhere "request" }} active {{ end }}">Room request</div></a></li>
+				</ul>
+			</li>
 			<a class="nav-link {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/lobby">Lobby</a>
-			{{if .UserAuthorized}}
-				{{/*<a class="nav-link {{ if eq .NavWhere "hoster" }} active {{ end }}" href="/hoster">Multihoster</a>*/}}
-				<a class="nav-link {{ if eq .NavWhere "resstat" }} active {{ end }}" href="/resstat">Research leaderboard</a>
-				<a class="btn btn-primary {{ if eq .NavWhere "request" }} active {{ end }}" href="/request">Room request</a>
-			{{end}}
 		</div>
 		<ul class="navbar-nav">
 			<li class="nav-item dropdown">
