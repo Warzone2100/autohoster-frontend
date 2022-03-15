@@ -105,6 +105,25 @@
 			<td>Elo2: {{.Player.Elo2}}<td>
 			<td>Played: {{.Player.Autoplayed}}<td></tr>
 			</table>
+			{{if len .Renames}}
+			<details>
+				<summary>Renames</summary>
+				<table class="table">
+					<thead>
+						<td>From</td>
+						<td>To</td>
+						<td>When</td>
+					</thead>
+				{{range $i, $r := .Renames}}
+					<tr>
+						<td>{{$r.Oldname}}</td>
+						<td>{{$r.Newname}}</td>
+						<td>{{$r.Time}}</td>
+					</tr>
+				{{end}}
+				</table>
+			</details>
+			{{end}}
 			<table class="table">
 				<tr>
 					<th>ID</th>

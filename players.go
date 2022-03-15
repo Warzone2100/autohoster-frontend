@@ -184,5 +184,24 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			gms = append(gms, g)
 		}
 	}
-	basicLayoutLookupRespond("player", w, r, map[string]interface{}{"Player": pp, "Games": gms})
+	renameRows, derr := dbpool.Query(context.Background(), `select oldname, newname, "time"::text from plrenames where id = $1 order by "time" desc;`, pid)
+	if derr != nil {
+		if derr != pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+		}
+		return
+	}
+	defer renameRows.Close()
+	type renameEntry struct {
+		Oldname string
+		Newname string
+		Time    string
+	}
+	renames := []renameEntry{}
+	for renameRows.Next() {
+		var o, n, t string
+		renameRows.Scan(&o, &n, &t)
+		renames = append(renames, renameEntry{Oldname: o, Newname: n, Time: t})
+	}
+	basicLayoutLookupRespond("player", w, r, map[string]interface{}{"Player": pp, "Games": gms, "Renames": renames})
 }
