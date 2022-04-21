@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -51,6 +53,23 @@ type LobbyRoomPretty struct {
 
 func btoi(a uint32) bool {
 	return a != 0
+}
+
+var lobbyIgnoreIPS []string
+
+func loadLobbyIgnores(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	ignored := []string{}
+	for scanner.Scan() {
+		ignored = append(ignored, scanner.Text())
+	}
+	lobbyIgnoreIPS = ignored
+	return scanner.Err()
 }
 
 func LobbyLookup() map[string]interface{} {
@@ -130,8 +149,11 @@ func LobbyLookup() map[string]interface{} {
 				fmt.Println(err.Error())
 				return map[string]interface{}{}
 			}
-			if strings.HasPrefix(string(room.HostIP[:]), "46.203.") {
-				continue // remove adolf
+			for _, i := range lobbyIgnoreIPS {
+				s := strings.Split(i, " ")
+				if len(s) > 1 && isMatch(string(room.HostIP[:]), s[1]) {
+					continue
+				}
 			}
 			roomp := LobbyRoomPretty{
 				room.GameID,
@@ -170,4 +192,40 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal([]byte(reqres), &rooms)
 	}
 	basicLayoutLookupRespond("lobby", w, r, map[string]interface{}{"Lobby": LobbyLookup(), "Hoster": rooms})
+}
+
+func isMatch(s string, p string) bool {
+	runeInput := []rune(s)
+	runePattern := []rune(p)
+	lenInput := len(runeInput)
+	lenPattern := len(runePattern)
+	isMatchingMatrix := make([][]bool, lenInput+1)
+	for i := range isMatchingMatrix {
+		isMatchingMatrix[i] = make([]bool, lenPattern+1)
+	}
+	isMatchingMatrix[0][0] = true
+	for i := 1; i < lenInput; i++ {
+		isMatchingMatrix[i][0] = false
+	}
+	if lenPattern > 0 {
+		if runePattern[0] == '*' {
+			isMatchingMatrix[0][1] = true
+		}
+	}
+	for j := 2; j <= lenPattern; j++ {
+		if runePattern[j-1] == '*' {
+			isMatchingMatrix[0][j] = isMatchingMatrix[0][j-1]
+		}
+	}
+	for i := 1; i <= lenInput; i++ {
+		for j := 1; j <= lenPattern; j++ {
+			if runePattern[j-1] == '*' {
+				isMatchingMatrix[i][j] = isMatchingMatrix[i-1][j] || isMatchingMatrix[i][j-1]
+			}
+			if runePattern[j-1] == '?' || runeInput[i-1] == runePattern[j-1] {
+				isMatchingMatrix[i][j] = isMatchingMatrix[i-1][j-1]
+			}
+		}
+	}
+	return isMatchingMatrix[lenInput][lenPattern]
 }

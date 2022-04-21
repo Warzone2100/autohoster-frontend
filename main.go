@@ -537,6 +537,7 @@ func main() {
 	go GamesWSHub.Run()
 
 	log.Println("Starting lobby pooler")
+	loadLobbyIgnores(os.Getenv("LOBBYIGNORES"))
 	go lobbyPooler()
 
 	log.Println("Adding routes")
