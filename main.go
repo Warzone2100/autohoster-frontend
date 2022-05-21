@@ -333,9 +333,37 @@ func microsoftAuthHandler(w http.ResponseWriter, r *http.Request) {
   ]
 }`)
 }
+
+type Ra struct {
+	Dummy      bool   `json:"dummy"`
+	Autohoster bool   `json:"autohoster"`
+	Star       [3]int `json:"star"`
+	Medal      int    `json:"medal"`
+	Level      int    `json:"level"`
+	Elo        string `json:"elo"`
+	Details    string `json:"details"`
+}
+
 func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	hash := params["hash"]
+	hash, ok := params["hash"]
+	if !ok {
+		hash = r.Header.Get("WZ-Player-Hash")
+	}
+	m := ratingLookup(hash)
+	ad, adok := r.URL.Query()["ad"]
+	if adok && len(ad[0]) >= 1 && string(ad[0][0]) == "true" {
+		m.Elo = "Play with me in Autohoster"
+	}
+	j, err := json.Marshal(m)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, string(j))
+}
+func ratingLookup(hash string) Ra {
 	isautohoster := false
 	if hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
 		isautohoster = true
@@ -347,21 +375,23 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	if hash == "7bade06ad15023640093ced192db5082641b625f74a72193142453a9ad742d93" {
 		elo = "Dirty manque cheater"
 	}
-	ad, adok := r.URL.Query()["ad"]
-	if adok && len(ad[0]) >= 1 && string(ad[0][0]) == "true" {
-		elo = "Play with me in Autohoster"
-	}
-	type Ra struct {
-		Dummy      bool   `json:"dummy"`
-		Autohoster bool   `json:"autohoster"`
-		Star       [3]int `json:"star"`
-		Medal      int    `json:"medal"`
-		Level      int    `json:"level"`
-		Elo        string `json:"elo"`
-	}
-	m := Ra{true, isautohoster, [3]int{0, 0, 0}, 0, -1, elo}
-	var de, de2, dap, daw, dal, dui int
-	derr := dbpool.QueryRow(context.Background(), `SELECT elo, elo2, autoplayed, autowon, autolost, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1) FROM players WHERE hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui)
+	m := Ra{true, isautohoster, [3]int{0, 0, 0}, 0, -1, elo, ""}
+	var de, de2, dap, daw, dal, dui, dep, drp, dpi int
+	var dname string
+	derr := dbpool.QueryRow(context.Background(), `select elo, elo2, autoplayed, autowon, autolost,
+		coalesce((SELECT id FROM users WHERE result.id = users.wzprofile2), -1),
+		elo_position, rating_position, id, name
+from (
+   select *,
+        row_number() over(
+           order by elo2 desc
+        ) as rating_position,
+        row_number() over(
+           order by elo desc
+        ) as elo_position
+   from players
+) result
+where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dep, &drp, &dpi, &dname)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if elo == "" {
@@ -371,6 +401,15 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 			log.Print(derr)
 		}
 	} else {
+		m.Details = fmt.Sprintf("Played: %d\n", dap)
+		m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
+		if dui != -1 && dui != 0 {
+			m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
+		} else {
+			m.Details += "Not registered user.\n"
+		}
+		m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
+		m.Details += "\nRating lookup from\nhttps://wz2100-autohost.net/"
 		if elo == "" {
 			if dui != -1 && dui != 0 {
 				m.Elo = fmt.Sprintf("R[%d] E[%d] W%d/L%d", de2, de, daw, dal)
@@ -415,13 +454,7 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	j, err := json.Marshal(m)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, string(j))
+	return m
 }
 
 //lint:ignore U1000 used
@@ -569,6 +602,7 @@ func main() {
 	router.HandleFunc("/preset-edit", presetEditorHandler)
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
+	router.HandleFunc("/rating", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
 	router.HandleFunc("/games", listDbGamesHandler)
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
