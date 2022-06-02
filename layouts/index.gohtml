@@ -82,6 +82,7 @@
 				// 	Object.assign(data, {[date]: count })
 				// });
 				var ctx = document.getElementById('GraphCanvas').getContext('2d');
+				document.getElementById('GraphCanvasContainer').classList.add('appear');
 				var labels = Object.keys(data);
 				chart = new Chart(ctx, {
 					type: 'line', parsing: false, normalized: true,
@@ -99,7 +100,7 @@
 						tension: 0.4
 					}]},
 					options: {spanGaps: true, showLine: true,
-						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						animation: {duration: 450}, responsive: true, maintainAspectRatio: false,
 						plugins: {
 							legend: {position: 'top'},
 							title: {display: true, text: 'Games count', position: 'top'},
