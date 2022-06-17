@@ -256,24 +256,66 @@
 }
 
 .rainbow {
-  animation: colorRotate .5s linear 0s infinite;
+  animation: colorRotate 1.5s linear 0s infinite;
+  color: transparent;
+  background-clip: text;
+  width: fit-content;
 }
 
 @keyframes colorRotate {
   from {
-    color: #6666ff;
+    background-image: -webkit-linear-gradient(45deg, #cc0000, #cc4400);
   }
-  10% {
-    color: #0099ff;
+  5.8% {
+    background-image: -webkit-linear-gradient(45deg, #cc4400, #cc8800);
   }
-  50% {
-    color: #00ff00;
+  11.7% {
+    background-image: -webkit-linear-gradient(45deg, #cc8800, #cccc00);
   }
-  75% {
-    color: #ff3399;
+  16.6% {
+    background-image: -webkit-linear-gradient(45deg, #cccc00, #88cc00);
+  }
+  23.5% {
+    background-image: -webkit-linear-gradient(45deg, #88cc00, #44cc00);
+  }
+  29.4% {
+    background-image: -webkit-linear-gradient(45deg, #44cc00, #00cc00);
+  }
+  35.2% {
+    background-image: -webkit-linear-gradient(45deg, #00cc00, #00cc44);
+  }
+  41.1% {
+    background-image: -webkit-linear-gradient(45deg, #00cc44, #00cc88);
+  }
+  47.0% {
+    background-image: -webkit-linear-gradient(45deg, #00cc88, #00cccc);
+  }
+  52.9% {
+    background-image: -webkit-linear-gradient(45deg, #00cccc, #0088cc);
+  }
+  58.8% {
+    background-image: -webkit-linear-gradient(45deg, #0088cc, #0044cc);
+  }
+  64.7% {
+    background-image: -webkit-linear-gradient(45deg, #0044cc, #0000cc);
+  }
+  70.5% {
+    background-image: -webkit-linear-gradient(45deg, #0000cc, #4400cc);
+  }
+  76.4% {
+    background-image: -webkit-linear-gradient(45deg, #4400cc, #8800cc);
+  }
+  82.3% {
+    background-image: -webkit-linear-gradient(45deg, #8800cc, #cc00cc);
+  }
+  88.2% {
+    background-image: -webkit-linear-gradient(45deg, #cc00cc, #cc0088);
+  }
+  94.1% {
+    background-image: -webkit-linear-gradient(45deg, #cc0088, #cc0044);
   }
   100% {
-    color: #6666ff;
+    background-image: -webkit-linear-gradient(45deg, #cc0044, #cc0000);
   }
 }
 
