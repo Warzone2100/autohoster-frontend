@@ -413,7 +413,7 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dep, &drp, &dpi
 		if elo == "" {
 			if dui != -1 && dui != 0 {
 				if dap > 0 {
-					m.Elo = fmt.Sprintf("R[%d] E[%d] %d %.1f%%", de2, de, dap, float64(daw)/float64(dap))
+					m.Elo = fmt.Sprintf("R[%d] E[%d] %d %.1f%%", de2, de, dap, 100*(float64(daw)/float64(dap)))
 				} else {
 					m.Elo = fmt.Sprintf("R[%d] E[%d] %d -", de2, de, dap)
 				}
