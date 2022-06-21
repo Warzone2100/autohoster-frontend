@@ -411,14 +411,16 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dep, &drp, &dpi
 		m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
 		m.Details += "\nRating lookup from\nhttps://wz2100-autohost.net/"
 		if elo == "" {
-			if dui != -1 && dui != 0 {
-				if dap > 0 {
-					m.Elo = fmt.Sprintf("R[%d] E[%d] %d %.1f%%", de2, de, dap, 100*(float64(daw)/float64(dap)))
-				} else {
-					m.Elo = fmt.Sprintf("R[%d] E[%d] %d -", de2, de, dap)
-				}
+			var pc string
+			if dap > 0 {
+				pc = fmt.Sprintf("%.1f%%", 100*(float64(daw)/float64(dap)))
 			} else {
-				m.Elo = fmt.Sprintf("unapproved E[%d] %d %.1f%%", de, dap, 100*(float64(daw)/float64(dap)))
+				pc = "-"
+			}
+			if dui != -1 && dui != 0 {
+				m.Elo = fmt.Sprintf("R[%d] E[%d] %d %s", de2, de, dap, pc)
+			} else {
+				m.Elo = fmt.Sprintf("unapproved E[%d] %d %s", de, dap, pc)
 			}
 		}
 		if dap < 5 {
