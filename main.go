@@ -418,7 +418,7 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dep, &drp, &dpi
 					m.Elo = fmt.Sprintf("R[%d] E[%d] %d -", de2, de, dap)
 				}
 			} else {
-				m.Elo = fmt.Sprintf("unapproved E[%d] W%d/L%d", de, daw, dal)
+				m.Elo = fmt.Sprintf("unapproved E[%d] %d %.1f%%", de, dap, 100*(float64(daw)/float64(dap)))
 			}
 		}
 		if dap < 5 {
