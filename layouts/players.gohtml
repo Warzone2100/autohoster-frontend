@@ -50,6 +50,7 @@
 					<td>Won</td>
 					<td>Lost</td>
 					<td>ID</td>
+					<td>Hash</td>
 				</thead>
 				<tbody>
 			{{range $pn, $p := .Players}}
@@ -64,6 +65,7 @@
 					<td>{{$p.Autowon}}</td>
 					<td>{{$p.Autolost}}</td>
 					<td>{{$p.ID}}</td>
+					<td>{{strcut $p.Hash 10}}</td>
 				</tr>
 			{{end}}
 			</table>
