@@ -54,7 +54,7 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) {
 	var j string
 	derr := dbpool.QueryRow(context.Background(), `select
 		json_agg(json_build_object(b::text,(select count(*) from games where date_trunc($1, timestarted) = b)))
-	from generate_series('2021-07-07'::timestamp, now(), $2::interval) as b;`, interval, "1 "+interval).Scan(&j)
+	from generate_series(date_trunc($1, now() - '1 year 7 days'::interval), now(), $2::interval) as b;`, interval, "1 "+interval).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)

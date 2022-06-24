@@ -76,6 +76,10 @@
 					Object.assign(avgData, {[date]: avgv/avgc })
 					// console.log(i, date, avgv/avgc);
 				}
+				let sortedDataKeys = Object.keys(data).sort();
+				for(let i = 0; i <= 6 && i < resp.length; i++) {
+					delete data[sortedDataKeys[i]];
+				}
 				// resp.forEach((i) => {
 				// 	const date = Object.keys(i)[0].split(" ")[0];
 				// 	const count = Object.values(i)[0];
