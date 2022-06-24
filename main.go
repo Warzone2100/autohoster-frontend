@@ -350,6 +350,12 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		hash = r.Header.Get("WZ-Player-Hash")
 	}
+	w.Header().Set("Content-Type", "application/json")
+	if hash == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("{\"error\": \"Empty hash.\"}"))
+		return
+	}
 	m := ratingLookup(hash)
 	ad, adok := r.URL.Query()["ad"]
 	if adok && len(ad[0]) >= 1 && string(ad[0][0]) == "true" {
@@ -359,7 +365,6 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, string(j))
 }
