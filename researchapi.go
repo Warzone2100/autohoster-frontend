@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"io"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -17,8 +17,8 @@ func APIgetResearchlogData(w http.ResponseWriter, r *http.Request) {
 	}
 	params := mux.Vars(r)
 	gid := params["gid"]
-	var j string
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog, '{}') FROM games WHERE id = $1`, gid).Scan(&j)
+	var j []map[string]interface{}
+	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog, '[]')::jsonb FROM games WHERE id = $1`, gid).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
@@ -28,8 +28,19 @@ func APIgetResearchlogData(w http.ResponseWriter, r *http.Request) {
 		log.Print(derr.Error())
 		return
 	}
+	for i := range j {
+		for k, v := range j[i] {
+			if k == "name" {
+				j[i][k] = getResearchName(v.(string))
+			}
+		}
+	}
+	b, err := json.Marshal(j)
+	if err != nil {
+		log.Println(err)
+	}
 	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, j)
+	w.Write(b)
 	w.WriteHeader(http.StatusOK)
 }

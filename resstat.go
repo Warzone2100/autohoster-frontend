@@ -5,10 +5,54 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"sort"
 	"strconv"
 
 	"github.com/jackc/pgx/v4"
 )
+
+var (
+	researchNamed = map[string]string{}
+)
+
+func prepareStatNames() {
+	b, err := os.ReadFile("./research.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var r map[string]interface{}
+	err = json.Unmarshal(b, &r)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for k, v := range r {
+		v1, ok := v.(map[string]interface{})
+		if !ok {
+			log.Printf("Research [%s] object is not a msi", k)
+			continue
+		}
+		v2, ok := v1["name"]
+		if !ok {
+			log.Printf("Research [%s] has no name", k)
+			continue
+		}
+		v3, ok := v2.(string)
+		if !ok {
+			log.Printf("Research [%s] name not a string", k)
+			continue
+		}
+		researchNamed[k] = v3
+	}
+}
+
+func getResearchName(n string) string {
+	r, ok := researchNamed[n]
+	if !ok {
+		return n
+	}
+	return r
+}
 
 func resstatHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkUserAuthorized(r) {
@@ -36,19 +80,35 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		sqver = reqver[0]
 	}
+	ming := 1032
+	rming, ok := r.URL.Query()["gamelimit"]
+	if ok {
+		sming, err := strconv.Atoi(rming[0])
+		if err == nil {
+			ming = sming
+		}
+	}
+	llim := 3
+	rllim, ok := r.URL.Query()["leadlim"]
+	if ok {
+		sllim, err := strconv.Atoi(rllim[0])
+		if err == nil {
+			llim = sllim
+		}
+	}
 	var rows pgx.Rows
 	if sqver == "any" {
 		rows, derr = dbpool.Query(context.Background(), `
 		SELECT
 		games.id, players, researchlog
 		FROM games
-		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false`, sqbase)
+		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND alliancetype = 3 AND id > $2`, sqbase, ming)
 	} else {
 		rows, derr = dbpool.Query(context.Background(), `
 		SELECT
 		games.id, players, researchlog
 		FROM games
-		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND version = $2`, sqbase, sqver)
+		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND alliancetype = 3 AND version = $2 AND id > $3`, sqbase, sqver, ming)
 	}
 	if derr != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
@@ -77,7 +137,7 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 		Pos  float64 `json:"position"`
 		Time float64 `json:"time"`
 	}
-	best := map[string]bestresearch{}
+	bestr := map[string][]bestresearch{}
 	for rows.Next() {
 		var gid int
 		var players []int
@@ -93,28 +153,53 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, e := range reslog {
-			if int(e.Time) == 2 || gid <= 1032 {
+			if int(e.Time) == 2 || gid <= 1032 || players[int(e.Pos)] == 321 {
 				continue
 			}
-			bt, ok := best[e.Name]
-			if !ok || bt.Time > int(e.Time) {
-				n := bestresearch{
-					Playerid: players[int(e.Pos)],
-					Time:     int(e.Time),
-					Gameid:   gid,
-				}
-				best[e.Name] = n
+			bt, ok := bestr[getResearchName(e.Name)]
+			if !ok {
+				bt = []bestresearch{}
 			}
+			bt = append(bt, bestresearch{
+				Playerid: players[int(e.Pos)],
+				Time:     int(e.Time),
+				Gameid:   gid,
+			})
+			bestr[getResearchName(e.Name)] = bt
 		}
 	}
+	best := map[string][]bestresearch{}
 	plid := map[int][]string{}
-	for i, j := range best {
-		plida, ok := plid[j.Playerid]
-		if !ok {
-			plid[j.Playerid] = []string{i}
-		} else {
-			plid[j.Playerid] = append(plida, i)
+	for k, b := range bestr {
+		sort.Slice(b, func(i, j int) bool { return b[i].Time < b[j].Time })
+		bestfiltered := []bestresearch{}
+		was := []int{}
+		for _, v := range b {
+			found := false
+			for _, vv := range was {
+				if vv == v.Playerid {
+					found = true
+					break
+				}
+			}
+			if !found {
+				bestfiltered = append(bestfiltered, v)
+				was = append(was, v.Playerid)
+				plida, ok := plid[v.Playerid]
+				if !ok {
+					plid[v.Playerid] = []string{k}
+				} else {
+					plid[v.Playerid] = append(plida, k)
+				}
+				if len(bestfiltered) > llim {
+					break
+				}
+			}
 		}
+		if len(bestfiltered) > llim {
+			bestfiltered = bestfiltered[:llim]
+		}
+		best[k] = bestfiltered
 	}
 	for i, j := range plid {
 		var pl GamePlayer
@@ -134,7 +219,11 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, v := range j {
 			if e, ok := best[v]; ok {
-				e.Player = pl
+				for ii := range e {
+					if e[ii].Playerid == i {
+						e[ii].Player = pl
+					}
+				}
 				best[v] = e
 			} else {
 				log.Print("Wut ", v)

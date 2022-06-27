@@ -24,7 +24,7 @@
 								<div class="col-auto">
 									<select class="form-select form-select-sm" name="gamever">
 										{{range $i, $j := .Versions}}
-										<option value="{{$j}}">{{$j}}</option>
+										<option {{if eq $.Selver $j}}selected{{end}} value="{{$j}}">{{$j}}</option>
 										{{end}}
 									</select>
 								</div>
@@ -35,15 +35,15 @@
 								<p>
 								<label>
 									<text class="label-radio">Base:</text>
-									<input id="base-0-radio" type="radio" class="hostsettings-radio" name="base" value="0">
+									<input id="base-0-radio" type="radio" class="hostsettings-radio" name="base" value="0" {{if eq .Selbase 0}}checked{{end}} required>
 									<img class="icons icons-base0">
 								</label>
 								<label>
-									<input id="base-1-radio" type="radio" class="hostsettings-radio" name="base" value="1" checked required>
+									<input id="base-1-radio" type="radio" class="hostsettings-radio" name="base" value="1" {{if eq .Selbase 1}}checked{{end}} required>
 									<img class="icons icons-base1">
 								</label>
 								<label>
-									<input id="base-2-radio" type="radio" class="hostsettings-radio" name="base" value="2">
+									<input id="base-2-radio" type="radio" class="hostsettings-radio" name="base" value="2" {{if eq .Selbase 2}}checked{{end}} required>
 									<img class="icons icons-base2">
 								</label>
 								</p>
@@ -60,9 +60,6 @@
 						</div>
 					</div>
 				</form>
-				<p>
-					Showing for version {{.Selver}} and <img class="icons icons-base{{.Selbase}}">
-				</p>
 				<table class="table">
 					<tr>
 						<th>Research id</th>
@@ -72,11 +69,19 @@
 					</tr>
 				{{range $k, $el := .Best}}
 					<tr>
-						<td>{{$k}}</td>
-						<td>{{template "wzprofile" $el.Player}}</td>
-						<td><a href="/games/{{$el.Gameid}}">{{$el.Gameid}}</a></td>
-						<td>{{GameTimeToStringI $el.Time}}</td>
+						<td rowspan="{{len $el}}">{{$k}}</td>
+						<td>{{template "wzprofile" (index $el 0).Player}}</td>
+						<td><a href="/games/{{(index $el 0).Gameid}}">{{(index $el 0).Gameid}}</a></td>
+						<td>{{GameTimeToStringI (index $el 0).Time}}</td>
 					</tr>
+					{{range $kk, $ell := $el}}
+					{{if eq $kk 0}}{{else}}
+					<tr>
+						<td>{{template "wzprofile" $ell.Player}}</td>
+						<td><a href="/games/{{$ell.Gameid}}">{{$ell.Gameid}}</a></td>
+						<td>{{GameTimeToStringI $ell.Time}}</td>
+					</tr>
+					{{end}}{{end}}
 				{{else}}
 					<tr><td colspan="99">No research found in database?! (bug)</td></tr>
 				{{end}}

@@ -584,6 +584,9 @@ func main() {
 	loadLobbyIgnores(os.Getenv("LOBBYIGNORES"))
 	go lobbyPooler()
 
+	log.Println("Loading research names")
+	prepareStatNames()
+
 	log.Println("Adding routes")
 	router := mux.NewRouter()
 	router.NotFoundHandler = myNotFoundHandler()
