@@ -103,7 +103,8 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		players, teams, colour, usertype,
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,
-		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills, coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}')
+		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills,
+		coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}')
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND $1 = any(games.players)
@@ -129,10 +130,11 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		var plsj []string
 		var dskills []int
 		var dselodiff []int
+		var dsratingdiff []int
 		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 			&plid, &plteam, &plcolour, &plusertype,
 			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dskills, &dselodiff)
+			&dskills, &dselodiff, &dsratingdiff)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
@@ -166,6 +168,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 				g.Players[slot].Kills = dskills[slot]
 				if len(dselodiff) > slot {
 					g.Players[slot].EloDiff = dselodiff[slot]
+					g.Players[slot].RatingDiff = dsratingdiff[slot]
 				}
 			} else {
 				g.Players[slot].Usertype = "fighter"

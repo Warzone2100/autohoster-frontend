@@ -24,10 +24,11 @@ type Elo struct {
 }
 
 type EloGamePlayer struct {
-	ID       int
-	Team     int
-	Usertype string
-	EloDiff  int
+	ID         int
+	Team       int
+	Usertype   string
+	EloDiff    int
+	RatingDiff int
 }
 
 type EloGame struct {
@@ -209,26 +210,26 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 		if p.Usertype == "winner" {
 			P[p.ID].Autowon++
 			P[p.ID].Elo += Additive
+			G.Players[pi].EloDiff = Additive
 			if calcelo2 {
 				P[p.ID].Elo2 += RAdditive
-				G.Players[pi].EloDiff = RAdditive
+				G.Players[pi].RatingDiff = RAdditive
 				calclog += fmt.Sprintf("Player %d won %d elo and %d rating\n", pi, Additive, RAdditive)
 			} else {
-				G.Players[pi].EloDiff = Additive
 				calclog += fmt.Sprintf("Player %d won %d elo\n", pi, Additive)
 			}
 		} else if p.Usertype == "loser" {
 			P[p.ID].Autolost++
 			P[p.ID].Elo -= Additive
+			G.Players[pi].EloDiff = -Additive
 			// P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			if calcelo2 {
 				P[p.ID].Elo2 -= RAdditive
 				// P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
-				G.Players[pi].EloDiff = -RAdditive
+				G.Players[pi].RatingDiff = -RAdditive
 				// G.Players[pi].EloDiff += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 				calclog += fmt.Sprintf("Player %d lost %d elo and %d rating\n", pi, Additive, RAdditive)
 			} else {
-				G.Players[pi].EloDiff = -Additive
 				// G.Players[pi].EloDiff += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 				calclog += fmt.Sprintf("Player %d lost %d elo\n", pi, Additive)
 			}
@@ -308,6 +309,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 			p.ID = pid
 			p.Team = teams[pslt]
 			p.EloDiff = 0
+			p.RatingDiff = 0
 			g.Players = append(g.Players, p)
 		}
 		Games = append(Games, &g)
@@ -332,9 +334,12 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		for _, p := range g.Players {
 			elodiffs = append(elodiffs, p.EloDiff)
 		}
+		var ratingdiffs []int
+		for _, p := range g.Players {
+			ratingdiffs = append(ratingdiffs, p.RatingDiff)
+		}
 		// log.Printf("Updating game %d: elodiff %v ", g.ID, elodiffs)
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE games SET elodiff = $1 WHERE id = $2",
-			elodiffs, g.ID)
+		tag, derr := dbpool.Exec(context.Background(), "UPDATE games SET elodiff = $1, ratingdiff = $2 WHERE id = $3", elodiffs, ratingdiffs, g.ID)
 		if derr != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
 			return

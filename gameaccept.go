@@ -426,9 +426,13 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	for _, eee := range eg.Players {
 		elodiff = append(elodiff, eee.EloDiff)
 	}
+	var ratingdiff []int
+	for _, eee := range eg.Players {
+		ratingdiff = append(ratingdiff, eee.RatingDiff)
+	}
 	tag, derr := dbpool.Exec(context.Background(), `
-	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitslost = $6, unitbuilt = $7, structs = $8, structbuilt = $9, structurelost = $10, rescount = $11, usertype = $12, researchlog = $13, elodiff = $14, structkilled = $15, summexp = $16, oilrigs = $17, unithp = $18, calculated = $19, debugtriggered = $20
-	WHERE id = $21`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, tbdstructkilled, tbdsummexp, tbdoilrigs, tbddroidhp, calculating, h.Game.DebugTriggered, gid)
+	UPDATE games SET finished = true, timeended = now(), gametime = $1, kills = $2, power = $3, score = $4, units = $5, unitslost = $6, unitbuilt = $7, structs = $8, structbuilt = $9, structurelost = $10, rescount = $11, usertype = $12, researchlog = $13, elodiff = $14, structkilled = $15, summexp = $16, oilrigs = $17, unithp = $18, calculated = $19, debugtriggered = $20, ratingdiff = $21
+	WHERE id = $22`, h.GameTime, tbdkills, tbdpower, tbdscore, tbddroid, tbddroidlost, tbddroidbuilt, tbdstruct, tbdstructbuilt, tbdstructlost, tbdrescount, tbdusertype, string(tbdreslog), elodiff, tbdstructkilled, tbdsummexp, tbdoilrigs, tbddroidhp, calculating, h.Game.DebugTriggered, ratingdiff, gid)
 	if derr != nil {
 		log.Printf("Can not upload frame [%s]", derr.Error())
 		io.WriteString(w, "err")

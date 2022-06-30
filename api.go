@@ -518,3 +518,94 @@ func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string("\n"))
 	w.WriteHeader(http.StatusOK)
 }
+
+func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	pid, err := strconv.Atoi(params["pid"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	rows, derr := dbpool.Query(context.Background(),
+		`SELECT
+			id,
+			coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
+			coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
+			to_char(timestarted, 'YYYY-MM-DD HH24:MI'),
+			players
+		FROM games
+		where
+			$1 = any(players)
+			AND finished = true
+			AND calculated = true
+			AND hidden = false
+			AND deleted = false
+			AND id > 200
+		order by timestarted asc`, pid)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(derr.Error())
+		return
+	}
+	defer rows.Close()
+	type eloHist struct {
+		Elo    int
+		Rating int
+	}
+	h := map[string]eloHist{}
+	prevts := ""
+	for rows.Next() {
+		var gid int
+		var ediff []int
+		var rdiff []int
+		var timestarted string
+		var players []int
+		err := rows.Scan(&gid, &ediff, &rdiff, &timestarted, &players)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Print(err.Error())
+			return
+		}
+		k := -1
+		for i, p := range players {
+			if p == pid {
+				k = i
+				break
+			}
+		}
+		if k < 0 || k >= len(ediff) || k >= len(rdiff) {
+			log.Printf("Game %d is broken (k %d) players %v diffs %v %v", gid, k, players, ediff, rdiff)
+			continue
+		}
+		eDiff := ediff[k]
+		rDiff := rdiff[k]
+		if prevts == "" {
+			h[timestarted] = eloHist{
+				Elo:    1400 + eDiff,
+				Rating: 1400 + rDiff,
+			}
+		} else {
+			ph := h[prevts]
+			h[timestarted] = eloHist{
+				Elo:    ph.Elo + eDiff,
+				Rating: ph.Rating + rDiff,
+			}
+		}
+		prevts = timestarted
+	}
+	ans, err := json.Marshal(h)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	io.WriteString(w, string(ans))
+	io.WriteString(w, string("\n"))
+	w.WriteHeader(http.StatusOK)
+}

@@ -331,6 +331,7 @@ var presets = [
 					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a> {{if avail "Userid" .}}{{if and (ne .Userid -1) (ne .Userid 0)}}<text class="games-winner-name">✔</text>{{end}}{{end}} <br>
 					 {{.Elo}}
 					{{if avail "EloDiff" .}}{{if not (eq .EloDiff 0)}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}{{end}}
+					{{if avail "RatingDiff" .}}{{if not (eq .RatingDiff 0)}}({{if ge .RatingDiff 1}}+{{end}}{{.RatingDiff}}){{end}}{{end}}
 				</td>
 			</tr><tr>
 				<!-- middle star -->

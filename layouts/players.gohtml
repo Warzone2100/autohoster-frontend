@@ -82,6 +82,9 @@
 		<meta content="Won {{.Player.Autowon}} Lost {{.Player.Autolost}} Played {{.Player.Autoplayed}} Elo {{.Player.Elo}} Rating {{.Player.Elo2}}" property="og:description">
 		<meta content="https://wz2100-autohost.net/players/{{.Player.ID}}" property="og:url">
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>
 		<title>Autohoster player {{.Player.Name}}</title>
 	</head>
 	<body>
@@ -89,7 +92,11 @@
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 container">
 			<h3 style="padding-bottom:18px">{{template "wzprofile" .Player}}</h3>
-			<button id="BtnRequestGraphs" class="btn btn-primary" onclick="LoadClassificationGraph()">Load research classification</button>
+			<button id="BtnClassificationRequestGraphs" class="btn btn-primary" onclick="LoadClassificationGraph()">Load research classification</button>
+			<button id="BtnElodiffRequestGraphs" class="btn btn-primary" onclick="LoadElodiffGraph()">Load Elo history</button>
+			<div id="ElodiffGraphContainingDiv" style="display:none;">
+				<canvas id="ElodiffGraphCanvas">
+			</div>
 			<div id="ClassificationGraphContainingDiv" style="display:none;">
 				<table><tr>
 				<td style="height:400px;"><canvas id="ClassificationGraphCanvas"></td>
@@ -225,6 +232,41 @@
 				}
 			});
 		}
+		function PlotLinearData(JsonData, ctx, title, subtitle) {
+			const resp = JSON.parse(JsonData);
+			if(Object.keys(resp).length == 0) {
+				return
+			}
+			chart2 = new Chart(ctx, {
+				type: 'line', normalized: true,
+				data: {
+					labels: Object.keys(resp),
+					datasets: [
+						{data: Object.values(resp).map(o => o.Elo), label: 'Elo', borderColor: '#0d6efd'},
+						{data: Object.values(resp).map(o => o.Rating), label: 'Rating', borderColor: '#aa0303'},
+					]
+				},
+				options: {spanGaps: true, showLine: true,
+					animation: {duration: 20}, responsive: true, maintainAspectRatio: false,
+					plugins: {
+						legend: {position: 'top'},
+						title: {display: true, text: title, position: 'top'},
+						subtitle: {display: true, text: subtitle},
+						zoom: {
+							pan: {enabled: true, mode: 'x'},
+							zoom: {
+								wheel: {enabled: true},
+								pinch: {enabled: true},
+								mode: 'x',
+							}
+						}
+					}, radius: 1,
+					scales: {x: {
+						type: "time"
+					}}
+				}
+			});
+		}
 		function doXHR(method, url, fn) {
 			var xhr = new XMLHttpRequest();
 			xhr.onreadystatechange = function() {
@@ -237,7 +279,7 @@
 		}
 		function LoadClassificationGraph() {
 			document.getElementById(`ClassificationGraphContainingDiv`).style.display = `block`;
-			document.getElementById(`BtnRequestGraphs`).style.display = `none`;
+			document.getElementById(`BtnClassificationRequestGraphs`).style.display = `none`;
 			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/1', function(resp) {
 				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - duels');
 			});
@@ -249,6 +291,14 @@
 			});
 			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/4', function(resp) {
 				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas4').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - 2x2+ noshared last 100 games');
+			});
+		}
+		function LoadElodiffGraph() {
+			document.getElementById(`ElodiffGraphContainingDiv`).style.display = `block`;
+			document.getElementById(`BtnElodiffRequestGraphs`).style.display = `none`;
+			document.getElementById('ElodiffGraphCanvas').style.height = "400px";
+			doXHR("GET", window.location.origin+'/api/elohistory/{{.Player.ID}}', function(resp) {
+				PlotLinearData(resp, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Elo history');
 			});
 		}
 		</script>
