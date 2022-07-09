@@ -181,7 +181,7 @@
 					<thead>
 						<th>Players</th>
 						<th>Position</th>
-						<th colspan="2">Elo, Rating transfer</th>
+						<th>Elo transfer</th>
 						<th>Kills</th>
 						<th>Droid lost</th>
 						<th>Units built</th>
@@ -200,7 +200,6 @@
 							</td>
 							<td>{{$player.Position}}</td>
 							<td>{{$player.EloDiff}}</td>
-							<td>{{$player.RatingDiff}}</td>
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>
@@ -222,7 +221,6 @@
 							</td>
 							<td>{{$player.Position}}</td>
 							<td>{{$player.EloDiff}}</td>
-							<td>{{$player.RatingDiff}}</td>
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>
@@ -250,7 +248,6 @@
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}} - {{$player.Team}}</td>
-							<td>---</td>
 							<td>---</td>
 							<td>---</td>
 							<td>---</td>
