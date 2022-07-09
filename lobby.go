@@ -49,6 +49,8 @@ type LobbyRoomPretty struct {
 	Pure           bool
 	MaxPlayers     uint32
 	CurrentPlayers uint32
+	LastSeen       int64
+	History        bool
 }
 
 func btoi(a uint32) bool {
@@ -106,6 +108,8 @@ func LobbyLookup() map[string]interface{} {
 			btoi(room.Pure),
 			room.MaxPlayers,
 			room.CurrentPlayers,
+			time.Now().Unix(),
+			false,
 		}
 		rooms = append(rooms, roomp)
 	}
@@ -165,6 +169,8 @@ func LobbyLookup() map[string]interface{} {
 				btoi(room.Pure),
 				room.MaxPlayers,
 				room.CurrentPlayers,
+				time.Now().Unix(),
+				false,
 			}
 			rooms = append(rooms, roomp)
 		}
@@ -177,10 +183,39 @@ func LobbyLookup() map[string]interface{} {
 }
 
 func lobbyPooler() {
+	lobbyHistory := []LobbyRoomPretty{}
+	previousLookup := []LobbyRoomPretty{}
 	for {
-		if len(LobbyWSHub.clients) != 0 {
-			WSLobbyUpdateLobby(LobbyLookup())
+		lookup := LobbyLookup()
+		rooms, ok := lookup["Rooms"].([]LobbyRoomPretty)
+		if !ok {
+			continue
 		}
+		for _, vv := range previousLookup {
+			found := false
+			for _, v := range rooms {
+				if v.GameID == vv.GameID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				vv.History = true
+				lobbyHistory = append([]LobbyRoomPretty{vv}, lobbyHistory...)
+			}
+		}
+		if len(lobbyHistory) > 10 {
+			lobbyHistory = lobbyHistory[:10]
+		}
+		previousLookup = rooms
+		currentRooms := rooms
+		respondRooms := append(currentRooms, lobbyHistory...)
+		// log.Printf("\n")
+		// for _, v := range respondRooms {
+		// 	log.Printf("Room %v %v %v %v\n", v.GameID, v.HostName, v.LastSeen, v.History)
+		// }
+		lookup["Rooms"] = respondRooms
+		WSLobbyUpdateLobby(lookup)
 		time.Sleep(1 * time.Second)
 	}
 }
