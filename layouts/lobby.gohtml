@@ -176,7 +176,7 @@
 		ws.onopen = function() {color("red")}
 		ws.onclose = function() {color("grey")}
 		document.getElementById("LiveBlob").onclick = function() {
-			if(ws == null) {
+			if(ws == null || ws.readyState == 2 || ws.readyState == 3) {
 				color("yellow")
 				document.getElementById("LiveBlob").style.background = "yellow"
 				ws = new WebSocket(wsurl)
