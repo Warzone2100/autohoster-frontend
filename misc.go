@@ -13,6 +13,37 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// func parseQueryInt(r *http.Request, field string, d int) int {
+// 	if val, ok := r.URL.Query()[field]; ok && len(val) > 0 {
+// 		val2, err := strconv.Atoi(val[0])
+// 		if err == nil {
+// 			return val2
+// 		}
+// 	}
+// 	return d
+// }
+
+// func parseQueryStringFiltered(r *http.Request, field string, d string, variants ...string) string {
+// 	if val, ok := r.URL.Query()[field]; ok && len(val) > 0 {
+// 		for _, v := range variants {
+// 			if val[0] == v {
+// 				return v
+// 			}
+// 		}
+// 	}
+// 	return d
+// }
+
+// func parseQueryStringMapped(r *http.Request, field string, d string, m map[string]string) string {
+// 	if val, ok := r.URL.Query()[field]; ok && len(val) > 0 {
+// 		v, ok := m[val[0]]
+// 		if ok {
+// 			return v
+// 		}
+// 	}
+// 	return d
+// }
+
 func respondWithUnauthorized(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusUnauthorized)
 	basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]interface{}{})

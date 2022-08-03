@@ -609,3 +609,175 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string("\n"))
 	w.WriteHeader(http.StatusOK)
 }
+
+func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	// dbLimit := parseQueryInt(r, "limit", 5)
+	// dbOffset := parseQueryInt(r, "offset", 0)
+	// dbOrderBy := parseQueryStringMapped(r, "sort", "elo", map[string]string{
+	// 	"Elo2":       "elo2",
+	// 	"Autoplayed": "autoplayed",
+	// 	"Autowon":    "autowon",
+	// 	"Autolost":   "autolost",
+	// 	"Name":       "name",
+	// 	"ID":         "id",
+	// })
+	rows, derr := dbpool.Query(context.Background(), `
+	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1)
+	FROM players
+	WHERE autoplayed > 0`)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("Database query error: " + derr.Error())
+		}
+		return
+	}
+	defer rows.Close()
+	var P []PlayerLeaderboard
+	for rows.Next() {
+		var pp PlayerLeaderboard
+		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid)
+		P = append(P, pp)
+	}
+	ans, err := json.Marshal(P)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+	// w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	io.WriteString(w, string(ans))
+	io.WriteString(w, string("\n"))
+	w.WriteHeader(http.StatusOK)
+}
+
+func APIgetGames(w http.ResponseWriter, r *http.Request) {
+	wherecase := "WHERE deleted = false AND hidden = false"
+	if sessionGetUsername(r) == "Flex seal" {
+		wherecase = ""
+	}
+	limiter := "LIMIT 5000"
+	limiterparam, limiterparamok := r.URL.Query()["all"]
+	if limiterparamok && len(limiterparam) >= 1 && limiterparam[0] == "true" {
+		limiter = ""
+	}
+	playerfilter, playerfilterok := r.URL.Query()["player"]
+	if playerfilterok && len(playerfilter) >= 1 {
+		pid, err := strconv.Atoi(playerfilter[0])
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if wherecase == "" {
+			wherecase = fmt.Sprintf("WHERE %d = any(games.players)", pid)
+		} else {
+			wherecase += fmt.Sprintf(" AND %d = any(games.players)", pid)
+		}
+	}
+	rows, derr := dbpool.Query(context.Background(), `
+	SELECT
+		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
+		players, teams, colour, usertype,
+		mapname, maphash,
+		baselevel, powerlevel, scavs, alliancetype,
+		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills,
+		coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
+		hidden, calculated, debugtriggered
+	FROM games
+	JOIN players as p ON p.id = any(games.players)
+	`+wherecase+`
+	GROUP BY gid
+	ORDER BY timestarted DESC
+	`+limiter+`;`)
+	if derr != nil {
+		if derr == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			log.Println("Database query error: " + derr.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+	defer rows.Close()
+	var gms []DbGamePreview
+	for rows.Next() {
+		var g DbGamePreview
+		var plid []int
+		var plteam []int
+		var plcolour []int
+		var plusertype []string
+		var plsj []string
+		var dskills []int
+		var dselodiff []int
+		var dsratingdiff []int
+		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+			&plid, &plteam, &plcolour, &plusertype,
+			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
+			&dskills, &dselodiff, &dsratingdiff, &g.Hidden, &g.Calculated, &g.DebugTriggered)
+		if err != nil {
+			log.Println("Database scan error: " + err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var np [11]DbGamePlayerPreview
+		for pi, pv := range plsj {
+			err := json.Unmarshal([]byte(pv), &np[pi])
+			if err != nil {
+				log.Println("Json unpack error: " + err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+		for slot, nid := range plid {
+			gpi := -1
+			for pi, pv := range np {
+				if pv.ID == nid {
+					gpi = pi
+					break
+				}
+			}
+			if gpi == -1 {
+				// log.Print("Failed to find player " + strconv.Itoa(slot) + " for game " + strconv.Itoa(g.Id))
+				continue
+			}
+			g.Players[slot] = np[gpi]
+			g.Players[slot].Team = plteam[slot]
+			g.Players[slot].Colour = plcolour[slot]
+			g.Players[slot].Position = slot
+			if g.Finished {
+				g.Players[slot].Usertype = plusertype[slot]
+				g.Players[slot].Kills = dskills[slot]
+				if (plusertype[slot] == "winner" || plusertype[slot] == "loser") && len(g.Players) > slot {
+					if len(dselodiff) > slot {
+						g.Players[slot].EloDiff = dselodiff[slot]
+					}
+					if len(dsratingdiff) > slot {
+						g.Players[slot].RatingDiff = dsratingdiff[slot]
+					}
+				}
+			} else {
+				g.Players[slot].Usertype = "fighter"
+				g.Players[slot].Kills = 0
+			}
+		}
+		// spew.Dump(g)
+		gms = append(gms, g)
+	}
+	ans, err := json.Marshal(gms)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Print(err.Error())
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+	// w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	io.WriteString(w, string(ans))
+	io.WriteString(w, string("\n"))
+	w.WriteHeader(http.StatusOK)
+}

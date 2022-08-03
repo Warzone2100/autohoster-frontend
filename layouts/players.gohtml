@@ -7,68 +7,91 @@
 		<meta content="Multihoster powered game autohosting solution" property="og:description">
 		<meta content="https://wz2100-autohost.net/games" property="og:url">
 		<title>Autohoster players leaderboard</title>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+		<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.css" rel="stylesheet">
+		<link href="https://unpkg.com/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" rel="stylesheet">
+		<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
+
+		<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/tableExport.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF/jspdf.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF-AutoTable/jspdf.plugin.autotable.js"></script>
+
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.js"></script>
+		
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/export/bootstrap-table-export.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
+		<script src="/static/tablehelpers.js"></script>
+		<style>
+			.expandme2 {
+				width: 3rem;
+			}
+		</style>
 	</head>
 	<body>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
-		<div class="px-4 py-5 my-5 container">
-			<div class="d-flex justify-content-between">
-				<div>
-					<h3>Autorating players</h3>
-					<small>{{len .Players}} total</small>
-				</div>
-				<div>
-					<form>
-						<div class="row">
-						<div class="col">
-							<select class="form-select" name="sort" style="width: 8rem">
-								<option value="autowon">Wins</option>
-								<option value="autolost">Losses</option>
-								<option value="autoplayed">Played</option>
-								<option value="elo2">Rating</option>
-								<option value="elo">Elo</option>
-								<option value="name">Name</option>
-								<option value="id">ID</option>
-								<option value="hash">Hash</option>
-							</select>
-						</div>
-						<div class="col">
-							<input type="submit" class="btn btn-primary" value="Sort">
-						</div>
-						</div>
-					</form>
-				</div>
+		<div class="px-4 py container">
+			<div id="table-toolbar">
+				<h4>Autohoster players</h4>
 			</div>
-			</table>
-			<table class="table">
+			<noscript>
+				Enable javascript to view table contents
+				<style> yes-script { display:none; } </style>
+			</noscript>
+			<yes-script>
+			<table id="table" class="smart-table"
+			data-url="/api/players"
+			data-filter-control="true"
+			data-sort-name="Elo"
+			data-sort-order="desc"
+			data-show-refresh="true"
+			data-toolbar="#table-toolbar"
+			data-cache="false"
+			data-toggle="table"
+			data-id-field="ID"
+			data-pagination="true"
+			data-page-size="50"
+			data-page-number="1"
+			data-pagination-loop="false"
+			data-show-extended-pagination="true"
+			data-page-list="[10, 15, 25, 35, 50, 100, all]"
+			data-buttons-prefix="btn-sm btn-primary"
+			data-classes="table table-striped table-sm"
+			data-search="true"
+			data-show-search-button="true"
+			{{/* data-side-pagination="server" */}}
+			{{/* data-search-highlight="true" */}}
+			data-show-export="true"
+			data-show-search-clear-button="true"
+			data-escape="true"
+			data-show-filter-control-switch="true"
+			data-filter-control-visible="false"
+			data-sticky-header="true">
 				<thead>
-					<td>№</td>
-					<td>Name</td>
-					<td>Rating</td>
-					<td>Elo</td>
-					<td>Played</td>
-					<td>Won</td>
-					<td>Lost</td>
-					<td>ID</td>
-					<td>Hash</td>
+					<tr>
+						<th data-formatter="rownumberFormatter" data-cell-style="rownumberStyler" data-class="expandme2"></th>
+						<th data-field="Name" data-sortable="true" data-class="width25" data-filter-control="input" data-formatter="nameFormatter">Name</th>
+						<th data-field="Elo2" data-sortable="true" data-filter-control="input">Rating</th>
+						<th data-field="Elo" data-sortable="true" data-filter-control="input">Elo</th>
+						<th data-field="Autoplayed" data-sortable="true" data-filter-control="input">Played</th>
+						<th data-field="Autolost" data-sortable="true" data-filter-control="input">Lost</th>
+						<th data-field="Autowon" data-sortable="true" data-filter-control="input">Won</th>
+						<th data-sortable="true" data-formatter="winrateFormatter" data-sorter="winrateSorter" data-filter-control="input">Winrate</th>
+						<th data-field="Hash" data-sortable="true" data-filter-control="input" data-formatter="hashFormatter">Hash</th>
+						<th data-field="ID" data-sortable="true" data-filter-control="input">ID</th>
+					</tr>
 				</thead>
-				<tbody>
-			{{range $pn, $p := .Players}}
-				<tr>
-					<td {{if eq (inc $pn) 1}}style="background: rgb(255,215,0); background: linear-gradient(90deg, rgba(255,215,0,0.5) 0%, rgba(255,215,0,0) 50%);"{{end}}
-						{{if eq (inc $pn) 2}}style="background: rgb(192,192,192); background: linear-gradient(90deg, rgba(192,192,192,0.5) 0%, rgba(192,192,192,0.0) 50%);"{{end}}
-						{{if eq (inc $pn) 3}}style="background: rgb(205,127,50); background: linear-gradient(90deg, rgba(205,127,50,0.5) 0%, rgba(205,127,50,0) 50%);"{{end}}>{{inc $pn}}</td>
-					<td title="{{$p.Hash}}">{{template "wzprofile" $p}}</td>
-					<td>{{$p.Elo2}}</td>
-					<td>{{$p.Elo}}</td>
-					<td>{{$p.Autoplayed}}</td>
-					<td>{{$p.Autowon}}</td>
-					<td>{{$p.Autolost}}</td>
-					<td>{{$p.ID}}</td>
-					<td>{{strcut $p.Hash 20}}</td>
-				</tr>
-			{{end}}
 			</table>
+			<yes-script>
+		</div>
+		<script>
+		$(function() {
+			$('#table').bootstrapTable()
+		})
+		</script>
 		</div>
 	</body>
 </html>
@@ -86,9 +109,26 @@
 		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
 		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>
 		<title>Autohoster player {{.Player.Name}}</title>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+		<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.css" rel="stylesheet">
+		<link href="https://unpkg.com/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" rel="stylesheet">
+		<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
+
+		<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/tableExport.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF/jspdf.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF-AutoTable/jspdf.plugin.autotable.js"></script>
+
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.js"></script>
+		
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/export/bootstrap-table-export.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
+		<script src="/static/tablehelpers.js"></script>
 	</head>
 	<body>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 container">
 			<h3 style="padding-bottom:18px">{{template "wzprofile" .Player}}</h3>
@@ -133,81 +173,67 @@
 				</table>
 			</details>
 			{{end}}
-			<table class="table">
-				<tr>
-					<th>ID</th>
-					<th>Time</th>
-					<th>Map,<br>Settings</th>
-					<th>Players</th>
-				</tr>
-				{{range $i, $e := .Games}}
-				<tr>
-					<td>{{$e.ID}}</td>
-					<td>{{$e.TimeStarted}}{{if $e.Finished}}<br>({{GameTimeToStringI $e.GameTime}}){{end}}</td>
-					<td>
-						{{$e.MapName}}<br>
-						<img class="icons icons-base{{$e.BaseLevel}}">
-						<img class="icons icons-alliance{{allianceToClassI $e.Alliances}}">
-						<img class="icons icons-scav{{boolto10 $e.Scavengers}}">
-					</td>
-					<td>
-						<div class="container">
-						<div class="row">
-							{{if $e.Finished}}
-							<div class="col-sm">
-								{{range $k, $player := $e.Players}}
-								{{if eq $player.Hash ""}}{{else}}
-								{{if eq $player.Usertype "winner"}}
-								<div class="row">
-									<div class="col-sm games-winner-name">{{template "wzprofile" $player}}</div>
-								</div>
-								{{end}}
-								{{end}}
-								{{end}}
-							</div>
-							<div class="col-sm">
-								{{range $k, $player := $e.Players}}
-								{{if eq $player.Hash ""}}{{else}}
-								{{if eq $player.Usertype "loser"}}
-								<div class="row">
-									<div class="col-sm games-loser-name">{{template "wzprofile" $player}}</div>
-									<!-- <div class="col-sm games-loser-name" title="Hash: {{$player.Hash}}">{{$player.Name}}</div>
-									<div class="col-sm">elo {{$player.EloDiff}}</div>
-									<div class="col-sm">kills {{$player.Kills}}</div> -->
-								</div>
-								{{end}}
-								{{end}}
-								{{end}}
-							</div>
-							{{else}}
-							<div class="col-sm">
-								{{range $k, $player := $e.Players}}
-								{{if eq $player.Hash ""}}{{else}}
-								<div class="row">
-									<div class="col-sm" title="Hash: {{$player.Hash}}">{{template "wzprofile" $player}}</div>
-								</div>
-								{{end}}
-								{{end}}
-							</div>
-							{{end}}
-						</div>
-						</div>
-					</td>
-					<td>
-						{{if $e.Finished}}
-						<a href="/games/{{$e.ID}}" class="btn btn-primary">More</a>
-						{{else}}
-						<button class="btn btn-primary" type="button" disabled>
-							<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-							In game
-						</button>
-						{{end}}
-					</td>
-				</tr>
-				{{end}}
+
+			<noscript>
+				Enable javascript to view table contents
+				<style> yes-script { display:none; } </style>
+			</noscript>
+			<yes-script>
+			<table id="table" class="smart-table"
+			data-url="/api/games"
+			data-filter-control="true"
+			data-sort-name="Elo"
+			data-sort-order="desc"
+			data-show-refresh="true"
+			data-toolbar="#table-toolbar"
+			data-cache="false"
+			data-toggle="table"
+			data-id-field="ID"
+			data-pagination="true"
+			data-page-size="50"
+			data-page-number="1"
+			data-pagination-loop="false"
+			data-show-extended-pagination="true"
+			data-page-list="[10, 15, 25, 35, 50, 100, all]"
+			data-buttons-prefix="btn-sm btn-primary"
+			data-classes="table table-striped table-sm"
+			data-search="true"
+			data-show-search-button="true"
+			{{/* data-side-pagination="server" */}}
+			{{/* data-search-highlight="true" */}}
+			data-show-export="true"
+			data-show-search-clear-button="true"
+			data-escape="true"
+			data-show-filter-control-switch="true"
+			data-filter-control-visible="false"
+			data-query-params="player={{.Player.ID}}"
+			{{/* data-show-footer="true" */}}
+			data-sticky-header="true"
+			data-buttons="loadButtons">
+				<thead>
+					<tr>
+						<th data-rowspan="2" data-halign="center" data-formatter="IDFormatter" data-field="ID">ID</th>
+						<th data-rowspan="2" data-halign="center" data-formatter="TimeFormatter" data-field="TimeStarted">Time</th>
+						<th data-rowspan="2" data-halign="center" data-field="MapName" data-sortable="true" data-filter-control="select">Map</th>
+						<th data-colspan="3" data-halign="center" data-class="noBottomBorder">Settings</th>
+						<th data-colspan="2" data-halign="center" data-class="noBottomBorder" data-formatter="playersFormatter" data-class="width45" data-filter-control="input">Players</th>
+						<th data-rowspan="2" data-halign="center" data-formatter="detailsBtn"></th>
+					</tr>
+					<tr>
+						<th data-class="hiddenrow" data-field="BaseLevel" data-formatter="BaseLevelSettingsFormatter"></th>
+						<th data-class="hiddenrow" data-field="Scavengers" data-formatter="ScavengersSettingsFormatter"></th>
+						<th data-class="hiddenrow" data-field="Alliances" data-formatter="AlliancesSettingsFormatter"></th>
+						<th data-class="hiddenrow" data-formatter="playersFormatterA"></th>
+						<th data-class="hiddenrow" data-formatter="playersFormatterB"></th>
+					</tr>
+				</thead>
 			</table>
+			</yes-script>
 		</div>
 		<script>
+		$(function() {
+			$('#table').bootstrapTable()
+		})
 		function PlotClassData(JsonData, ctx, title, subtitle) {
 			const resp = JSON.parse(JsonData);
 			if(Object.keys(resp).length == 0) {

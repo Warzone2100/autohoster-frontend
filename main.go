@@ -648,6 +648,8 @@ func main() {
 	router.HandleFunc("/api/allowjoining/{hash:[0-9a-z]+}", APIgetPlayerAllowedJoining).Methods("GET")
 	router.HandleFunc("/api/approvedhashes", APIgetAllowedModerators).Methods("GET")
 	router.HandleFunc("/api/elohistory/{pid:[0-9]+}", APIgetElodiffChartPlayer).Methods("GET")
+	router.HandleFunc("/api/players", APIgetLeaderboard).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/games", APIgetGames).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 

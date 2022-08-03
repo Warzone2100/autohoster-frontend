@@ -354,3 +354,57 @@
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+
+.leaderboardGold {
+  background: rgb(255,215,0);
+  background: linear-gradient(90deg, rgba(255,215,0,0.5) 0%, rgba(255,215,0,0) 75%);
+}
+
+.leaderboardSilver {
+  background: rgb(192,192,192);
+  background: linear-gradient(90deg, rgba(192,192,192,0.5) 0%, rgba(192,192,192,0.0) 75%);
+}
+
+.leaderboardBronze {
+  background: rgb(205,127,50);
+  background: linear-gradient(90deg, rgba(205,127,50,0.5) 0%, rgba(205,127,50,0) 75%);
+}
+
+[data-theme=dark] .smart-table {
+  color: #ddd;
+}
+[data-theme=dark] .sticky-header {
+  background-color: #222;
+}
+[data-theme=dark] .table-striped > tbody > tr:nth-of-type(2n+1) {
+  color: #ddd;
+}
+[data-theme=dark] .fixed-table-loading {
+  color: #ddd;
+}
+
+.search-input {
+  padding: 2px;
+}
+.filter-control > select {
+  padding: 2px;
+}
+.width45 {
+  width: 45%;
+}
+.width25 {
+  width: 25%;
+}
+.buttons-toolbar {
+  text-align: right;
+}
+
+.hiddenrow > div:nth-child(1) {
+  padding: 0 !important;
+}
+.noBottomBorder {
+  border-bottom: 0;
+}
+.table > :not(caption) > * > * {
+  border-bottom: 0;
+}
