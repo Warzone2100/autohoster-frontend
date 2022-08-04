@@ -22,10 +22,6 @@ type PlayerLeaderboard struct {
 	Userid     int
 }
 
-func PlayersListHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("players", w, r, map[string]interface{}{})
-}
-
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	pids := params["id"]

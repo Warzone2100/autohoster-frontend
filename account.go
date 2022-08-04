@@ -55,9 +55,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
-func accountHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("account", w, r, map[string]interface{}{})
-}
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	sessionManager.Destroy(r.Context())
 	w.Header().Set("Refresh", "2; /login")

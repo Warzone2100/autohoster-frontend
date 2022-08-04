@@ -304,15 +304,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	uptimetime, _ := time.ParseDuration(strconv.Itoa(int(uptime)) + "s")
 	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem, "Uptime": uptimetime})
 }
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("about", w, r, map[string]interface{}{})
-}
-func statsHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("stats", w, r, map[string]interface{}{})
-}
-func legalHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("legal", w, r, map[string]interface{}{})
-}
 func autohosterControllHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("autohoster-controll", w, r, map[string]interface{}{})
 }
@@ -321,17 +312,6 @@ func robotsHandler(w http.ResponseWriter, r *http.Request) {
 }
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./static/favicon.ico")
-}
-func microsoftAuthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Length", "111")
-	fmt.Fprint(w, `{
-  "associatedApplications": [
-    {
-      "applicationId": "88650e7e-efee-4857-b9a9-cf580a00ef43"
-    }
-  ]
-}`)
 }
 
 type Ra struct {
@@ -593,15 +573,14 @@ func main() {
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	router.HandleFunc("/favicon.ico", faviconHandler)
 	router.HandleFunc("/robots.txt", robotsHandler)
-	router.HandleFunc("/.well-known/microsoft-identity-association.json", microsoftAuthHandler)
 	router.HandleFunc("/", indexHandler)
 
-	router.HandleFunc("/legal", legalHandler)
-	router.HandleFunc("/about", aboutHandler)
+	router.HandleFunc("/legal", basicLayoutHandler("legal"))
+	router.HandleFunc("/about", basicLayoutHandler("about"))
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/logout", logoutHandler)
 	router.HandleFunc("/register", registerHandler)
-	router.HandleFunc("/account", accountHandler)
+	router.HandleFunc("/account", basicLayoutHandler("account"))
 	router.HandleFunc("/users", usersHandler)
 	router.HandleFunc("/activate", emailconfHandler)
 	router.HandleFunc("/recover", recoverPasswordHandler)
@@ -612,17 +591,17 @@ func main() {
 	router.HandleFunc("/request", hostRequestHandler)
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
-	router.HandleFunc("/autohoster", autohosterControllHandler)
+	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
 	router.HandleFunc("/preset-edit", presetEditorHandler)
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
-	router.HandleFunc("/games", listDbGamesHandler)
+	router.HandleFunc("/games", basicLayoutHandler("games2"))
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
-	router.HandleFunc("/players", PlayersListHandler)
+	router.HandleFunc("/players", basicLayoutHandler("players"))
 	router.HandleFunc("/players/{id:[0-9]+}", PlayersHandler)
-	router.HandleFunc("/stats", statsHandler)
+	router.HandleFunc("/stats", basicLayoutHandler("stats"))
 	router.HandleFunc("/resstat", resstatHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)

@@ -181,10 +181,6 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func listDbGamesHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("games2", w, r, map[string]interface{}{})
-}
-
 func GameTimeToString(t float64) string {
 	return (time.Duration(int(t/1000)) * time.Second).String()
 }
