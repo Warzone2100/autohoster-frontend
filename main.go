@@ -134,10 +134,6 @@ var layoutFuncs = template.FuncMap{
 	"FormatBytes":   ByteCountIEC,
 	"FormatPercent": FormatPercent,
 	"tostr": func(val interface{}) string {
-		v := reflect.ValueOf(val)
-		if v.Kind() == reflect.Ptr {
-			v = v.Elem()
-		}
 		if d, ok := val.(uint32); ok {
 			return fmt.Sprint(d)
 		}
@@ -303,9 +299,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	uptime, _ := host.Uptime()
 	uptimetime, _ := time.ParseDuration(strconv.Itoa(int(uptime)) + "s")
 	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem, "Uptime": uptimetime})
-}
-func autohosterControllHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("autohoster-controll", w, r, map[string]interface{}{})
 }
 func robotsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "User-agent: *\nDisallow: /\n\n\n")

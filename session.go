@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	keyUserUsername = "User.Username"
-	keyUserAuthorized = "UserAuthorized"
+	keyUserUsername       = "User.Username"
+	keyUserAuthorized     = "UserAuthorized"
 	valUserAuthorizedTrue = "True"
 )
 
