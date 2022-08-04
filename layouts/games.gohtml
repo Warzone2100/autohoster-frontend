@@ -457,7 +457,7 @@
 				let ctx = document.getElementById('GraphCanvas').getContext('2d');
 				let l = [];
 				dfields.forEach((v) => {
-					dany[v] = Object.assign({}, dtempl); //JSON.parse(JSON.stringify(dtempl));
+					dany[v] = JSON.parse(JSON.stringify(dtempl));
 				});
 				resp.forEach((tick, i) => {
 					let minutes = Math.floor(tick.gametime / 60000);
