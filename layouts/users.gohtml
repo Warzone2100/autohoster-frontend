@@ -19,7 +19,6 @@
 					<td>Any</td>
 					<td>Reason</td>
 					<td>Last Request</td>
-					<td>WZold</td>
 					<td>WZnew</td>
 				</tr>
 				{{range $i, $e := .Users}}
@@ -51,8 +50,7 @@
 							<input type="submit" value="S">
 						</form></div></td>
 					<td>{{$e.last_host_request}}</td>
-					<td>{{$e.wzprofile}}</td>
-					<td>{{$e.wzprofile2}}</td>
+					<td><a href="/players/{{$e.wzprofile2}}">{{$e.wzprofile2}}</a></td>
 				</tr>
 				{{end}}
 			</table>
