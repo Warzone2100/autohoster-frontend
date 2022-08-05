@@ -190,7 +190,7 @@ function rownumberStyler(value, row, idx) {
 	}
 }
 function winrateSorter(a, b, ra, rb) {
-	if (((ra.Autoplayed==0?0:ra.Autowon/ra.Autoplayed)*100) > ((rb.Autoplayed==0?0:rb.Autowon/rb.Autoplayed)*100)) return 1;
-	if (((ra.Autoplayed==0?0:ra.Autowon/ra.Autoplayed)*100) < ((rb.Autoplayed==0?0:rb.Autowon/rb.Autoplayed)*100)) return -1;
+	if ((ra.Autowon/ra.Autoplayed+0.5) > (rb.Autowon/rb.Autoplayed+0.5)) return 1;
+	if ((ra.Autowon/ra.Autoplayed+0.5) < (rb.Autowon/rb.Autoplayed+0.5)) return -1;
 	return 0;
 }
