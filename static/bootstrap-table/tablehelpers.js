@@ -173,7 +173,7 @@ function hashFormatter(value, row) {
 	return value.slice(0, 15) + '...'
 }
 function winrateFormatter(value, row) {
-	return ((row.Autoplayed==0?0:row.Autowon/row.Autoplayed)*100).toFixed(2) + "%"
+	return ((row.Autoplayed==0?0:row.Autowon/(row.Autolost+row.Autolost))*100).toFixed(2) + "%"
 }
 function rownumberFormatter(value, row, idx) {
 	return idx+1
@@ -190,7 +190,7 @@ function rownumberStyler(value, row, idx) {
 	}
 }
 function winrateSorter(a, b, ra, rb) {
-	if ((ra.Autowon/(ra.Autoplayed+0.05)) > (rb.Autowon/(rb.Autoplayed+0.05))) return 1;
-	if ((ra.Autowon/(ra.Autoplayed+0.05)) < (rb.Autowon/(rb.Autoplayed+0.05))) return -1;
+	if ((ra.Autowon/(ra.Autolost+ra.Autolost+0.05)) > (rb.Autowon/(rb.Autolost+ra.Autolost+0.05))) return 1;
+	if ((ra.Autowon/(ra.Autolost+ra.Autolost+0.05)) < (rb.Autowon/(rb.Autolost+ra.Autolost+0.05))) return -1;
 	return 0;
 }
