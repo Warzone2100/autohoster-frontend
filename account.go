@@ -156,7 +156,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 func emailconfHandler(w http.ResponseWriter, r *http.Request) {
 	keys, ok := r.URL.Query()["code"]
-	if !ok || len(keys[0]) < 1 {
+	if !ok || len(keys) == 0 || len(keys[0]) < 1 || keys[0] == "resetcomplete" {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Confirm code does not exist", "msgred": true})
 		return
 	}
