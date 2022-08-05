@@ -173,7 +173,7 @@ function hashFormatter(value, row) {
 	return value.slice(0, 15) + '...'
 }
 function winrateFormatter(value, row) {
-	return ((row.Autoplayed==0?0:row.Autowon/(row.Autowon+row.Autolost))*100).toFixed(2) + "%"
+	return (((row.Autowon+row.Autolost)==0?0:row.Autowon/(row.Autowon+row.Autolost))*100).toFixed(2) + "%"
 }
 function rownumberFormatter(value, row, idx) {
 	return idx+1
