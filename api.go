@@ -47,13 +47,14 @@ func APIcall(c func(http.ResponseWriter, *http.Request) (int, interface{})) func
 				}
 			}
 		}
-		w.WriteHeader(code)
 		w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
 		if len(response) > 0 {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.Header().Set("Content-Length", strconv.Itoa(len(response)))
+			w.WriteHeader(code)
 			w.Write(response)
-			w.Write([]byte("\n"))
+		} else {
+			w.WriteHeader(code)
 		}
 	}
 }
@@ -741,6 +742,7 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 			gms[i].Players[j].Userid = p.Userid
 		}
 	}
+	log.Printf("debug")
 	return 200, map[string]interface{}{
 		"total":            totals,
 		"totalNotFiltered": totalsNoFilter,
