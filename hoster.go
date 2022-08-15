@@ -582,7 +582,7 @@ func MultihosterRequest(url string) (bool, string) {
 		log.Print(err)
 		return false, err.Error()
 	}
-	bodyString := string(bodyBytes)
+	bodyString := string(bodyBytes) + "\n"
 	return true, bodyString
 }
 

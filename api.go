@@ -17,6 +17,47 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+func APIcall(c func(http.ResponseWriter, *http.Request) (int, interface{})) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code, content := c(w, r)
+		if code <= 0 {
+			return
+		}
+		var response []byte
+		var err error
+		if content != nil {
+			if bcontent, ok := content.([]byte); ok {
+				if json.Valid(bcontent) {
+					response = bcontent
+				}
+			} else if econtent, ok := content.(error); ok {
+				log.Printf("Error inside handler [%v]: %v", r.URL.Path, econtent.Error())
+				response, err = json.Marshal(map[string]interface{}{"error": econtent.Error()})
+				if err != nil {
+					code = 500
+					response = []byte(`{"error": "Failed to marshal json response"}`)
+					log.Println("Failed to marshal json content: ", err.Error())
+				}
+			} else {
+				response, err = json.Marshal(content)
+				if err != nil {
+					code = 500
+					response = []byte(`{"error": "Failed to marshal json response"}`)
+					log.Println("Failed to marshal json content: ", err.Error())
+				}
+			}
+		}
+		w.WriteHeader(code)
+		w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+		if len(response) > 0 {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.Header().Set("Content-Length", strconv.Itoa(len(response)))
+			w.Write(response)
+			w.Write([]byte("\n"))
+		}
+	}
+}
+
 func APItryReachMultihoster(w http.ResponseWriter, r *http.Request) {
 	s, m := RequestStatus()
 	io.WriteString(w, m)
@@ -27,28 +68,21 @@ func APItryReachMultihoster(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func APIgetGraphData(w http.ResponseWriter, r *http.Request) {
+func APIgetGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j string
 	derr := dbpool.QueryRow(context.Background(), `SELECT json_agg(frames)::text FROM frames WHERE game = $1`, gid).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return 204, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Content-Length", strconv.Itoa(len(j)))
-	io.WriteString(w, j)
-	w.WriteHeader(http.StatusOK)
+	return 200, []byte(j)
 }
 
-func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) {
+func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	interval := params["interval"]
 	var j string
@@ -57,25 +91,17 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) {
 	from generate_series(date_trunc($1, now() - '1 year 7 days'::interval), now(), $2::interval) as b;`, interval, "1 "+interval).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return 204, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, j)
-	w.WriteHeader(http.StatusOK)
+	return 200, []byte(j)
 }
 
-func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) {
+func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(context.Background(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
 	if derr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	defer rows.Close()
 	re := make(map[int]int)
@@ -83,25 +109,14 @@ func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) {
 		var d, c int
 		err := rows.Scan(&c, &d)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Print(err.Error())
-			return
+			return 500, err
 		}
 		re[d] = c
 	}
-	j, err := json.Marshal(re)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(j))
-	w.WriteHeader(http.StatusOK)
+	return 200, re
 }
 
-func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) {
+func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(context.Background(),
 		`SELECT
 			b::TEXT,
@@ -112,12 +127,9 @@ func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) {
 		FROM generate_series((select min(timestarted) from games), now(), '1 day'::INTERVAL) AS b;`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return 204, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	defer rows.Close()
 	re := make(map[string]int)
@@ -126,34 +138,17 @@ func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) {
 		var c int
 		err := rows.Scan(&d, &c)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Print(err.Error())
-			return
+			return 500, err
 		}
 		re[d] = c
 	}
-	j, err := json.Marshal(re)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Write(j)
-	w.WriteHeader(http.StatusOK)
+	return 200, re
 }
 
-func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(context.Background(), `select mapname, count(*) as c from games group by mapname order by c desc`)
 	if derr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	defer rows.Close()
 	re := make(map[string]int)
@@ -162,32 +157,16 @@ func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) {
 		var n string
 		err := rows.Scan(&n, &c)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Print(err.Error())
-			return
+			return 500, derr
 		}
 		re[n] = c
 	}
-	j, err := json.Marshal(re)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(j))
-	w.WriteHeader(http.StatusOK)
+	return 200, re
 }
 
-func APIgetReplayFile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	if !checkUserAuthorized(r) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
+		return 401, nil
 	}
 	params := mux.Vars(r)
 	gid := params["gid"]
@@ -195,130 +174,87 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) {
 	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(gamedir) FROM games WHERE id = $1;`, gid).Scan(&dir)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return 204, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	if dir == "-1" {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		return 204, nil
 	}
 	log.Print(dir)
 	replaydir := os.Getenv("MULTIHOSTER_GAMEDIRBASE") + dir + "replay/multiplay/"
 	files, err := ioutil.ReadDir(replaydir)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
+		return 500, err
 	}
 	for _, f := range files {
 		// log.Println(f.Name())
 		if strings.HasSuffix(f.Name(), ".wzrp") {
 			h, err := os.Open(replaydir + f.Name())
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				log.Print(err.Error())
-				return
+				return 500, err
 			}
 			var header [4]byte
 			n, err := io.ReadFull(h, header[:])
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				log.Print(err.Error())
-				return
+				return 500, err
 			}
 			h.Close()
 			if n == 4 && string(header[:]) == "WZrp" {
 				w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
 				w.Header().Set("Content-Disposition", "attachment; filename=\"autohoster-game-"+gid+".wzrp\"")
 				http.ServeFile(w, r, replaydir+f.Name())
-				return
+				return -1, nil
 			}
 		}
 	}
-	w.WriteHeader(http.StatusNotFound)
+	return 204, nil
 }
 
-func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	reslog := "0"
 	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog) FROM games WHERE id = $1;`, gid).Scan(&reslog)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return 204, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	if reslog == "-1" {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		return 204, nil
 	}
 	c, err := LoadClassification()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
+		return 500, err
 	}
 	var resl []resEntry
 	err = json.Unmarshal([]byte(reslog), &resl)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
+		return 500, err
 	}
-	ans, err := json.Marshal(CountClassification(c, resl))
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(ans))
-	io.WriteString(w, string("\n"))
-	w.WriteHeader(http.StatusOK)
+	return 200, CountClassification(c, resl)
 }
 
-func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	phash := params["hash"]
 	badplayed := 0
 	derr := dbpool.QueryRow(context.Background(), `SELECT COUNT(id) FROM games WHERE (SELECT id FROM players WHERE hash = $1) = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true;`, phash).Scan(&badplayed)
 	if derr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	w.WriteHeader(http.StatusOK)
 	io.WriteString(w, fmt.Sprint(badplayed))
 	log.Println(badplayed)
+	return -1, nil
 }
 
-func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(context.Background(), `select hash from players join users on players.id = users.wzprofile2 where users.allow_preset_request = true;`)
 	if derr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	defer rows.Close()
 	re := []string{}
@@ -326,22 +262,11 @@ func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) {
 		var h string
 		err := rows.Scan(&h)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Print(err.Error())
-			return
+			return 500, err
 		}
 		re = append(re, h)
 	}
-	j, err := json.Marshal(re)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(j))
-	w.WriteHeader(http.StatusOK)
+	return 200, re
 }
 
 type resEntry struct {
@@ -388,21 +313,15 @@ func CountClassification(c []map[string]string, resl []resEntry) (ret map[int]ma
 	return
 }
 
-func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	pid, err := strconv.Atoi(params["pid"])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return 400, nil
 	}
 	filteri, err := strconv.Atoi(params["category"])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return 400, nil
 	}
 	filter := ""
 	filter2 := ""
@@ -431,12 +350,9 @@ func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) {
 		`+filter2, pid)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return 204, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	defer rows.Close()
 	rowcount := 0
@@ -450,9 +366,7 @@ func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) {
 		var gid int
 		err := rows.Scan(&gid, &h, &p)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Print(err.Error())
-			return
+			return 500, err
 		}
 		playerfound := false
 		playersreallen := 0
@@ -471,21 +385,17 @@ func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) {
 		}
 		if !playerfound {
 			log.Printf("Can not find player %d in game %d THIS MUST NOT HAPPEN", pid, gid)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return 500, nil
 		}
 		researches = append(researches, h)
 		gids = append(gids, gid)
 	}
 	if rowcount == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		return 204, nil
 	}
 	classif, err := LoadClassification()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
+		return 500, err
 	}
 	ret := map[string]int{}
 	for i, j := range researches {
@@ -506,25 +416,14 @@ func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	ans, err := json.Marshal(ret)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(ans))
-	io.WriteString(w, string("\n"))
-	w.WriteHeader(http.StatusOK)
+	return 200, ret
 }
 
-func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) {
+func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	pid, err := strconv.Atoi(params["pid"])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return 400, nil
 	}
 	rows, derr := dbpool.Query(context.Background(),
 		`SELECT
@@ -544,12 +443,9 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) {
 		order by timestarted asc`, pid)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNoContent)
-			return
+			return 204, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, derr
 	}
 	defer rows.Close()
 	type eloHist struct {
@@ -566,9 +462,7 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) {
 		var players []int
 		err := rows.Scan(&gid, &ediff, &rdiff, &timestarted, &players)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Print(err.Error())
-			return
+			return 500, err
 		}
 		k := -1
 		for i, p := range players {
@@ -597,20 +491,10 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) {
 		}
 		prevts = timestarted
 	}
-	ans, err := json.Marshal(h)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(ans))
-	io.WriteString(w, string("\n"))
-	w.WriteHeader(http.StatusOK)
+	return 200, h
 }
 
-func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) {
+func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
 	// dbLimit := parseQueryInt(r, "limit", 5)
 	// dbOffset := parseQueryInt(r, "offset", 0)
@@ -628,12 +512,9 @@ func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) {
 	WHERE autoplayed > 0`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println("Database query error: " + derr.Error())
+			return 204, nil
 		}
-		return
+		return 500, derr
 	}
 	defer rows.Close()
 	var P []PlayerLeaderboard
@@ -642,21 +523,10 @@ func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) {
 		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid)
 		P = append(P, pp)
 	}
-	ans, err := json.Marshal(P)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	// w.Header().Set("Access-Control-Allow-Headers", "*")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(ans))
-	io.WriteString(w, string("\n"))
-	w.WriteHeader(http.StatusOK)
+	return 200, P
 }
 
-func APIgetGames(w http.ResponseWriter, r *http.Request) {
+func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	reqLimit := parseQueryInt(r, "limit", 50)
 	if reqLimit > 200 {
 		reqLimit = 200
@@ -838,16 +708,9 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) {
 		select {
 		case derr := <-echan:
 			if derr == pgx.ErrNoRows {
-				w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-				w.Header().Set("Content-Type", "application/json; charset=utf-8")
-				io.WriteString(w, `{"total": 0, "totalNotFiltered": 0, "rows": []}`)
-				io.WriteString(w, string("\n"))
-				w.WriteHeader(http.StatusOK)
-			} else {
-				log.Println("Database query error: " + derr.Error())
-				w.WriteHeader(http.StatusInternalServerError)
+				return 200, []byte(`{"total": 0, "totalNotFiltered": 0, "rows": []}`)
 			}
-			return
+			return 500, derr
 		case gms = <-growsc:
 			gpresent = true
 		case pmap = <-pmapc:
@@ -878,19 +741,9 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) {
 			gms[i].Players[j].Userid = p.Userid
 		}
 	}
-	ans, err := json.Marshal(map[string]interface{}{
+	return 200, map[string]interface{}{
 		"total":            totals,
 		"totalNotFiltered": totalsNoFilter,
 		"rows":             gms,
-	})
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(err.Error())
-		return
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	io.WriteString(w, string(ans))
-	io.WriteString(w, string("\n"))
-	w.WriteHeader(http.StatusOK)
 }
