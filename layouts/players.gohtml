@@ -201,16 +201,16 @@
 			data-page-list="[10, 15, 25, 35, 50, 100, all]"
 			data-buttons-prefix="btn-sm btn-primary"
 			data-classes="table table-striped table-sm"
-			data-search="true"
+			{{/* data-search="true" */}}
 			data-show-search-button="true"
-			{{/* data-side-pagination="server" */}}
+			data-side-pagination="server"
 			{{/* data-search-highlight="true" */}}
 			data-show-export="true"
 			data-show-search-clear-button="true"
 			data-escape="true"
 			data-show-filter-control-switch="true"
 			data-filter-control-visible="false"
-			data-query-params="player={{.Player.ID}}"
+			data-query-params="queryParams"
 			{{/* data-show-footer="true" */}}
 			data-sticky-header="true"
 			data-buttons="loadButtons">
@@ -235,8 +235,19 @@
 			</yes-script>
 		</div>
 		<script>
+		function queryParams(params) {
+			params.player = {{.Player.ID}}
+			return params
+		}
 		$(function() {
 			$('#table').bootstrapTable()
+			$("#table").on("page-change.bs.table", function (number, size) {
+				window.scrollTo({
+					top: 0,
+					left: 0,
+					behavior: 'smooth'
+				});
+			});
 		})
 		function PlotClassData(JsonData, ctx, title, subtitle) {
 			const resp = JSON.parse(JsonData);
