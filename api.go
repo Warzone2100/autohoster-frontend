@@ -657,125 +657,238 @@ func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func APIgetGames(w http.ResponseWriter, r *http.Request) {
+	reqLimit := parseQueryInt(r, "limit", 50)
+	if reqLimit > 200 {
+		reqLimit = 200
+	}
+	if reqLimit <= 0 {
+		reqLimit = 1
+	}
+	reqOffset := parseQueryInt(r, "offset", 0)
+	if reqOffset < 0 {
+		reqOffset = 0
+	}
+	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	fieldmappings := map[string]string{
+		"TimeStarted": "timestarted",
+		"TimeEnded":   "timeended",
+		"ID":          "id",
+		"MapName":     "mapname",
+		"GameTime":    "gametime",
+	}
+	reqSortField := parseQueryStringMapped(r, "sort", "timestarted", fieldmappings)
+
+	reqFilterJ := parseQueryString(r, "filter", "")
+	reqFilterFields := map[string]string{}
+	reqDoFilters := false
+	if reqFilterJ != "" {
+		err := json.Unmarshal([]byte(reqFilterJ), &reqFilterFields)
+		if err == nil && len(reqFilterFields) > 0 {
+			reqDoFilters = true
+		}
+	}
+
 	wherecase := "WHERE deleted = false AND hidden = false"
 	if sessionGetUsername(r) == "Flex seal" {
 		wherecase = ""
 	}
-	limiter := "LIMIT 5000"
-	limiterparam, limiterparamok := r.URL.Query()["all"]
-	if limiterparamok && len(limiterparam) >= 1 && limiterparam[0] == "true" {
-		limiter = ""
-	}
-	playerfilter, playerfilterok := r.URL.Query()["player"]
-	if playerfilterok && len(playerfilter) >= 1 {
-		pid, err := strconv.Atoi(playerfilter[0])
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+	pid := parseQueryInt(r, "player", -1)
+	if pid > 0 {
 		if wherecase == "" {
 			wherecase = fmt.Sprintf("WHERE %d = any(games.players)", pid)
 		} else {
 			wherecase += fmt.Sprintf(" AND %d = any(games.players)", pid)
 		}
 	}
-	rows, derr := dbpool.Query(context.Background(), `
-	SELECT
-		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
-		players, teams, colour, usertype,
-		mapname, maphash,
-		baselevel, powerlevel, scavs, alliancetype,
-		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames, kills,
-		coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-		hidden, calculated, debugtriggered
-	FROM games
-	JOIN players as p ON p.id = any(games.players)
-	`+wherecase+`
-	GROUP BY gid
-	ORDER BY timestarted DESC
-	`+limiter+`;`)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			log.Println("Database query error: " + derr.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+	whereargs := []interface{}{}
+	if reqDoFilters {
+		val, ok := reqFilterFields["MapName"]
+		if ok {
+			whereargs = append(whereargs, val)
+			if wherecase == "" {
+				wherecase = "WHERE mapname = $1"
+			} else {
+				wherecase += " AND mapname = $1"
+			}
 		}
-		return
 	}
-	defer rows.Close()
+
+	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
+	offset := fmt.Sprintf("OFFSET %d", reqOffset)
+
+	totalsc := make(chan int)
+	var totals int
+	totalspresent := false
+
+	totalsNoFilterc := make(chan int)
+	var totalsNoFilter int
+	totalsNoFilterpresent := false
+
+	growsc := make(chan []DbGamePreview)
 	var gms []DbGamePreview
-	for rows.Next() {
-		var g DbGamePreview
-		var plid []int
-		var plteam []int
-		var plcolour []int
-		var plusertype []string
-		var plsj []string
-		var dskills []int
-		var dselodiff []int
-		var dsratingdiff []int
-		err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
-			&plid, &plteam, &plcolour, &plusertype,
-			&g.MapName, &g.MapHash, &g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances, &plsj,
-			&dskills, &dselodiff, &dsratingdiff, &g.Hidden, &g.Calculated, &g.DebugTriggered)
-		if err != nil {
-			log.Println("Database scan error: " + err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+	gpresent := false
+
+	pmapc := make(chan map[int]DbGamePlayerPreview)
+	var pmap map[int]DbGamePlayerPreview
+	ppresent := false
+
+	echan := make(chan error)
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(context.Background(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
+		if derr != nil {
+			echan <- derr
 			return
 		}
-		var np [11]DbGamePlayerPreview
-		for pi, pv := range plsj {
-			err := json.Unmarshal([]byte(pv), &np[pi])
+		totalsNoFilterc <- c
+	}()
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(context.Background(), `select count(games) from games `+wherecase+`;`, whereargs...).Scan(&c)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsc <- c
+	}()
+	go func() {
+		req := `SELECT
+			id, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timeended, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
+			players, teams, colour, usertype,
+			mapname, maphash,
+			baselevel, powerlevel, scavs, alliancetype,
+			coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
+			hidden, calculated, debugtriggered
+		FROM games ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + `;`
+		rows, derr := dbpool.Query(context.Background(), req, whereargs...)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		defer rows.Close()
+		gmsStage := []DbGamePreview{}
+		for rows.Next() {
+			g := DbGamePreview{}
+			var splayers []int
+			var steams []int
+			var scolour []int
+			var susertype []string
+			var selodiff []int
+			var sratingdiff []int
+			err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+				&splayers, &steams, &scolour, &susertype,
+				&g.MapName, &g.MapHash,
+				&g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances,
+				&selodiff, &sratingdiff, &g.Hidden, &g.Calculated, &g.DebugTriggered)
 			if err != nil {
-				log.Println("Json unpack error: " + err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
+				echan <- err
 				return
 			}
-		}
-		for slot, nid := range plid {
-			gpi := -1
-			for pi, pv := range np {
-				if pv.ID == nid {
-					gpi = pi
-					break
+			for i, p := range splayers {
+				if p == -1 {
+					continue
+				}
+				// log.Printf("Filling player %v", i)
+				g.Players[i].Position = i
+				g.Players[i].ID = p
+				g.Players[i].Team = steams[i]
+				g.Players[i].Colour = scolour[i]
+				if len(susertype) > i {
+					g.Players[i].Usertype = susertype[i]
+				}
+				if len(selodiff) > i {
+					g.Players[i].EloDiff = selodiff[i]
+				}
+				if len(sratingdiff) > i {
+					g.Players[i].RatingDiff = sratingdiff[i]
 				}
 			}
-			if gpi == -1 {
-				// log.Print("Failed to find player " + strconv.Itoa(slot) + " for game " + strconv.Itoa(g.Id))
+			gmsStage = append(gmsStage, g)
+		}
+		growsc <- gmsStage
+	}()
+	go func() {
+		req := `SELECT
+			p.id, p.name, p.hash, p.elo, p.elo2, p.autoplayed, p.autowon, p.autolost, coalesce(u.id, -1)
+		FROM players as p
+		LEFT JOIN users as u ON u.wzprofile2 = p.id
+		WHERE p.id = any((select distinct unnest(a.players)
+				FROM (SELECT players FROM games ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + `) as a));`
+		// log.Println(req)
+		rows, derr := dbpool.Query(context.Background(), req, whereargs...)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		defer rows.Close()
+		pmapStage := map[int]DbGamePlayerPreview{}
+		for rows.Next() {
+			p := DbGamePlayerPreview{}
+			err := rows.Scan(&p.ID, &p.Name, &p.Hash, &p.Elo, &p.Elo2, &p.Autoplayed, &p.Autowon, &p.Autolost, &p.Userid)
+			if err != nil {
+				echan <- err
+				return
+			}
+			pmapStage[p.ID] = p
+		}
+		pmapc <- pmapStage
+	}()
+	for !(gpresent && ppresent && totalspresent && totalsNoFilterpresent) {
+		select {
+		case derr := <-echan:
+			if derr == pgx.ErrNoRows {
+				w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				io.WriteString(w, `{"total": 0, "totalNotFiltered": 0, "rows": []}`)
+				io.WriteString(w, string("\n"))
+				w.WriteHeader(http.StatusOK)
+			} else {
+				log.Println("Database query error: " + derr.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			return
+		case gms = <-growsc:
+			gpresent = true
+		case pmap = <-pmapc:
+			ppresent = true
+		case totals = <-totalsc:
+			totalspresent = true
+		case totalsNoFilter = <-totalsNoFilterc:
+			totalsNoFilterpresent = true
+		}
+	}
+	for i := range gms {
+		for j := range gms[i].Players {
+			if gms[i].Players[j].ID <= 0 {
 				continue
 			}
-			g.Players[slot] = np[gpi]
-			g.Players[slot].Team = plteam[slot]
-			g.Players[slot].Colour = plcolour[slot]
-			g.Players[slot].Position = slot
-			if g.Finished {
-				g.Players[slot].Usertype = plusertype[slot]
-				g.Players[slot].Kills = dskills[slot]
-				if (plusertype[slot] == "winner" || plusertype[slot] == "loser") && len(g.Players) > slot {
-					if len(dselodiff) > slot {
-						g.Players[slot].EloDiff = dselodiff[slot]
-					}
-					if len(dsratingdiff) > slot {
-						g.Players[slot].RatingDiff = dsratingdiff[slot]
-					}
-				}
-			} else {
-				g.Players[slot].Usertype = "fighter"
-				g.Players[slot].Kills = 0
+			p, ok := pmap[gms[i].Players[j].ID]
+			if !ok {
+				log.Printf("Game %v has unknown player %v (%v)", gms[i].ID, gms[i].Players[j].ID, gms[i].Players)
+				continue
 			}
+			gms[i].Players[j].Name = p.Name
+			gms[i].Players[j].Hash = p.Hash
+			gms[i].Players[j].Elo = p.Elo
+			gms[i].Players[j].Elo2 = p.Elo2
+			gms[i].Players[j].Autoplayed = p.Autoplayed
+			gms[i].Players[j].Autolost = p.Autolost
+			gms[i].Players[j].Autowon = p.Autowon
+			gms[i].Players[j].Userid = p.Userid
 		}
-		// spew.Dump(g)
-		gms = append(gms, g)
 	}
-	ans, err := json.Marshal(gms)
+	ans, err := json.Marshal(map[string]interface{}{
+		"total":            totals,
+		"totalNotFiltered": totalsNoFilter,
+		"rows":             gms,
+	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Print(err.Error())
 		return
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	// w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	io.WriteString(w, string(ans))
 	io.WriteString(w, string("\n"))

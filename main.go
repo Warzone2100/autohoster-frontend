@@ -460,6 +460,13 @@ func customLogger(writer io.Writer, params handlers.LogFormatterParams) {
 	log.Println("["+geo+" "+ip+"]", r.Method, params.StatusCode, r.RequestURI, "["+ua+"]")
 }
 
+func shouldCache(maxage int, h http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Cache-Control", "public, max-age=604800")
+		h.ServeHTTP(w, r)
+	}
+}
+
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -563,7 +570,7 @@ func main() {
 	log.Println("Adding routes")
 	router := mux.NewRouter()
 	router.NotFoundHandler = myNotFoundHandler()
-	router.PathPrefix("/static").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	router.PathPrefix("/static").Handler(http.StripPrefix("/static/", shouldCache(604800, http.FileServer(http.Dir("./static")))))
 	router.HandleFunc("/favicon.ico", faviconHandler)
 	router.HandleFunc("/robots.txt", robotsHandler)
 	router.HandleFunc("/", indexHandler)
@@ -590,7 +597,7 @@ func main() {
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
-	router.HandleFunc("/games", basicLayoutHandler("games2"))
+	router.HandleFunc("/games", DbGamesHandler)
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
 	router.HandleFunc("/players", basicLayoutHandler("players"))
 	router.HandleFunc("/players/{id:[0-9]+}", PlayersHandler)

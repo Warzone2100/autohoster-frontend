@@ -58,6 +58,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	sessionManager.Destroy(r.Context())
 	w.Header().Set("Refresh", "2; /login")
+	w.Header().Set("Clear-Site-Data", `"cache", "cookies", "storage", "executionContexts"`)
 	basicLayoutLookupRespond("logout", w, r, map[string]interface{}{})
 }
 func registerHandler(w http.ResponseWriter, r *http.Request) {

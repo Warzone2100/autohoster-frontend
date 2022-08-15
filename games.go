@@ -181,6 +181,46 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func DbGamesHandler(w http.ResponseWriter, r *http.Request) {
+	dmapsc := make(chan []string)
+	var dmaps []string
+	dmapspresent := false
+	dtotalc := make(chan int)
+	var dtotal int
+	dtotalpresent := false
+	errc := make(chan error)
+	go func() {
+		var mapnames []string
+		derr := dbpool.QueryRow(context.Background(), `select array_agg(distinct mapname) from games where hidden = false and deleted = false;`).Scan(&mapnames)
+		if derr != nil && derr != pgx.ErrNoRows {
+			errc <- derr
+			return
+		}
+		dmapsc <- mapnames
+	}()
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(context.Background(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
+		if derr != nil && derr != pgx.ErrNoRows {
+			errc <- derr
+			return
+		}
+		dtotalc <- c
+	}()
+	for !(dmapspresent && dtotalpresent) {
+		select {
+		case derr := <-errc:
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+			return
+		case dmaps = <-dmapsc:
+			dmapspresent = true
+		case dtotal = <-dtotalc:
+			dtotalpresent = true
+		}
+	}
+	basicLayoutLookupRespond("games2", w, r, map[string]interface{}{"Total": dtotal, "Maps": dmaps})
+}
+
 func GameTimeToString(t float64) string {
 	return (time.Duration(int(t/1000)) * time.Second).String()
 }
