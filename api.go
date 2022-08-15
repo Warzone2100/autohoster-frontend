@@ -50,7 +50,7 @@ func APIcall(c func(http.ResponseWriter, *http.Request) (int, interface{})) func
 		w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
 		if len(response) > 0 {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.Header().Set("Content-Length", strconv.Itoa(len(response)))
+			w.Header().Set("Content-Length", strconv.Itoa(len(response)+1))
 			w.WriteHeader(code)
 			w.Write(response)
 			w.Write([]byte("\n"))
