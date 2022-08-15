@@ -53,6 +53,7 @@ func APIcall(c func(http.ResponseWriter, *http.Request) (int, interface{})) func
 			w.Header().Set("Content-Length", strconv.Itoa(len(response)))
 			w.WriteHeader(code)
 			w.Write(response)
+			w.Write([]byte("\n"))
 		} else {
 			w.WriteHeader(code)
 		}
@@ -248,7 +249,6 @@ func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, in
 	}
 	w.WriteHeader(http.StatusOK)
 	io.WriteString(w, fmt.Sprint(badplayed))
-	log.Println(badplayed)
 	return -1, nil
 }
 
@@ -742,7 +742,6 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 			gms[i].Players[j].Userid = p.Userid
 		}
 	}
-	log.Printf("debug")
 	return 200, map[string]interface{}{
 		"total":            totals,
 		"totalNotFiltered": totalsNoFilter,
