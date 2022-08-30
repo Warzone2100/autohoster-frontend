@@ -217,7 +217,7 @@ func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) (int, interfac
 	params := mux.Vars(r)
 	gid := params["gid"]
 	reslog := "0"
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog) FROM games WHERE id = $1;`, gid).Scan(&reslog)
+	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog, "{}") FROM games WHERE id = $1;`, gid).Scan(&reslog)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
