@@ -7,6 +7,9 @@ function nameFormatter(value, row) {
 	Autolost = row.Autolost !== undefined ? row.Autolost : row.autolost
 	Hash = row.Hash !== undefined ? row.Hash : row.hash
 	Name = row.Name !== undefined ? row.Name : row.name
+	if(Name.length > 23) {
+		Name = Name.slice(0, 20) + '...';
+	}
 	Elo = row.Elo !== undefined ? row.Elo : row.elo
 	Elo2 = row.Elo2 !== undefined ? row.Elo2 : row.elo2
 	Userid = row.Userid !== undefined ? row.Userid : row.userid
