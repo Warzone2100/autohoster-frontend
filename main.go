@@ -385,6 +385,9 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 		m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
 		if dui != -1 && dui != 0 {
 			m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
+			if dallowed {
+				m.Details += "Allowed to moderate and request rooms\n"
+			}
 		} else {
 			m.Details += "Not registered user.\n"
 		}
@@ -398,7 +401,6 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 				pc = "-"
 			}
 			if dui != -1 && dui != 0 {
-				log.Printf("Allowed %v", dallowed)
 				if dallowed {
 					m.Elo = fmt.Sprintf("A R[%d] E[%d] %d %s", de2, de, dap, pc)
 				} else {
