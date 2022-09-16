@@ -359,7 +359,7 @@ func ratingLookup(hash string) Ra {
 	var dallowed bool
 	derr := dbpool.QueryRow(context.Background(), `select elo, elo2, autoplayed, autowon, autolost,
 		coalesce((SELECT id FROM users WHERE result.id = users.wzprofile2), -1),
-		(SELECT allow_preset_request OR allow_host_request FROM users WHERE result.id = users.wzprofile2),
+		coalesce((SELECT allow_preset_request OR allow_host_request FROM users WHERE result.id = users.wzprofile2), 'false'),
 		elo_position, rating_position, id, name
 from (
    select *,
