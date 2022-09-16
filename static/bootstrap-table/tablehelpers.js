@@ -197,3 +197,19 @@ function winrateSorter(a, b, ra, rb) {
 	if ((ra.Autowon/(ra.Autowon+ra.Autolost+0.05)) < (rb.Autowon/(rb.Autowon+rb.Autolost+0.05))) return -1;
 	return 0;
 }
+function timeplayedFormatter(value, row) {
+	if(value === undefined) {
+		return "???"
+	} else if(value == 0) {
+		return "0"
+	} else {
+		let hoursLeft = Math.floor(value / 3600);
+		let min = Math.floor((value - hoursLeft * 3600) / 60);
+		let secondsLeft = value - hoursLeft * 3600 - min * 60;
+		secondsLeft = Math.round(secondsLeft * 100) / 100;
+		let answer = hoursLeft< 10 ? "0" + hoursLeft : hoursLeft;
+		answer += ":" + (min < 10 ? "0" + min : min);
+		answer += ":" + (secondsLeft< 10 ? "0" + secondsLeft : secondsLeft);
+		return answer;
+	}
+}

@@ -21,6 +21,7 @@ type Elo struct {
 	Autolost   int `json:"autolost"`
 	Autoplayed int `json:"autoplayed"`
 	Userid     int `json:"userid"`
+	Timeplayed int `json:"timeplayed"`
 }
 
 type EloGamePlayer struct {
@@ -51,6 +52,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 	}
 	for _, p := range G.Players {
 		P[p.ID].Autoplayed++
+		P[p.ID].Timeplayed += G.GameTime / 1000
 	}
 	if len(G.Players) == 1 {
 		calclog += "Only one player found, ignoring\n"
@@ -249,6 +251,7 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) (calclog string) {
 		p.Autowon = 0
 		p.Autolost = 0
 		p.Autoplayed = 0
+		p.Timeplayed = 0
 	}
 	for gamei := range G {
 		calclog += CalcElo(G[gamei], P)
@@ -315,11 +318,11 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		Games = append(Games, &g)
 	}
 	calclog := CalcEloForAll(Games, Players)
-	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + calclog + "</pre>")})
+	log.Printf("Updating %v players", len(Players))
 	for _, p := range Players {
 		// log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
-			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
+		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5, timeplayed = $6 WHERE id = $7",
+			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.Timeplayed, p.ID)
 		if derr != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
 			return
@@ -329,6 +332,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	log.Printf("Updating %v games", len(Games))
 	for _, g := range Games {
 		var elodiffs []int
 		for _, p := range g.Players {
@@ -349,4 +353,5 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + calclog + "</pre>")})
 }

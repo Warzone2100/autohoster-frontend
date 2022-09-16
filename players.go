@@ -20,6 +20,7 @@ type PlayerLeaderboard struct {
 	Autolost   int
 	Autowon    int
 	Userid     int
+	Timeplayed int
 }
 
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {

@@ -405,9 +405,9 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbdsummexp[int(p.Position)] = int(p.SummExp)
 		tbdoilrigs[int(p.Position)] = int(p.OilRigs)
 		tbdusertype[int(p.Position)] = p.Usertype
-		var playerID, elo, elo2, eap, eal, eaw, euid int
+		var playerID, elo, elo2, eap, eal, eaw, euid, etimeplayed int
 		perr := dbpool.QueryRow(context.Background(), `
-			SELECT id, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1) FROM players WHERE hash = $1;`, p.Hash).Scan(&playerID, &elo, &elo2, &eap, &eal, &eaw, &euid)
+			SELECT id, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1), timeplayed FROM players WHERE hash = $1;`, p.Hash).Scan(&playerID, &elo, &elo2, &eap, &eal, &eaw, &euid, &etimeplayed)
 		if perr != nil {
 			log.Printf("Error [%s]", perr.Error())
 			io.WriteString(w, "err")
@@ -415,7 +415,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		eg.Players = append(eg.Players, EloGamePlayer{ID: playerID, Team: int(p.Team), Usertype: p.Usertype, EloDiff: 0})
-		pls[playerID] = &Elo{ID: playerID, Elo: elo, Elo2: elo2, Autoplayed: eap, Autolost: eal, Autowon: eaw, Userid: euid}
+		pls[playerID] = &Elo{ID: playerID, Elo: elo, Elo2: elo2, Autoplayed: eap, Autolost: eal, Autowon: eaw, Userid: euid, Timeplayed: etimeplayed}
 	}
 	tbdreslog, _ := json.Marshal(h.ResearchComplete)
 	calculating := !h.Game.DebugTriggered
@@ -448,8 +448,8 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	if calculating {
 		for _, p := range pls {
 			log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
-			tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5 WHERE id = $6",
-				p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.ID)
+			tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5, timeplayed = $6 WHERE id = $7",
+				p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.Timeplayed, p.ID)
 			if derr != nil {
 				log.Printf("sql error [%s]", derr.Error())
 				io.WriteString(w, "err")

@@ -508,7 +508,7 @@ func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) (int, interface{}
 	// 	"ID":         "id",
 	// })
 	rows, derr := dbpool.Query(context.Background(), `
-	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1)
+	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1), timeplayed
 	FROM players
 	WHERE autoplayed > 0`)
 	if derr != nil {
@@ -521,7 +521,7 @@ func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) (int, interface{}
 	var P []PlayerLeaderboard
 	for rows.Next() {
 		var pp PlayerLeaderboard
-		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid)
+		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed)
 		P = append(P, pp)
 	}
 	return 200, P
