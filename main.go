@@ -356,8 +356,10 @@ func ratingLookup(hash string) Ra {
 	m := Ra{true, isautohoster, [3]int{0, 0, 0}, 0, -1, elo, ""}
 	var de, de2, dap, daw, dal, dui, dep, drp, dpi int
 	var dname string
+	var dallowed bool
 	derr := dbpool.QueryRow(context.Background(), `select elo, elo2, autoplayed, autowon, autolost,
 		coalesce((SELECT id FROM users WHERE result.id = users.wzprofile2), -1),
+		(SELECT allow_preset_request OR allow_host_request FROM users WHERE result.id = users.wzprofile2),
 		elo_position, rating_position, id, name
 from (
    select *,
@@ -369,7 +371,7 @@ from (
         ) as elo_position
    from players
 ) result
-where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dep, &drp, &dpi, &dname)
+where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep, &drp, &dpi, &dname)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if elo == "" {
@@ -396,7 +398,12 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dep, &drp, &dpi
 				pc = "-"
 			}
 			if dui != -1 && dui != 0 {
-				m.Elo = fmt.Sprintf("R[%d] E[%d] %d %s", de2, de, dap, pc)
+				log.Printf("Allowed %v", dallowed)
+				if dallowed {
+					m.Elo = fmt.Sprintf("A R[%d] E[%d] %d %s", de2, de, dap, pc)
+				} else {
+					m.Elo = fmt.Sprintf("R[%d] E[%d] %d %s", de2, de, dap, pc)
+				}
 			} else {
 				m.Elo = fmt.Sprintf("unapproved E[%d] %d %s", de, dap, pc)
 			}
