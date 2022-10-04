@@ -604,7 +604,7 @@ func main() {
 	router.HandleFunc("/preset-edit", presetEditorHandler)
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
-	router.HandleFunc("/rating", ratingHandler)
+	router.HandleFunc("/rating/", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
 	router.HandleFunc("/games", DbGamesHandler)
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
