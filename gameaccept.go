@@ -467,6 +467,19 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "ok")
 	w.WriteHeader(http.StatusOK)
 
+	if h.Game.GameDir == "" {
+		err = dbpool.QueryRow(context.Background(), "SELECT coalesce(gamedir, '') FROM games WHERE id = $1", gidnum).Scan(&h.Game.GameDir)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	if h.Game.GameDir == "" {
+		log.Println("Gamedir is empty!")
+		return
+	}
+
 	replayfname, err := findReplayByConfigFolder(h.Game.GameDir)
 	if err != nil {
 		log.Println("Failed to find replay: ", err)
@@ -477,6 +490,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Failed to move replay to storage: ", err)
 		return
 	}
+	log.Println("Replay [", replayfname, "] is sent to storage")
 
 	// WSLobbyEndAutohosterRoom(gidnum)
 }
