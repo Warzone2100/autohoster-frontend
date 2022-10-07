@@ -115,8 +115,16 @@ func getReplayFromStorage(gid int) ([]byte, error) {
 }
 
 func checkReplayExistsInStorage(gid int) bool {
-	_, err := os.Stat(getStorageReplayPath(gid))
-	return !os.IsNotExist(err)
+	fname := getStorageReplayPath(gid)
+	_, err := os.Stat(fname)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		log.Printf("Failed to stat by gid %d filename [%s]: %v", gid, fname, err)
+		return false
+	}
+	return true
 }
 
 func replayMoveHandler(w http.ResponseWriter, r *http.Request) (int, interface{}) {
