@@ -165,9 +165,6 @@ func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) (int, interface{
 }
 
 func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{}) {
-	if !checkUserAuthorized(r) {
-		return 401, nil
-	}
 	params := mux.Vars(r)
 	gids := params["gid"]
 	gid, err := strconv.Atoi(gids)
