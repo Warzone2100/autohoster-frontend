@@ -341,19 +341,19 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, string(j))
 }
+
 func ratingLookup(hash string) Ra {
-	isautohoster := false
+	m := Ra{true, false, [3]int{0, 0, 0}, 0, -1, "", ""}
 	if hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
-		isautohoster = true
+		m.Autohoster = true
+		var c int
+		derr := dbpool.QueryRow(context.Background(), "select count(games) from games where hidden = false and deleted = false;").Scan(&c)
+		if derr != nil {
+			log.Print(derr)
+		}
+		m.Details = "wz2100-autohost.net\n\nTotal games served: " + strconv.Itoa(c) + "\n"
+		m.Elo = "Visit wz2100-autohost.net"
 	}
-	elo := ""
-	if isautohoster {
-		elo = "Visit wz2100-autohost.net"
-	}
-	if hash == "7bade06ad15023640093ced192db5082641b625f74a72193142453a9ad742d93" {
-		elo = "Dirty manque cheater"
-	}
-	m := Ra{true, isautohoster, [3]int{0, 0, 0}, 0, -1, elo, ""}
 	var de, de2, dap, daw, dal, dui, dep, drp, dpi int
 	var dname string
 	var dallowed bool
@@ -374,26 +374,27 @@ from (
 where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep, &drp, &dpi, &dname)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			if elo == "" {
+			if m.Elo == "" {
 				m.Elo = "Unknown player"
 			}
 		} else {
 			log.Print(derr)
 		}
 	} else {
-		m.Details = fmt.Sprintf("Played: %d\n", dap)
-		m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
-		if dui != -1 && dui != 0 {
-			m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
-			if dallowed {
-				m.Details += "Allowed to moderate and request rooms\n"
+		if m.Details == "" {
+			m.Details = fmt.Sprintf("Played: %d\n", dap)
+			m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
+			if dui != -1 && dui != 0 {
+				m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
+				if dallowed {
+					m.Details += "Allowed to moderate and request rooms\n"
+				}
+			} else {
+				m.Details += "Not registered user.\n"
 			}
-		} else {
-			m.Details += "Not registered user.\n"
+			m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
 		}
-		m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
-		m.Details += "\nRating lookup from\nhttps://wz2100-autohost.net/"
-		if elo == "" {
+		if m.Elo == "" {
 			var pc string
 			if dap > 0 {
 				pc = fmt.Sprintf("%.1f%%", 100*(float64(daw)/float64(dap)))
