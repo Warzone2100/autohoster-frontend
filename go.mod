@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v1.1.0 // indirect
+	github.com/DataDog/zstd v1.5.2
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/alexedwards/scs/pgxstore v0.0.0-20220216073957-c252878bcf5a
 	github.com/alexedwards/scs/v2 v2.5.0

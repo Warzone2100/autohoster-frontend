@@ -58,6 +58,7 @@ type DbGamePreview struct {
 	Hidden         bool
 	Calculated     bool
 	DebugTriggered bool
+	ReplayFound    bool
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +174,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	// return g, nil
+	g.ReplayFound = checkReplayExistsInStorage(gidn)
 	if count == 0 {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Game not found"})
 	} else {

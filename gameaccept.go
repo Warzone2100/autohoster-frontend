@@ -466,5 +466,17 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	io.WriteString(w, "ok")
 	w.WriteHeader(http.StatusOK)
+
+	replayfname, err := findReplayByConfigFolder(h.Game.GameDir)
+	if err != nil {
+		log.Println("Failed to find replay: ", err)
+		return
+	}
+	err = sendReplayToStorage(replayfname, gidnum)
+	if err != nil {
+		log.Println("Failed to move replay to storage: ", err)
+		return
+	}
+
 	// WSLobbyEndAutohosterRoom(gidnum)
 }

@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
@@ -171,7 +169,21 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{})
 		return 401, nil
 	}
 	params := mux.Vars(r)
-	gid := params["gid"]
+	gids := params["gid"]
+	gid, err := strconv.Atoi(gids)
+	if err != nil {
+		return 400, nil
+	}
+	replaycontent, err := getReplayFromStorage(gid)
+	if err == nil {
+		log.Println("Serving replay from replay storage, gid ", gids)
+		w.Header().Set("Content-Disposition", "attachment; filename=\"autohoster-game-"+gids+".wzrp\"")
+		w.Header().Set("Content-Length", strconv.Itoa(len(replaycontent)))
+		w.Write(replaycontent)
+		return -1, nil
+	} else if err != errReplayNotFound {
+		log.Printf("ERROR getting replay from storage: %v game id is %d", err, gid)
+	}
 	dir := "0"
 	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(gamedir) FROM games WHERE id = $1;`, gid).Scan(&dir)
 	if derr != nil {
@@ -183,34 +195,21 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{})
 	if dir == "-1" {
 		return 204, nil
 	}
-	log.Print(dir)
-	replaydir := os.Getenv("MULTIHOSTER_GAMEDIRBASE") + dir + "replay/multiplay/"
-	files, err := ioutil.ReadDir(replaydir)
+	replaypath, err := findReplayByConfigFolder(dir)
 	if err != nil {
 		return 500, err
 	}
-	for _, f := range files {
-		// log.Println(f.Name())
-		if strings.HasSuffix(f.Name(), ".wzrp") {
-			h, err := os.Open(replaydir + f.Name())
-			if err != nil {
-				return 500, err
-			}
-			var header [4]byte
-			n, err := io.ReadFull(h, header[:])
-			if err != nil {
-				return 500, err
-			}
-			h.Close()
-			if n == 4 && string(header[:]) == "WZrp" {
-				w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-				w.Header().Set("Content-Disposition", "attachment; filename=\"autohoster-game-"+gid+".wzrp\"")
-				http.ServeFile(w, r, replaydir+f.Name())
-				return -1, nil
-			}
-		}
+	if replaypath == "" {
+		return 204, nil
 	}
-	return 204, nil
+	replaycontent, err = os.ReadFile(replaypath)
+	if err != nil {
+		return 500, err
+	}
+	w.Header().Set("Content-Disposition", "attachment; filename=\"autohoster-game-"+gids+".wzrp\"")
+	w.Header().Set("Content-Length", strconv.Itoa(len(replaycontent)))
+	w.Write(replaycontent)
+	return -1, nil
 }
 
 func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) (int, interface{}) {
