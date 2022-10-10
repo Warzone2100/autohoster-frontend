@@ -477,6 +477,37 @@ func shouldCache(maxage int, h http.Handler) http.HandlerFunc {
 	}
 }
 
+func accountMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if checkUserAuthorized(r) {
+			u := sessionGetUsername(r)
+			go func() {
+				tag, err := dbpool.Exec(context.Background(), "UPDATE users SET last_seen = now() WHERE username = $1", u)
+				if err != nil {
+					log.Println("Failed to set last seen on user [", u, "]")
+					return
+				}
+				if !tag.Update() || tag.RowsAffected() != 1 {
+					log.Println("Last seen update for [", u, "] is sus (", tag.String(), ")")
+				}
+			}()
+			var t bool
+			err := dbpool.QueryRow(r.Context(), "SELECT terminated FROM users WHERE username = $1", u).Scan(&t)
+			if err != nil {
+				log.Println("Error checking account terminated username [", u, "]:", err)
+				terminatedHandler(w, r)
+				return
+			}
+			if t {
+				log.Println("Terminated user performed request, username [", u, "]")
+				terminatedHandler(w, r)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -643,11 +674,9 @@ func main() {
 
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 
-	router0 := sessionManager.LoadAndSave(router)
-	router1 := handlers.ProxyHeaders(router0)
-	//	router2 := handlers.CompressHandler(router1)
-	router3 := handlers.CustomLoggingHandler(os.Stdout, router1, customLogger)
-	// router4 := handlers.RecoveryHandler()(router3)
+	// handlers.CompressHandler(router1)
+	// handlers.RecoveryHandler()(router3)
+	routerMiddle := sessionManager.LoadAndSave(handlers.CustomLoggingHandler(os.Stdout, handlers.ProxyHeaders(accountMiddleware(router)), customLogger))
 	log.Println("Started!")
-	log.Panic(http.ListenAndServe(":"+port, router3))
+	log.Panic(http.ListenAndServe(":"+port, routerMiddle))
 }

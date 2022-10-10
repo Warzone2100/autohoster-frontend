@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -26,7 +27,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		var passdb string
 		var iddb int
-		derr := dbpool.QueryRow(context.Background(), "SELECT password, id FROM users WHERE username = $1", r.PostFormValue("username")).Scan(&passdb, &iddb)
+		var terminated bool
+		derr := dbpool.QueryRow(context.Background(), "SELECT password, id, terminated FROM users WHERE username = $1", r.PostFormValue("username")).Scan(&passdb, &iddb, &terminated)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
 				basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginError": true})
@@ -38,6 +40,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if comparePasswords(passdb, r.PostFormValue("password")) {
+			if terminated {
+				basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginError": true,
+					"LoginDetailedError": template.HTML("<p><b>Account was terminated.</b></p><p><a href=\"/about#contact\">Contact administrator</a> for further information.</p><p>Creating more accounts will not help and will only get you permanently banned.</p>")})
+				log.Printf("Terminated account [%s] success login attempt", r.PostFormValue("username"))
+				return
+			}
 			sessionManager.Put(r.Context(), "User.Username", r.PostFormValue("username"))
 			sessionManager.Put(r.Context(), "User.Id", iddb)
 			sessionManager.Put(r.Context(), "UserAuthorized", "True")
@@ -54,6 +62,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{})
 		}
 	}
+}
+func terminatedHandler(w http.ResponseWriter, r *http.Request) {
+	sessionManager.Destroy(r.Context())
+	w.Header().Set("Refresh", "2; /login")
+	w.Header().Set("Clear-Site-Data", `"cache", "cookies", "storage", "executionContexts"`)
+	basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginError": true,
+		"LoginDetailedError": template.HTML("<p><b>Account was terminated.</b></p><p><a href=\"/about#contact\">Contact administrator</a> for further information.</p><p>Creating more accounts will not help and will only get you permanently banned.</p>")})
 }
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	sessionManager.Destroy(r.Context())

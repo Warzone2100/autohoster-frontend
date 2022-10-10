@@ -62,6 +62,15 @@ func parseQueryStringMapped(r *http.Request, field string, d string, m map[strin
 	return d
 }
 
+func stringOneOf(a string, b ...string) bool {
+	for _, s := range b {
+		if a == s {
+			return true
+		}
+	}
+	return false
+}
+
 func respondWithUnauthorized(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusUnauthorized)
 	basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]interface{}{})
