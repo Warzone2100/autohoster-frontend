@@ -626,7 +626,7 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 			mapname, maphash,
 			baselevel, powerlevel, scavs, alliancetype,
 			coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-			hidden, calculated, debugtriggered
+			hidden, calculated, debugtriggered, version
 		FROM games ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + `;`
 		rows, derr := dbpool.Query(context.Background(), req, whereargs...)
 		if derr != nil {
@@ -647,7 +647,7 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 				&splayers, &steams, &scolour, &susertype,
 				&g.MapName, &g.MapHash,
 				&g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances,
-				&selodiff, &sratingdiff, &g.Hidden, &g.Calculated, &g.DebugTriggered)
+				&selodiff, &sratingdiff, &g.Hidden, &g.Calculated, &g.DebugTriggered, &g.GameVersion)
 			if err != nil {
 				echan <- err
 				return

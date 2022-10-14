@@ -104,7 +104,7 @@ function AlliancesSettingsFormatter(value, row) {
 	return `<img class="icons icons-alliance${row.Alliances == 3?"1":row.Alliances}">`
 }
 function IDFormatter(value, row) {
-	return `${row.ID}<br>${row.Calculated?"":"<text style=\"color:red;\">C</text>"} ${row.DebugTriggered?"<text class=\"rainbow\">D</text>":""}`;
+	return `${row.ID} ${row.Calculated?"":"<text style=\"color:red;\">C</text>"} ${row.DebugTriggered?"<text class=\"rainbow\">D</text>":""}<br>${row.GameVersion}`;
 }
 function TimeFormatter(value, row) {
 	let igt = "in-game";

@@ -53,12 +53,13 @@ type DbGamePreview struct {
 	PowerLevel     int
 	Scavengers     bool
 	Alliances      int
-	Researchlog    string
-	Gamedir        string
+	Researchlog    string `json:",omitempty"`
+	Gamedir        string `json:",omitempty"`
 	Hidden         bool
 	Calculated     bool
 	DebugTriggered bool
 	ReplayFound    bool
+	GameVersion    string `json:",omitempty"`
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
