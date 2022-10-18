@@ -218,9 +218,9 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 	starttime := ParseMilliTimestamp(int64(h.Game.StartDate))
 	log.Println(starttime.Format("2006-01-02 15:04:05"))
 	derr = tx.QueryRow(context.Background(), `INSERT INTO games
-		(timestarted, gametime, players, teams, colour, mapname, maphash, powerlevel, baselevel, scavs, alliancetype, version, gamedir) VALUES
-		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`, starttime.Format("2006-01-02 15:04:05"), h.GameTime, tdbplayers, tdbteams, tdbcolour,
-		h.Game.MapName, h.Game.MapHash, h.Game.PowerType, h.Game.BaseType, h.Game.Scavengers != 0, h.Game.AlliancesType, h.Game.Version, h.Game.GameDir).Scan(&gameid)
+		(timestarted, gametime, players, teams, colour, mapname, maphash, powerlevel, baselevel, scavs, alliancetype, version, gamedir, mod) VALUES
+		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`, starttime.Format("2006-01-02 15:04:05"), h.GameTime, tdbplayers, tdbteams, tdbcolour,
+		h.Game.MapName, h.Game.MapHash, h.Game.PowerType, h.Game.BaseType, h.Game.Scavengers != 0, h.Game.AlliancesType, h.Game.Version, h.Game.GameDir, h.Game.Mod).Scan(&gameid)
 	if derr != nil {
 		log.Printf("Error [%s]", derr.Error())
 		io.WriteString(w, "-1")
