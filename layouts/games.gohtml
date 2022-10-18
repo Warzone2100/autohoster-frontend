@@ -106,6 +106,9 @@
 			});
 		})
 		function MapNameFormatter(value, row) {
+			if(row.Mod == 'none' || row.Mod == 'vanilla') {
+				return value;
+			}
 			return value + '<br>' + row.Mod;
 		}
 		</script>
