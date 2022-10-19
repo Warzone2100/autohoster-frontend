@@ -106,7 +106,7 @@
 			});
 		})
 		function MapNameFormatter(value, row) {
-			if(row.Mod == 'none' || row.Mod == 'vanilla') {
+			if(row.Mod == 'none' || row.Mod == 'vanilla' || row.Mod == '' || row.Mod === undefined) {
 				return value;
 			}
 			return value + '<br>' + row.Mod;
