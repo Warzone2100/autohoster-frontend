@@ -52,13 +52,13 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 		calclog += "Game is too fast to be calculated\n"
 		return
 	}
-	if G.Mod == "masterbal" && G.Timestarted > 1666528200 {
-		calclog += "Game is played with draft balance\n"
-		return
-	}
 	for _, p := range G.Players {
 		P[p.ID].Autoplayed++
 		P[p.ID].Timeplayed += G.GameTime / 1000
+	}
+	if G.Mod == "masterbal" && G.Timestarted > 1666528200 {
+		calclog += "Game is played with draft balance\n"
+		return
 	}
 	if len(G.Players) == 1 {
 		calclog += "Only one player found, ignoring\n"
