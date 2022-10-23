@@ -492,35 +492,121 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) (int, inte
 }
 
 func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) (int, interface{}) {
-	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
-	// dbLimit := parseQueryInt(r, "limit", 5)
-	// dbOffset := parseQueryInt(r, "offset", 0)
-	// dbOrderBy := parseQueryStringMapped(r, "sort", "elo", map[string]string{
-	// 	"Elo2":       "elo2",
-	// 	"Autoplayed": "autoplayed",
-	// 	"Autowon":    "autowon",
-	// 	"Autolost":   "autolost",
-	// 	"Name":       "name",
-	// 	"ID":         "id",
-	// })
-	rows, derr := dbpool.Query(context.Background(), `
-	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1), timeplayed
-	FROM players
-	WHERE autoplayed > 0`)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			return 204, nil
+	reqLimit := parseQueryInt(r, "limit", 50)
+	if reqLimit > 200 {
+		reqLimit = 200
+	}
+	if reqLimit <= 0 {
+		reqLimit = 1
+	}
+	reqOffset := parseQueryInt(r, "offset", 0)
+	if reqOffset < 0 {
+		reqOffset = 0
+	}
+	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	fieldmappings := map[string]string{
+		"Elo2":       "elo2",
+		"Elo":        "elo",
+		"Autoplayed": "autoplayed",
+		"Autowon":    "autowon",
+		"Autolost":   "autolost",
+		"Name":       "name",
+		"ID":         "id",
+		"Winrate":    "winrate",
+		"TimeIdle":   "timeidle",
+	}
+	var reqSortField string
+	if len(sessionGetUsername(r)) > 0 {
+		reqSortField = parseQueryStringMapped(r, "sort", "elo2", fieldmappings)
+	} else {
+		reqSortField = parseQueryStringMapped(r, "sort", "timestarted", fieldmappings)
+	}
+
+	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
+	offset := fmt.Sprintf("OFFSET %d", reqOffset)
+
+	wherecase := "where autoplayed > 0"
+
+	totalsc := make(chan int)
+	var totals int
+	totalspresent := false
+
+	totalsNoFilterc := make(chan int)
+	var totalsNoFilter int
+	totalsNoFilterpresent := false
+
+	playersc := make(chan []PlayerLeaderboard)
+	var players []PlayerLeaderboard
+	playersPresent := false
+
+	echan := make(chan error)
+
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(context.Background(), `select count(*) from players;`).Scan(&c)
+		if derr != nil {
+			echan <- derr
+			return
 		}
-		return 500, derr
+		totalsNoFilterc <- c
+	}()
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(context.Background(), `select count(*) from players `+wherecase).Scan(&c)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsc <- c
+	}()
+	go func() {
+		rows, derr := dbpool.Query(context.Background(), `
+	SELECT
+		id, name, hash, elo, elo2, autoplayed, autolost, autowon,
+		coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1), timeplayed,
+		round(extract('epoch' from now() - (SELECT timestarted FROM games WHERE players.id = any(games.players) ORDER BY id desc LIMIT 1))) as timeidle,
+		autowon/autoplayed as winrate
+	FROM
+		players
+	`+wherecase+`
+	`+ordercase+`
+	`+offset+`
+	`+limiter+`;`)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		defer rows.Close()
+		P := []PlayerLeaderboard{}
+		for rows.Next() {
+			var pp PlayerLeaderboard
+			rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed, &pp.TimeIdle, &pp.Winrate)
+			P = append(P, pp)
+		}
+		playersc <- P
+	}()
+
+	for !(playersPresent && totalspresent && totalsNoFilterpresent) {
+		select {
+		case derr := <-echan:
+			if derr == pgx.ErrNoRows {
+				return 200, []byte(`{"total": 0, "totalNotFiltered": 0, "rows": []}`)
+			}
+			return 500, derr
+		case players = <-playersc:
+			playersPresent = true
+		case totals = <-totalsc:
+			totalspresent = true
+		case totalsNoFilter = <-totalsNoFilterc:
+			totalsNoFilterpresent = true
+		}
 	}
-	defer rows.Close()
-	var P []PlayerLeaderboard
-	for rows.Next() {
-		var pp PlayerLeaderboard
-		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed)
-		P = append(P, pp)
+	return 200, map[string]interface{}{
+		"total":            totals,
+		"totalNotFiltered": totalsNoFilter,
+		"rows":             players,
 	}
-	return 200, P
 }
 
 func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {

@@ -21,6 +21,8 @@ type PlayerLeaderboard struct {
 	Autowon    int
 	Userid     int
 	Timeplayed int
+	TimeIdle   int
+	Winrate    float64
 }
 
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {
