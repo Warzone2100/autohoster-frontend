@@ -33,11 +33,13 @@ type EloGamePlayer struct {
 }
 
 type EloGame struct {
-	ID       int
-	GameTime int
-	Base     int
-	IsFFA    bool
-	Players  []EloGamePlayer
+	ID          int
+	GameTime    int
+	Base        int
+	IsFFA       bool
+	Players     []EloGamePlayer
+	Timestarted int
+	Mod         string
 }
 
 func EloDiff(K, e1, e2 int) float64 {
@@ -47,7 +49,11 @@ func EloDiff(K, e1, e2 int) float64 {
 func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 	calclog += fmt.Sprintf("Processing game %d\n", G.ID)
 	if G.GameTime < 1000*60*2 {
-		calclog += "Game is too fast to be calculated"
+		calclog += "Game is too fast to be calculated\n"
+		return
+	}
+	if G.Mod == "masterbal" && G.Timestarted > 1666528200 {
+		calclog += "Game is played with draft balance\n"
 		return
 	}
 	for _, p := range G.Players {
@@ -264,7 +270,8 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 				SELECT
 					games.id as gid, gametime, alliancetype,
 					players, teams, usertype,
-					array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames
+					array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames,
+					EXTRACT(EPOCH FROM timestarted), mod
 				FROM games
 				JOIN players as p ON p.id = any(games.players)
 				WHERE deleted = false AND hidden = false AND calculated = true AND finished = true
@@ -288,7 +295,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		var usertype []string
 		var playerinfo []string
 		var alliance int
-		err := rows.Scan(&g.ID, &g.GameTime, &alliance, &players, &teams, &usertype, &playerinfo)
+		err := rows.Scan(&g.ID, &g.GameTime, &alliance, &players, &teams, &usertype, &playerinfo, g.Timestarted, g.Mod)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return

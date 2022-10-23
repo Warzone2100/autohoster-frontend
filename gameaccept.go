@@ -418,7 +418,10 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		pls[playerID] = &Elo{ID: playerID, Elo: elo, Elo2: elo2, Autoplayed: eap, Autolost: eal, Autowon: eaw, Userid: euid, Timeplayed: etimeplayed}
 	}
 	tbdreslog, _ := json.Marshal(h.ResearchComplete)
-	calculating := !h.Game.DebugTriggered
+	calculating := h.Game.DebugTriggered == false
+	if h.Game.Mod == "masterbal" {
+		calculating = false
+	}
 	if calculating {
 		CalcElo(&eg, pls)
 	}
