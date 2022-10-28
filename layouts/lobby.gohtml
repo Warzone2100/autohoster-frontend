@@ -175,6 +175,7 @@
 		ws.onmessage = parsewsmessage
 		ws.onopen = function() {color("red")}
 		ws.onclose = function() {color("grey")}
+		ws.onerror = function() {color("orange")}
 		document.getElementById("LiveBlob").onclick = function() {
 			if(ws == null || ws.readyState == 2 || ws.readyState == 3) {
 				color("yellow")

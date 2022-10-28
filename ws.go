@@ -20,12 +20,18 @@ func APIWSHub(hub *WSHub, w http.ResponseWriter, r *http.Request) {
 		respondWithUnauthorized(w, r)
 		return
 	}
-
+	hub.clientsLock.RLock()
+	var d *WSHubClient
+	d = nil
 	for i := range hub.clients {
 		if i.username == username {
-			w.WriteHeader(http.StatusTooManyRequests)
-			return
+			d = i
+			break
 		}
+	}
+	hub.clientsLock.RUnlock()
+	if d != nil {
+		hub.disconnect <- d
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

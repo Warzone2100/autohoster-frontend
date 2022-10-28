@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -220,7 +221,27 @@ func lobbyPooler() {
 	}
 }
 
+var (
+	lobbyLastRequest         = map[string]time.Time{}
+	lobbyLastRequestLock     sync.Mutex
+	lobbyTooManyRequestsTime = int64(7) // seconds
+)
+
 func lobbyHandler(w http.ResponseWriter, r *http.Request) {
+	u := sessionGetUsername(r)
+	if len(u) > 0 {
+		lobbyLastRequestLock.Lock()
+		l, ok := lobbyLastRequest[u]
+		lobbyLastRequest[u] = time.Now()
+		if ok {
+			if l.Unix()+lobbyTooManyRequestsTime > time.Now().Unix() {
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Too many requests. Please do not spam page refresh. Authorized users have automatic lobby refresh every second.", "msgred": true})
+				lobbyLastRequestLock.Unlock()
+				return
+			}
+		}
+		lobbyLastRequestLock.Unlock()
+	}
 	s, reqres := RequestHosters()
 	var rooms []interface{}
 	if s {

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -10,18 +11,19 @@ import (
 
 const (
 	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
+	writeWait = 5 * time.Second
 	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
+	pongWait = 10 * time.Second
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
 )
 
 type WSHub struct {
-	clients    map[*WSHubClient]bool
-	bcast      chan interface{}
-	connect    chan *WSHubClient
-	disconnect chan *WSHubClient
+	clients     map[*WSHubClient]bool
+	clientsLock sync.RWMutex
+	bcast       chan interface{}
+	connect     chan *WSHubClient
+	disconnect  chan *WSHubClient
 }
 
 type WSHubClient struct {
@@ -44,15 +46,20 @@ func (hub *WSHub) Run() {
 	for {
 		select {
 		case client := <-hub.connect:
+			hub.clientsLock.Lock()
 			hub.clients[client] = true
+			hub.clientsLock.Unlock()
 			go client.ClientRead()
 			go client.ClientWrite()
 		case client := <-hub.disconnect:
+			hub.clientsLock.Lock()
 			if _, ok := hub.clients[client]; ok {
 				delete(hub.clients, client)
 				close(client.send)
 			}
+			hub.clientsLock.Unlock()
 		case message := <-hub.bcast:
+			hub.clientsLock.Lock()
 			for client := range hub.clients {
 				select {
 				case client.send <- message:
@@ -61,6 +68,7 @@ func (hub *WSHub) Run() {
 					delete(hub.clients, client)
 				}
 			}
+			hub.clientsLock.Unlock()
 		}
 	}
 }
