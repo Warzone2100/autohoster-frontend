@@ -361,7 +361,7 @@ func ratingLookup(hash string) Ra {
 	derr := dbpool.QueryRow(context.Background(), `select elo, elo2, autoplayed, autowon, autolost,
 		coalesce((SELECT id FROM users WHERE result.id = users.wzprofile2), -1),
 		coalesce((SELECT allow_preset_request OR allow_host_request FROM users WHERE result.id = users.wzprofile2), 'false'),
-		elo_position, rating_position, id, name, (select distinct array(select oldname from plrenames where id = 16 group by oldname order by max(time) desc LIMIT 5) from plrenames)
+		elo_position, rating_position, id, name, (select distinct array(select oldname from plrenames where id = result.id group by oldname order by max(time) desc LIMIT 5) from plrenames)
 from (
    select *,
         row_number() over(
