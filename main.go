@@ -394,9 +394,12 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 			} else {
 				m.Details += "Not registered user.\n"
 			}
-			m.Details += fmt.Sprintf("Elo: %d (#%d)\nOther names:", de, dep)
-			for _, v := range drenames {
-				m.Details += "\n" + v
+			m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
+			if len(drenames) > 0 {
+				m.Details += "Other names:"
+				for _, v := range drenames {
+					m.Details += "\n" + v
+				}
 			}
 		}
 		if m.Elo == "" {
