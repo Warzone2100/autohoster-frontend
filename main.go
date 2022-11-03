@@ -376,13 +376,14 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 		if derr == pgx.ErrNoRows {
 			if m.Elo == "" {
 				m.Elo = "Unknown player"
+				m.Details = "Casual noname"
 			}
 		} else {
 			log.Print(derr)
 		}
 	} else {
 		if m.Details == "" {
-			m.Details = fmt.Sprintf("Played: %d\n", dap)
+			m.Details = fmt.Sprintf("%s\nPlayed: %d\n", dname, dap)
 			m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
 			if dui != -1 && dui != 0 {
 				m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
