@@ -403,11 +403,7 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 				pc = "-"
 			}
 			if dui != -1 && dui != 0 {
-				if dallowed {
-					m.Elo = fmt.Sprintf("A R[%d] E[%d] %d %s", de2, de, dap, pc)
-				} else {
-					m.Elo = fmt.Sprintf("R[%d] E[%d] %d %s", de2, de, dap, pc)
-				}
+				m.Elo = fmt.Sprintf("R[%d] E[%d] %d %s", de2, de, dap, pc)
 			} else {
 				m.Elo = fmt.Sprintf("unapproved E[%d] %d %s", de, dap, pc)
 			}
