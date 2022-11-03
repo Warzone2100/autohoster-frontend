@@ -357,10 +357,11 @@ func ratingLookup(hash string) Ra {
 	var de, de2, dap, daw, dal, dui, dep, drp, dpi int
 	var dname string
 	var dallowed bool
+	var drenames []string
 	derr := dbpool.QueryRow(context.Background(), `select elo, elo2, autoplayed, autowon, autolost,
 		coalesce((SELECT id FROM users WHERE result.id = users.wzprofile2), -1),
 		coalesce((SELECT allow_preset_request OR allow_host_request FROM users WHERE result.id = users.wzprofile2), 'false'),
-		elo_position, rating_position, id, name
+		elo_position, rating_position, id, name, (select distinct array(select oldname from plrenames where id = 16 group by oldname order by max(time) desc LIMIT 5) from plrenames)
 from (
    select *,
         row_number() over(
@@ -371,7 +372,7 @@ from (
         ) as elo_position
    from players
 ) result
-where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep, &drp, &dpi, &dname)
+where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep, &drp, &dpi, &dname, &drenames)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if m.Elo == "" {
@@ -393,7 +394,10 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 			} else {
 				m.Details += "Not registered user.\n"
 			}
-			m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
+			m.Details += fmt.Sprintf("Elo: %d (#%d)\nOther names:", de, dep)
+			for _, v := range drenames {
+				m.Details += "\n" + v
+			}
 		}
 		if m.Elo == "" {
 			var pc string
