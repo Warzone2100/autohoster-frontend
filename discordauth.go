@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	_ "fmt"
 	"io"
@@ -41,7 +42,7 @@ func DiscordGetUrl(state string) string {
 }
 
 func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
-	res, err := discordOauthConfig.Client(r.Context(), token).Get("https://discord.com/api/users/@me")
+	res, err := discordOauthConfig.Client(context.Background(), token).Get("https://discord.com/api/users/@me")
 	if err != nil {
 		log.Println("Unauthorized, resetting discord")
 		token.AccessToken = ""

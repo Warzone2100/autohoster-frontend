@@ -161,7 +161,7 @@ func ByteCountIEC(b uint64) string {
 	return fmt.Sprintf("%.1f%ciB", float64(b)/float64(div), "KMGTPE"[exp])
 }
 
-func getWzProfile(id int, table string) map[string]interface{} {
+func getWzProfile(context context.Context, id int, table string) map[string]interface{} {
 	var name string
 	var hash string
 	var played int
@@ -171,7 +171,7 @@ func getWzProfile(id int, table string) map[string]interface{} {
 	var pl map[string]interface{}
 	var derr error
 	req := "SELECT name, hash, autoplayed, autowon, autolost, elo FROM " + table + " WHERE id = $1"
-	derr = dbpool.QueryRow(r.Context(), req, id).
+	derr = dbpool.QueryRow(context, req, id).
 		Scan(&name, &hash, &played, &wins, &losses, &elo)
 	if derr != nil {
 		if derr != pgx.ErrNoRows {
@@ -274,8 +274,8 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 		"Lname":      sesslname,
 		"Email":      sessemail,
 		"Econf":      sesseconf,
-		"WzProfile":  getWzProfile(sesswzprofile, "old_players3"),
-		"WzProfile2": getWzProfile(sesswzprofile2, "players"),
+		"WzProfile":  getWzProfile(r.Context(), sesswzprofile, "old_players3"),
+		"WzProfile2": getWzProfile(r.Context(), sesswzprofile2, "players"),
 		"Discord": map[string]interface{}{
 			"Token":   sessdisctoken,
 			"AuthUrl": sessdiscurl,
