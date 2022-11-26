@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -215,7 +215,7 @@ func sendgridConfirmcode(email string, code string) bool {
 	defer resp.Body.Close()
 	log.Println("response Status:", resp.Status)
 	log.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	log.Println("response Body:", string(body))
 	return resp.Status == "200 Success" || resp.Status == "202 Accepted"
 }
@@ -260,7 +260,7 @@ func sendgridRecoverRequest(email string, code string) bool {
 	defer resp.Body.Close()
 	log.Println("response Status:", resp.Status)
 	log.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	log.Println("response Body:", string(body))
 	return resp.Status == "200 Success" || resp.Status == "202 Accepted"
 }

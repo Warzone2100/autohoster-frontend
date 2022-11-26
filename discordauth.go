@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	_ "fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -51,7 +51,7 @@ func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
 		return map[string]interface{}{"DiscordError": "Error"}
 	}
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return map[string]interface{}{"DiscordError": err.Error()}
 	}

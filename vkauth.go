@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	_ "fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -34,7 +34,7 @@ func VKGetUInfo(token string) map[string]interface{} {
 		log.Print(err)
 		return map[string]interface{}{"Error": "Error requesting"}
 	}
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
 		return map[string]interface{}{"Error": "Error reading"}
@@ -105,7 +105,7 @@ func VKCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Can not send code exchange request."})
 		return
 	}
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Can not read vk response."})

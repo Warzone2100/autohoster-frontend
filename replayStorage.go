@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"net/http"
@@ -55,7 +54,7 @@ var errReplayNotFound = errors.New("replay not found")
 
 func findReplayByConfigFolder(p string) (string, error) {
 	replaydir := path.Join(os.Getenv("MULTIHOSTER_GAMEDIRBASE"), p, "replay/multiplay/")
-	files, err := ioutil.ReadDir(replaydir)
+	files, err := os.ReadDir(replaydir)
 	if err != nil {
 		return "", err
 	}

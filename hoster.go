@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -577,7 +577,7 @@ func MultihosterRequest(url string) (bool, string) {
 		log.Print(err)
 		return false, err.Error()
 	}
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
 		return false, err.Error()
@@ -624,7 +624,7 @@ func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, 
 		log.Print(err)
 		return false, "Error executing request"
 	}
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Print(err)
 		return false, "Error reading response"
