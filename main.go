@@ -626,7 +626,6 @@ func main() {
 	router.HandleFunc("/logout", logoutHandler)
 	router.HandleFunc("/register", registerHandler)
 	router.HandleFunc("/account", basicLayoutHandler("account"))
-	router.HandleFunc("/users", usersHandler)
 	router.HandleFunc("/activate", emailconfHandler)
 	router.HandleFunc("/recover", recoverPasswordHandler)
 	router.HandleFunc("/oauth/discord", DiscordCallbackHandler)
@@ -638,6 +637,10 @@ func main() {
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
 	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
 	router.HandleFunc("/preset-edit", presetEditorHandler)
+
+	router.HandleFunc("/moderation/users", modUsersHandler)
+	router.HandleFunc("/moderation/merge", modMergeHandler)
+	router.HandleFunc("/moderation", basicLayoutHandler("modMain"))
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating/", ratingHandler)

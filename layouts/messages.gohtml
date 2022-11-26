@@ -16,7 +16,13 @@
 				<div class="alert alert-danger" role="alert">
 			{{end}}
 			
+			{{if .plaintext}}
+			<code>
+			{{end}}
 			{{.msg}}
+			{{if .plaintext}}
+			</code>
+			{{end}}
 			
 			{{if .msggreen}}
 				</div>
