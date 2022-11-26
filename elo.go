@@ -271,7 +271,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 					games.id as gid, gametime, alliancetype,
 					players, teams, usertype,
 					array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames,
-					EXTRACT(EPOCH FROM timestarted), mod
+					EXTRACT(EPOCH FROM timestarted)::int, mod
 				FROM games
 				JOIN players as p ON p.id = any(games.players)
 				WHERE deleted = false AND hidden = false AND calculated = true AND finished = true
@@ -295,7 +295,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		var usertype []string
 		var playerinfo []string
 		var alliance int
-		err := rows.Scan(&g.ID, &g.GameTime, &alliance, &players, &teams, &usertype, &playerinfo, g.Timestarted, g.Mod)
+		err := rows.Scan(&g.ID, &g.GameTime, &alliance, &players, &teams, &usertype, &playerinfo, &g.Timestarted, &g.Mod)
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
