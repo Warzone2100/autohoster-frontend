@@ -48,21 +48,17 @@ func VKGetUInfo(token string) map[string]interface{} {
 	d := make(map[string]interface{})
 	dd, p1 := u["response"] //.([]interface{})[0].(map[string]interface{})
 	if !p1 {
-		log.Print("No response found")
 		return map[string]interface{}{"Error": "No response"}
 	}
 	d2, p2 := dd.([]interface{})
 	if !p2 {
-		log.Print("Response is not []interface{}")
 		return map[string]interface{}{"Error": "Response is not an array"}
 	}
 	if len(d2) < 1 {
-		log.Print("Response is empty")
 		return map[string]interface{}{"Error": "Response is empty"}
 	}
 	d3, p3 := d2[0].(map[string]interface{})
 	if !p3 {
-		log.Print("Response body is not map[string]interface{}")
 		return map[string]interface{}{"Error": "Response is not response"}
 	}
 	d["Photo"] = d3["photo_400_orig"]
