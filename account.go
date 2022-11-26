@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"html/template"
 	"log"
 	"net/http"
@@ -28,7 +27,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		var passdb string
 		var iddb int
 		var terminated bool
-		derr := dbpool.QueryRow(context.Background(), "SELECT password, id, terminated FROM users WHERE username = $1", r.PostFormValue("username")).Scan(&passdb, &iddb, &terminated)
+		derr := dbpool.QueryRow(r.Context(), "SELECT password, id, terminated FROM users WHERE username = $1", r.PostFormValue("username")).Scan(&passdb, &iddb, &terminated)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
 				basicLayoutLookupRespond(templateLogin, w, r, map[string]interface{}{"LoginError": true})
@@ -125,7 +124,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		numUsername := 0
-		numUsernameErr := dbpool.QueryRow(context.Background(), "SELECT COUNT(*) FROM users WHERE username = $1", requname).Scan(&numUsername)
+		numUsernameErr := dbpool.QueryRow(r.Context(), "SELECT COUNT(*) FROM users WHERE username = $1", requname).Scan(&numUsername)
 		if numUsernameErr != nil {
 			dberr(numUsernameErr)
 			return
@@ -136,7 +135,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		numEmail := 0
-		numEmailErr := dbpool.QueryRow(context.Background(), "SELECT COUNT(*) FROM users WHERE email = $1", reqemail).Scan(&numEmail)
+		numEmailErr := dbpool.QueryRow(r.Context(), "SELECT COUNT(*) FROM users WHERE email = $1", reqemail).Scan(&numEmail)
 		if numEmailErr != nil {
 			dberr(numEmailErr)
 			return
@@ -151,7 +150,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tag, derr := dbpool.Exec(context.Background(), "INSERT INTO users (username, password, fname, lname, email, emailconfirmcode) VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING", requname, requpass, reqfname, reqlname, reqemail, reqemailcode)
+		tag, derr := dbpool.Exec(r.Context(), "INSERT INTO users (username, password, fname, lname, email, emailconfirmcode) VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING", requname, requpass, reqfname, reqlname, reqemail, reqemailcode)
 		if derr != nil {
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database call error: " + derr.Error(), "LastAttempt": la})
 			return
@@ -177,7 +176,7 @@ func emailconfHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := keys[0]
-	tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET email_confirmed = now(), emailconfirmcode = '' WHERE emailconfirmcode = $1", key)
+	tag, derr := dbpool.Exec(r.Context(), "UPDATE users SET email_confirmed = now(), emailconfirmcode = '' WHERE emailconfirmcode = $1", key)
 	if derr != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Database call error: " + derr.Error(), "msgred": true})
 		return
@@ -219,7 +218,7 @@ func recoverPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverDetailedError": "Password must be between 6 and 25 symbols in length"})
 				return
 			}
-			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET password = $1, emailconfirmcode = 'resetcomplete' WHERE emailconfirmcode = $2", hashPassword(r.PostFormValue("password")), r.PostFormValue("code"))
+			tag, derr := dbpool.Exec(r.Context(), "UPDATE users SET password = $1, emailconfirmcode = 'resetcomplete' WHERE emailconfirmcode = $2", hashPassword(r.PostFormValue("password")), r.PostFormValue("code"))
 			if derr != nil {
 				basicLayoutLookupRespond("passwordReset", w, r, map[string]interface{}{"RecoverError": true})
 				log.Print(derr)
@@ -239,7 +238,7 @@ func recoverPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			numEmails := 0
-			numEmailsErr := dbpool.QueryRow(context.Background(), "SELECT COUNT(*) FROM users WHERE email = $1 AND coalesce(extract(epoch from email_confirmed), 0) != 0", r.PostFormValue("email")).Scan(&numEmails)
+			numEmailsErr := dbpool.QueryRow(r.Context(), "SELECT COUNT(*) FROM users WHERE email = $1 AND coalesce(extract(epoch from email_confirmed), 0) != 0", r.PostFormValue("email")).Scan(&numEmails)
 			if numEmailsErr != nil {
 				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
 				log.Print(numEmailsErr)
@@ -250,7 +249,7 @@ func recoverPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			reqemailcode := generateRandomString(50)
-			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET emailconfirmcode = $1 WHERE email = $2", reqemailcode, r.PostFormValue("email"))
+			tag, derr := dbpool.Exec(r.Context(), "UPDATE users SET emailconfirmcode = $1 WHERE email = $2", reqemailcode, r.PostFormValue("email"))
 			if derr != nil {
 				basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
 				log.Print(derr)
@@ -272,7 +271,7 @@ func recoverPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		numEmails := 0
-		numEmailsErr := dbpool.QueryRow(context.Background(), "SELECT COUNT(*) FROM users WHERE emailconfirmcode = $1", keys[0]).Scan(&numEmails)
+		numEmailsErr := dbpool.QueryRow(r.Context(), "SELECT COUNT(*) FROM users WHERE emailconfirmcode = $1", keys[0]).Scan(&numEmails)
 		if numEmailsErr != nil {
 			basicLayoutLookupRespond("recoveryRequest", w, r, map[string]interface{}{"RecoverError": true})
 			log.Print(numEmailsErr)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -72,7 +71,7 @@ func APIgetGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) 
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j string
-	derr := dbpool.QueryRow(context.Background(), `SELECT json_agg(frames)::text FROM frames WHERE game = $1`, gid).Scan(&j)
+	derr := dbpool.QueryRow(r.Context(), `SELECT json_agg(frames)::text FROM frames WHERE game = $1`, gid).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
@@ -86,7 +85,7 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interfac
 	params := mux.Vars(r)
 	interval := params["interval"]
 	var j string
-	derr := dbpool.QueryRow(context.Background(), `select
+	derr := dbpool.QueryRow(r.Context(), `select
 		json_agg(json_build_object(b::text,(select count(*) from games where date_trunc($1, timestarted) = b)))
 	from generate_series(date_trunc($1, now() - '1 year 7 days'::interval), now(), $2::interval) as b;`, interval, "1 "+interval).Scan(&j)
 	if derr != nil {
@@ -99,7 +98,7 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interfac
 }
 
 func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) (int, interface{}) {
-	rows, derr := dbpool.Query(context.Background(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
+	rows, derr := dbpool.Query(r.Context(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
 	if derr != nil {
 		return 500, derr
 	}
@@ -117,7 +116,7 @@ func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) (int, interf
 }
 
 func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) (int, interface{}) {
-	rows, derr := dbpool.Query(context.Background(),
+	rows, derr := dbpool.Query(r.Context(),
 		`SELECT
 			b::TEXT,
 			(SELECT COUNT(c) FROM
@@ -146,7 +145,7 @@ func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) (int, int
 }
 
 func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) (int, interface{}) {
-	rows, derr := dbpool.Query(context.Background(), `select mapname, count(*) as c from games group by mapname order by c desc`)
+	rows, derr := dbpool.Query(r.Context(), `select mapname, count(*) as c from games group by mapname order by c desc`)
 	if derr != nil {
 		return 500, derr
 	}
@@ -182,7 +181,7 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{})
 		log.Printf("ERROR getting replay from storage: %v game id is %d", err, gid)
 	}
 	dir := "0"
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(gamedir) FROM games WHERE id = $1;`, gid).Scan(&dir)
+	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(gamedir) FROM games WHERE id = $1;`, gid).Scan(&dir)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
@@ -213,7 +212,7 @@ func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) (int, interfac
 	params := mux.Vars(r)
 	gid := params["gid"]
 	reslog := "0"
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog, '{}') FROM games WHERE id = $1;`, gid).Scan(&reslog)
+	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(researchlog, '{}') FROM games WHERE id = $1;`, gid).Scan(&reslog)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
@@ -239,7 +238,7 @@ func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, in
 	params := mux.Vars(r)
 	phash := params["hash"]
 	badplayed := 0
-	derr := dbpool.QueryRow(context.Background(), `SELECT COUNT(id) FROM games WHERE (SELECT id FROM players WHERE hash = $1) = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true;`, phash).Scan(&badplayed)
+	derr := dbpool.QueryRow(r.Context(), `SELECT COUNT(id) FROM games WHERE (SELECT id FROM players WHERE hash = $1) = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true;`, phash).Scan(&badplayed)
 	if derr != nil {
 		return 500, derr
 	}
@@ -249,7 +248,7 @@ func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, in
 }
 
 func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) (int, interface{}) {
-	rows, derr := dbpool.Query(context.Background(), `select hash from players join users on players.id = users.wzprofile2 where users.allow_preset_request = true;`)
+	rows, derr := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2 where users.allow_preset_request = true;`)
 	if derr != nil {
 		return 500, derr
 	}
@@ -333,7 +332,7 @@ func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) (int, interf
 		filter2 = " LIMIT 100 "
 		filter = " AND array_length(players, 1) >= 2 AND alliancetype != 2 "
 	}
-	rows, derr := dbpool.Query(context.Background(),
+	rows, derr := dbpool.Query(r.Context(),
 		`SELECT coalesce(id, -1), coalesce(researchlog, ''), coalesce(players) 
 		FROM games 
 		WHERE 
@@ -422,7 +421,7 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) (int, inte
 	if err != nil {
 		return 400, nil
 	}
-	rows, derr := dbpool.Query(context.Background(),
+	rows, derr := dbpool.Query(r.Context(),
 		`SELECT
 			id,
 			coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
@@ -503,7 +502,7 @@ func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) (int, interface{}
 	// 	"Name":       "name",
 	// 	"ID":         "id",
 	// })
-	rows, derr := dbpool.Query(context.Background(), `
+	rows, derr := dbpool.Query(r.Context(), `
 	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1), timeplayed
 	FROM players
 	WHERE autoplayed > 0`)
@@ -603,7 +602,7 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	echan := make(chan error)
 	go func() {
 		var c int
-		derr := dbpool.QueryRow(context.Background(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
+		derr := dbpool.QueryRow(r.Context(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
 		if derr != nil {
 			echan <- derr
 			return
@@ -612,7 +611,7 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	}()
 	go func() {
 		var c int
-		derr := dbpool.QueryRow(context.Background(), `select count(games) from games `+wherecase+`;`, whereargs...).Scan(&c)
+		derr := dbpool.QueryRow(r.Context(), `select count(games) from games `+wherecase+`;`, whereargs...).Scan(&c)
 		if derr != nil {
 			echan <- derr
 			return
@@ -628,7 +627,7 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 			coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
 			hidden, calculated, debugtriggered, coalesce(version, '???'), mod
 		FROM games ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + `;`
-		rows, derr := dbpool.Query(context.Background(), req, whereargs...)
+		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
 		if derr != nil {
 			echan <- derr
 			return
@@ -683,7 +682,7 @@ func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 		WHERE p.id = any((select distinct unnest(a.players)
 				FROM (SELECT players FROM games ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + `) as a));`
 		// log.Println(req)
-		rows, derr := dbpool.Query(context.Background(), req, whereargs...)
+		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
 		if derr != nil {
 			echan <- derr
 			return

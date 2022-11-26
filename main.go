@@ -171,7 +171,7 @@ func getWzProfile(id int, table string) map[string]interface{} {
 	var pl map[string]interface{}
 	var derr error
 	req := "SELECT name, hash, autoplayed, autowon, autolost, elo FROM " + table + " WHERE id = $1"
-	derr = dbpool.QueryRow(context.Background(), req, id).
+	derr = dbpool.QueryRow(r.Context(), req, id).
 		Scan(&name, &hash, &played, &wins, &losses, &elo)
 	if derr != nil {
 		if derr != pgx.ErrNoRows {

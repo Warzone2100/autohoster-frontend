@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	_ "sort"
@@ -68,7 +67,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	gid := params["id"]
 	gidn, _ := strconv.Atoi(gid)
-	rows, derr := dbpool.Query(context.Background(), `
+	rows, derr := dbpool.Query(r.Context(), `
 	SELECT
 		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
 		players, teams, colour, usertype,
@@ -194,7 +193,7 @@ func DbGamesHandler(w http.ResponseWriter, r *http.Request) {
 	errc := make(chan error)
 	go func() {
 		var mapnames []string
-		derr := dbpool.QueryRow(context.Background(), `select array_agg(distinct mapname) from games where hidden = false and deleted = false;`).Scan(&mapnames)
+		derr := dbpool.QueryRow(r.Context(), `select array_agg(distinct mapname) from games where hidden = false and deleted = false;`).Scan(&mapnames)
 		if derr != nil && derr != pgx.ErrNoRows {
 			errc <- derr
 			return
@@ -203,7 +202,7 @@ func DbGamesHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 	go func() {
 		var c int
-		derr := dbpool.QueryRow(context.Background(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
+		derr := dbpool.QueryRow(r.Context(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
 		if derr != nil && derr != pgx.ErrNoRows {
 			errc <- derr
 			return

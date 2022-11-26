@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	_ "fmt"
 	"io"
@@ -42,7 +41,7 @@ func DiscordGetUrl(state string) string {
 }
 
 func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
-	res, err := discordOauthConfig.Client(context.Background(), token).Get("https://discord.com/api/users/@me")
+	res, err := discordOauthConfig.Client(r.Context(), token).Get("https://discord.com/api/users/@me")
 	if err != nil {
 		log.Println("Unauthorized, resetting discord")
 		token.AccessToken = ""
@@ -81,7 +80,7 @@ func DiscordCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "State missmatch " + st})
 		return
 	}
-	token, err := discordOauthConfig.Exchange(context.Background(), code)
+	token, err := discordOauthConfig.Exchange(r.Context(), code)
 	if err != nil {
 		log.Printf("Code exchange failed with error %s\n", err.Error())
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Code exchange failed with error: " + err.Error()})
@@ -92,7 +91,7 @@ func DiscordCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Retreived invalid token"})
 		return
 	}
-	tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
+	tag, derr := dbpool.Exec(r.Context(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
 	if derr != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
 		return
