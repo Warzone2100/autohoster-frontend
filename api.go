@@ -84,17 +84,29 @@ func APIgetGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) 
 func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	interval := params["interval"]
-	var j string
-	derr := dbpool.QueryRow(r.Context(), `select
-		json_agg(json_build_object(b::text,(select count(*) from games where date_trunc($1, timestarted) = b)))
-	from generate_series(date_trunc($1, now() - '1 year 7 days'::interval), now(), $2::interval) as b;`, interval, "1 "+interval).Scan(&j)
+	rows, derr := dbpool.Query(r.Context(), `SELECT date_trunc($1, g.timestarted)::text || '+00', count(g.timestarted)
+	FROM games as g
+	WHERE g.timestarted > now() - '1 year 7 days'::interval
+	GROUP BY date_trunc($1, g.timestarted)
+	ORDER BY date_trunc($1, g.timestarted)`, interval)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
 		}
 		return 500, derr
 	}
-	return 200, []byte(j)
+	defer rows.Close()
+	ret := []map[string]int{}
+	for rows.Next() {
+		var d string
+		var c int
+		err := rows.Scan(&d, &c)
+		if err != nil {
+			return 500, err
+		}
+		ret = append(ret, map[string]int{d: c})
+	}
+	return 200, ret
 }
 
 func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) (int, interface{}) {
