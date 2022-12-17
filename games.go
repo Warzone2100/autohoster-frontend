@@ -69,7 +69,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	gidn, _ := strconv.Atoi(gid)
 	rows, derr := dbpool.Query(r.Context(), `
 	SELECT
-		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timestarted, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
+		games.id as gid, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timeended, 'YYYY-MM-DD HH24:MI'), 'in-game'), gametime,
 		players, teams, colour, usertype,
 		mapname, maphash,
 		baselevel, powerlevel, scavs, alliancetype,

@@ -138,7 +138,8 @@
 				<div class="col-sm">
 					<h3>Game {{.ID}}</h4>
 					<p>Map: {{.MapName}} ({{.MapHash}})</p>
-					<p>When: {{.TimeStarted}} ({{GameTimeToStringI .GameTime}})</p>
+					<p>When: {{.TimeStarted}} <=> {{.TimeEnded}} GMT</p>
+					<p>Game time: {{GameTimeToStringI .GameTime}}</p>
 					<p>Settings:
 						<img class="icons icons-base{{.BaseLevel}}">
 						<img class="icons icons-alliance{{allianceToClassI .Alliances}}">
