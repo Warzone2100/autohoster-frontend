@@ -109,9 +109,13 @@ function IDFormatter(value, row) {
 function TimeFormatter(value, row) {
 	let igt = "in-game";
 	if(row.GameTime > 200) {
-		let minutes = Math.floor(row.GameTime / 60000);
-		let seconds = ((row.GameTime % 60000) / 1000).toFixed(0);
-		igt = minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+		let seconds = Math.floor(row.GameTime / 1000);
+		let minutes = Math.floor(seconds / 60);
+		let hours = Math.floor(minutes / 60);
+		seconds = seconds % 60;
+		minutes = minutes % 60;
+		igt = hours == 0 ? "" : hours + ":"
+		igt += (hours != 0 && minutes < 10 ? '0' : '') + minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 	}
 	return value + `<br>` + igt;
 }
