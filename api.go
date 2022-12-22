@@ -259,6 +259,68 @@ func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, in
 	return -1, nil
 }
 
+func APIgetPlayerLinked(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+	params := mux.Vars(r)
+	phash := params["hash"]
+	linked := 0
+	derr := dbpool.QueryRow(r.Context(), `select count(*) from users where wzprofile2 = (select id from players where hash = $1);`, phash).Scan(&linked)
+	if derr != nil {
+		return 500, derr
+	}
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, fmt.Sprint(linked))
+	return -1, nil
+}
+
+func APIgetLinkedPlayers(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+	hashes := []string{}
+	rows, err := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2;`)
+	if err != nil {
+		return 500, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		h := ""
+		err = rows.Scan(&h)
+		if err != nil {
+			return 500, err
+		}
+		hashes = append(hashes, h)
+	}
+	return 200, hashes
+}
+
+func APIgetISPbypassHashes(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+	hashes := []string{}
+	rows, err := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2 where users.bypass_ispban = true;`)
+	if err != nil {
+		return 500, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		h := ""
+		err = rows.Scan(&h)
+		if err != nil {
+			return 500, err
+		}
+		hashes = append(hashes, h)
+	}
+	return 200, hashes
+}
+
+func APIgetISPbypassHash(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+	params := mux.Vars(r)
+	phash := params["hash"]
+	linked := 0
+	derr := dbpool.QueryRow(r.Context(), `select count(*) from users where wzprofile2 = (select id from players where hash = $1) and bypass_ispban = true;`, phash).Scan(&linked)
+	if derr != nil {
+		return 500, derr
+	}
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, fmt.Sprint(linked))
+	return -1, nil
+}
+
 func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2 where users.allow_preset_request = true;`)
 	if derr != nil {

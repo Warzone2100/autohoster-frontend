@@ -41,12 +41,12 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Failed to parse form"))
 			return
 		}
-		if !stringOneOf(r.FormValue("param"), "allow_preset_request", "allow_host_request", "terminated", "norequest_reason") {
+		if !stringOneOf(r.FormValue("param"), "bypass_ispban", "allow_preset_request", "allow_host_request", "terminated", "norequest_reason") {
 			w.WriteHeader(403)
 			w.Write([]byte("Param is bad (" + r.FormValue("param") + ")"))
 			return
 		}
-		if stringOneOf(r.FormValue("param"), "allow_preset_request", "allow_host_request", "terminated") {
+		if stringOneOf(r.FormValue("param"), "bypass_ispban", "allow_preset_request", "allow_host_request", "terminated") {
 			if !stringOneOf(r.FormValue("val"), "true", "false") {
 				w.WriteHeader(400)
 				w.Write([]byte("Val is bad"))
@@ -72,8 +72,10 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(200)
-		// basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": "Success"})
-		// w.Header().Set("Refresh", "1; /users")
+		if r.FormValue("param") == "norequest_reason" {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": "Success"})
+			w.Header().Set("Refresh", "1; /moderation/users")
+		}
 	} else {
 		rows, derr := dbpool.Query(context.Background(), `select to_json(users) from users order by id asc;`)
 		if derr != nil {
