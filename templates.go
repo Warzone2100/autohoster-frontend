@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -34,6 +35,9 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 			}
 		}
 		params["NavWhere"] = page
+		if strings.HasPrefix(r.Host, "dev.") {
+			params["IsDevWebsite"] = true
+		}
 		sessionAppendUser(r, &params)
 		w.Header().Set("Server", "TacticalPepe webserver "+CommitHash)
 		w.Header().Set("Cache-Control", "no-cache")
