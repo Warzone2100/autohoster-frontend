@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
@@ -111,12 +112,10 @@ func checkRespondGenericErrorAny(w http.ResponseWriter, r *http.Request, derr er
 
 func myNotFoundHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := r.Header.Get("CF-Connecting-IP")
-		geo := r.Header.Get("CF-IPCountry")
-		ua := r.Header.Get("user-agent")
-		log.Println("["+geo+" "+ip+"] 404", r.Method, r.URL.Path, "["+ua+"]")
 		w.WriteHeader(http.StatusNotFound)
-		basicLayoutLookupRespond("error404", w, r, map[string]interface{}{})
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			basicLayoutLookupRespond("error404", w, r, map[string]interface{}{})
+		}
 	})
 }
 func hashPassword(pwd string) string {
