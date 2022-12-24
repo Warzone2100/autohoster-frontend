@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -141,6 +142,9 @@ var layoutFuncs = template.FuncMap{
 			return fmt.Sprint(d)
 		}
 		return "snan"
+	},
+	"datefmt": func(val time.Time) string {
+		return val.Format("15:04 02 Jan 2006")
 	},
 }
 
@@ -293,12 +297,59 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	})
 	return a
 }
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	load, _ := load.Avg()
 	virtmem, _ := mem.VirtualMemory()
 	uptime, _ := host.Uptime()
 	uptimetime, _ := time.ParseDuration(strconv.Itoa(int(uptime)) + "s")
-	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem, "Uptime": uptimetime})
+	type article struct {
+		Title   string    `json:"title"`
+		Content string    `json:"content"`
+		Time    time.Time `json:"posttime"`
+		Color   string    `json:"color"`
+	}
+	news := []article{}
+	rows, err := dbpool.Query(r.Context(), `select title, content, posttime, color from news order by posttime desc limit 25;`)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			news = []article{
+				{
+					Title:   "No news yet",
+					Content: "I am lazy",
+					Time:    time.Now(),
+					Color:   "success",
+				},
+			}
+		} else {
+			news = []article{
+				{
+					Title:   "Error loading news",
+					Content: err.Error(),
+					Time:    time.Now(),
+					Color:   "danger",
+				},
+			}
+		}
+	} else {
+		for rows.Next() {
+			var a article
+			err = rows.Scan(&a.Title, &a.Content, &a.Time, &a.Color)
+			if err != nil {
+				news = []article{
+					{
+						Title:   "Error loading news",
+						Content: err.Error(),
+						Time:    time.Now(),
+						Color:   "danger",
+					},
+				}
+				break
+			}
+			news = append(news, a)
+		}
+	}
+	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem, "Uptime": uptimetime, "News": news})
 }
 func robotsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "User-agent: *\nDisallow: /\n\n\n")
@@ -640,6 +691,7 @@ func main() {
 
 	router.HandleFunc("/moderation/users", modUsersHandler)
 	router.HandleFunc("/moderation/merge", modMergeHandler)
+	router.HandleFunc("/moderation/news", modNewsHandler)
 	router.HandleFunc("/moderation", basicLayoutHandler("modMain"))
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)

@@ -179,3 +179,46 @@
 	</body>
 </html>
 {{end}}
+{{define "modNews"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+		{{template "NavPanel" . }}
+		<div class="px-4 py-5 my-5 container">
+			<h3>Post news</h3>
+			<form method="POST" action="/moderation/news" target="_self">
+				<table><tr><td>
+					<label for="into">Title: </label></td><td>
+					<input type="text" name="title"></td></tr>
+				<tr><td>
+					<label for="content">Content: </label></td><td>
+					<textarea name="content"></textarea></td></tr>
+				<tr><td>
+					<label for="date">Date: </label></td><td>
+					<input type="datetime-local" name="date" id="datetime-selector"></td></tr>
+				<tr><td>
+					Color:</td><td>
+					<input type="radio" name="color" value="default" id="default" checked><label for="default"><div class="callout p-1 m-1 callout-default">default</div></label><br>
+					<input type="radio" name="color" value="primary" id="primary"><label for="primary"><div class="callout p-1 m-1 callout-primary">primary</div></label><br>
+					<input type="radio" name="color" value="success" id="success"><label for="success"><div class="callout p-1 m-1 callout-success">success</div></label><br>
+					<input type="radio" name="color" value="danger" id="danger"><label for="danger"><div class="callout p-1 m-1 callout-danger">danger</div></label><br>
+					<input type="radio" name="color" value="warning" id="warning"><label for="warning"><div class="callout p-1 m-1 callout-warning">warning</div></label><br>
+					<input type="radio" name="color" value="info" id="info"><label for="info"><div class="callout p-1 m-1 callout-info">info</div></label><br>
+					<input type="radio" name="color" value="bdc" id="bdc"><label for="bdc"><div class="callout p-1 m-1 callout-bdc">bdc</div></label><br>
+					{{/* <input type="text" name="color" value="success"></td></tr> */}}
+				</tr></table>
+				<input type="submit">
+			</form>
+			<script>
+			var myField = document.getElementById("datetime-selector");
+			var now = new Date();
+			myField.valueAsNumber = now.getTime() - now.getTimezoneOffset() * 60000;
+			</script>
+		</div>
+	</body>
+</html>
+{{end}}

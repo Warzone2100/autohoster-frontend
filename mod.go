@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -178,5 +179,37 @@ func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true, "msg": report})
 	} else {
 		basicLayoutLookupRespond("modMerge", w, r, map[string]interface{}{})
+	}
+}
+
+func modNewsHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkUserAuthorized(r) {
+		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+		return
+	}
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		w.WriteHeader(http.StatusForbidden)
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
+		return
+	}
+	if r.Method == "POST" {
+		err := r.ParseForm()
+		if err != nil {
+			w.WriteHeader(400)
+			w.Write([]byte("Failed to parse form: " + err.Error()))
+			return
+		}
+		tag, err := dbpool.Exec(r.Context(), `insert into news (title, content, color, posttime) values ($1, $2, $3, $4)`, r.FormValue("title"), r.FormValue("content"), r.FormValue("color"), r.FormValue("date"))
+		result := ""
+		if err != nil {
+			result = err.Error()
+		} else {
+			result = tag.String()
+		}
+		msg := template.HTML(result + `<br><a href="/moderation/news">back</a>`)
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true,
+			"msg": msg})
+	} else {
+		basicLayoutLookupRespond("modNews", w, r, map[string]interface{}{})
 	}
 }
