@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -81,19 +82,17 @@ func APIgetGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) 
 	return 200, []byte(j)
 }
 
-func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) {
-	params := mux.Vars(r)
-	interval := params["interval"]
-	rows, derr := dbpool.Query(r.Context(), `SELECT date_trunc($1, g.timestarted)::text || '+00', count(g.timestarted)
+func getDatesGraphData(ctx context.Context, interval string) ([]map[string]int, error) {
+	rows, derr := dbpool.Query(ctx, `SELECT date_trunc($1, g.timestarted)::text || '+00', count(g.timestarted)
 	FROM games as g
 	WHERE g.timestarted > now() - '1 year 7 days'::interval
 	GROUP BY date_trunc($1, g.timestarted)
 	ORDER BY date_trunc($1, g.timestarted)`, interval)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			return 204, nil
+			return []map[string]int{}, nil
 		}
-		return 500, derr
+		return []map[string]int{}, derr
 	}
 	defer rows.Close()
 	ret := []map[string]int{}
@@ -102,9 +101,17 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interfac
 		var c int
 		err := rows.Scan(&d, &c)
 		if err != nil {
-			return 500, err
+			return []map[string]int{}, err
 		}
 		ret = append(ret, map[string]int{d: c})
+	}
+	return ret, nil
+}
+
+func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+	ret, err := getDatesGraphData(r.Context(), mux.Vars(r)["interval"])
+	if err != nil {
+		return 500, err
 	}
 	return 200, ret
 }

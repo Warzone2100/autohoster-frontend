@@ -21,7 +21,7 @@
 					<p>Home of Autohoster - automatic hosting system with ratings and replays.
 						Everyone can request room and get dedicated host for Warzone 2100.
 						Autohoster can read chat, respond to your commands and provide leaderbords.
-						With authentication you can also proof to others that you are legit player</p>
+						With authentication you can also proof to others that you are legit player.</p>
 					<div class="row">
 						<div class="col">
 							<h5>Useful links</h5>
@@ -38,16 +38,20 @@
 							</p>
 						</div>
 						<div class="col">
-							{{if avail "LoadAvg" .}}<p>Server load: {{.LoadAvg.Load1}} {{.LoadAvg.Load5}} {{.LoadAvg.Load15}}</p>{{end}}
-							{{if avail "VirtMem" .}}<p>Server RAM: {{FormatBytes .VirtMem.Used}}/{{FormatBytes .VirtMem.Total}} ({{FormatPercent .VirtMem.UsedPercent}})</p>{{end}}
-							{{if avail "Uptime" .}}<p>Server uptime: {{.Uptime}}</p>{{end}}
-							{{if avail "GamesLastWeek" .}}<p>Games played for the past 7 days: {{.GamesLastWeek}}</p>{{end}}
+							<p>In past 48 hours:</p>
+							{{if avail "LastGames" .}}Games played: {{.LastGames}}<br>{{end}}
+							{{if avail "LastPlayers" .}}Unique players: {{.LastPlayers}}<br>{{end}}
+							{{if avail "LastGTime" .}}Time in-game: {{GameTimeToStringI .LastGTime}}<br>{{end}}
+							{{if avail "LastProduced" .}}Produced units: {{.LastProduced}}<br>{{end}}
+							{{if avail "LastBuilt" .}}Built structures: {{.LastBuilt}}<br>{{end}}
+							{{if avail "LastElo" .}}Elo transferred: {{.LastElo}}<br>{{end}}
+							{{if avail "LastRating" .}}Rating transferred: {{.LastRating}}<br>{{end}}
 						</div>
 					</div>
 				</div>
 				<div class="col" style="margin-left: 50px;">
 					<h3>News</h3>
-					<div style="overflow-y: scroll;overflow-x: clip;height: 25rem;">
+					<div style="overflow-y: scroll;overflow-x: clip;height: 24rem;">
 						{{range $_, $v := .News}}
 						<div class="callout callout-{{$v.Color}} m-1 p-1 ps-2">
 							<div class="row"><div class="col"><h5>{{$v.Title}}</h5></div>
@@ -136,20 +140,8 @@
 				// y : {stacked: false,
 				// 	title: {display: true, text: 'Value'}
 				// }
-			function LoadGraph() {
-				// document.getElementById(`LoadingGraphText`).style.display = `block`;
-				var xhr = new XMLHttpRequest();
-				xhr.onreadystatechange = function() {
-					if (xhr.readyState === 4 && xhr.status === 200) {
-						PlotData(xhr.response);
-						// document.getElementById(`LoadingGraphText`).style.display = `none`;
-					}
-				}
-				xhr.open('GET', window.location.origin+'/api/gamecount/day', true);
-				xhr.send(null);
-			}
 			document.addEventListener("DOMContentLoaded", function () {
-				LoadGraph();
+				PlotData({{.GamesGraph}});
 			});
 			</script>
 		</div>

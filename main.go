@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -295,59 +294,6 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	return a
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	// load, _ := load.Avg()
-	// virtmem, _ := mem.VirtualMemory()
-	// uptime, _ := host.Uptime()
-	// uptimetime, _ := time.ParseDuration(strconv.Itoa(int(uptime)) + "s")
-	type article struct {
-		Title   string    `json:"title"`
-		Content string    `json:"content"`
-		Time    time.Time `json:"posttime"`
-		Color   string    `json:"color"`
-	}
-	news := []article{}
-	rows, err := dbpool.Query(r.Context(), `select title, content, posttime, color from news order by posttime desc limit 25;`)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			news = []article{
-				{
-					Title:   "No news yet",
-					Content: "I am lazy",
-					Time:    time.Now(),
-					Color:   "success",
-				},
-			}
-		} else {
-			news = []article{
-				{
-					Title:   "Error loading news",
-					Content: err.Error(),
-					Time:    time.Now(),
-					Color:   "danger",
-				},
-			}
-		}
-	} else {
-		for rows.Next() {
-			var a article
-			err = rows.Scan(&a.Title, &a.Content, &a.Time, &a.Color)
-			if err != nil {
-				news = []article{
-					{
-						Title:   "Error loading news",
-						Content: err.Error(),
-						Time:    time.Now(),
-						Color:   "danger",
-					},
-				}
-				break
-			}
-			news = append(news, a)
-		}
-	}
-	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"News": news})
-}
 func robotsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "User-agent: *\nDisallow: /\n\n\n")
 }
