@@ -28,9 +28,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/natefinch/lumberjack"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/load"
-	"github.com/shirou/gopsutil/v3/mem"
 	"golang.org/x/oauth2"
 )
 
@@ -299,10 +296,10 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	load, _ := load.Avg()
-	virtmem, _ := mem.VirtualMemory()
-	uptime, _ := host.Uptime()
-	uptimetime, _ := time.ParseDuration(strconv.Itoa(int(uptime)) + "s")
+	// load, _ := load.Avg()
+	// virtmem, _ := mem.VirtualMemory()
+	// uptime, _ := host.Uptime()
+	// uptimetime, _ := time.ParseDuration(strconv.Itoa(int(uptime)) + "s")
 	type article struct {
 		Title   string    `json:"title"`
 		Content string    `json:"content"`
@@ -349,7 +346,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			news = append(news, a)
 		}
 	}
-	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"LoadAvg": load, "VirtMem": virtmem, "Uptime": uptimetime, "News": news})
+	basicLayoutLookupRespond("index", w, r, map[string]interface{}{"News": news})
 }
 func robotsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "User-agent: *\nDisallow: /\n\n\n")
