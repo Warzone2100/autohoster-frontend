@@ -21,6 +21,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	timeInterval := "48 hours"
 	news := []article{}
 	gamesPlayed := 0
+	gamesPlayedMasterbal := 0
 	uniqPlayers := 0
 	gameTime := 0
 	unitsProduced := 0
@@ -69,7 +70,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}, func(ech chan<- error) {
-		err := dbpool.QueryRow(r.Context(), `select count(*) from games where timestarted + $1::interval > now()`, timeInterval).Scan(&gamesPlayed)
+		err := dbpool.QueryRow(r.Context(), `select count(*) from games where timestarted + $1::interval > now() and mod != 'masterbal'`, timeInterval).Scan(&gamesPlayed)
+		if err != nil {
+			ech <- err
+		}
+	}, func(ech chan<- error) {
+		err := dbpool.QueryRow(r.Context(), `select count(*) from games where timestarted + $1::interval > now() and mod = 'masterbal'`, timeInterval).Scan(&gamesPlayedMasterbal)
 		if err != nil {
 			ech <- err
 		}
@@ -117,14 +123,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	basicLayoutLookupRespond("index", w, r, map[string]interface{}{
-		"News":         news,
-		"LastGames":    gamesPlayed,
-		"LastPlayers":  uniqPlayers,
-		"LastGTime":    gameTime,
-		"LastProduced": humanize.Comma(int64(unitsProduced)),
-		"LastBuilt":    humanize.Comma(int64(structsBuilt)),
-		"LastElo":      eloTransferred,
-		"LastRating":   ratingTransferred,
-		"GamesGraph":   string(gamesGraph),
+		"News":               news,
+		"LastGames":          gamesPlayed,
+		"LastGamesMasterbal": gamesPlayedMasterbal,
+		"LastPlayers":        uniqPlayers,
+		"LastGTime":          gameTime,
+		"LastProduced":       humanize.Comma(int64(unitsProduced)),
+		"LastBuilt":          humanize.Comma(int64(structsBuilt)),
+		"LastElo":            eloTransferred,
+		"LastRating":         ratingTransferred,
+		"GamesGraph":         string(gamesGraph),
 	})
 }
