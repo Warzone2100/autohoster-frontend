@@ -107,15 +107,15 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tag, derr = dbpool.Exec(context.Background(), "UPDATE presets SET last_requested = now() WHERE maphash = $1", r.PostFormValue("maphash"))
+		_, derr = dbpool.Exec(context.Background(), "UPDATE presets SET last_requested = now() WHERE maphash = $1", r.PostFormValue("maphash"))
 		if derr != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + cerr.Error()})
 			return
 		}
-		if tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
-			return
-		}
+		// if tag.RowsAffected() != 1 {
+		// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+		// 	return
+		// }
 		gamever := r.PostFormValue("gamever")
 		k, versraw := RequestVersions()
 		vers := map[string]interface{}{}
@@ -144,11 +144,11 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			roomname = "Autohoster"
 		}
 		mixmod := ""
-		if r.PostFormValue("AddSpecs") == "on" {
-			mixmod = "spec"
-		}
+		// if r.PostFormValue("AddSpecs") == "on" {
+		// 	mixmod = "spec"
+		// }
 		if r.PostFormValue("AddBalance") == "on" {
-			mixmod += "bal"
+			mixmod += "masterbal"
 		}
 		alliancen, err := strconv.Atoi(r.PostFormValue("alliances"))
 		if err != nil {
