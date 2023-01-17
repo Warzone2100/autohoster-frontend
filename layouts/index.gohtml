@@ -37,10 +37,11 @@
 								</ul>
 							</p>
 						</div>
-						<div class="col">
+						<div class="col col-7">
 							<p>In past 48 hours:</p>
 							{{if avail "LastGames" .}}Games played: {{.LastGames}}<br>{{end}}
 							{{if avail "LastGamesMasterbal" .}}Games played on masterbalance: {{.LastGamesMasterbal}}<br>{{end}}
+							{{if avail "LastGamesTiny" .}}Games played on Tiny_VautEdition: {{.LastGamesTiny}} {{.LastGamesTinyPrc}}<br>{{end}}
 							{{if avail "LastPlayers" .}}Unique players: {{.LastPlayers}}<br>{{end}}
 							{{if avail "LastGTime" .}}Time in-game: {{GameTimeToStringI .LastGTime}}<br>{{end}}
 							{{if avail "LastProduced" .}}Produced units: {{.LastProduced}}<br>{{end}}

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -22,6 +23,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	news := []article{}
 	gamesPlayed := 0
 	gamesPlayedMasterbal := 0
+	gamesPlayedTiny := 0
 	uniqPlayers := 0
 	gameTime := 0
 	unitsProduced := 0
@@ -80,6 +82,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			ech <- err
 		}
 	}, func(ech chan<- error) {
+		err := dbpool.QueryRow(r.Context(), `select count(*) from games where timestarted + $1::interval > now() and mapname = 'Tiny_VautEdition'`, timeInterval).Scan(&gamesPlayedTiny)
+		if err != nil {
+			ech <- err
+		}
+	}, func(ech chan<- error) {
 		err := dbpool.QueryRow(r.Context(), `select count(distinct p) from games, unnest(players) as p where timestarted + $1::interval > now()`, timeInterval).Scan(&uniqPlayers)
 		if err != nil {
 			ech <- err
@@ -126,6 +133,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		"News":               news,
 		"LastGames":          gamesPlayed,
 		"LastGamesMasterbal": gamesPlayedMasterbal,
+		"LastGamesTiny":      gamesPlayedTiny,
+		"LastGamesTinyPrc":   fmt.Sprintf("(%.1f%%)", float64(gamesPlayedTiny)/float64(gamesPlayed)*float64(100)),
 		"LastPlayers":        uniqPlayers,
 		"LastGTime":          gameTime,
 		"LastProduced":       humanize.Comma(int64(unitsProduced)),
