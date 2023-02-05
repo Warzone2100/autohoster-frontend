@@ -84,6 +84,8 @@ func main() {
 	currentWeek := time.Now().Unix() / (7 * 24 * 60 * 60)
 
 	var stat unix.Statfs_t
+	wd, err := os.Getwd()
+	must(err)
 
 	for wi, w := range keys {
 		if currentWeek-w < 3 {
@@ -92,8 +94,6 @@ func main() {
 		instances := weeks[w]
 		log.Printf("Packing week %3d offset %3d instances %3d", w, currentWeek-w, len(instances))
 
-		wd, err := os.Getwd()
-		must(err)
 		unix.Statfs(wd, &stat)
 		freeMegabytesLeft := (stat.Bavail * uint64(stat.Bsize)) / 1024 / 1024
 		if freeMegabytesLeft < 250 {
@@ -108,6 +108,8 @@ func main() {
 		twr := tar.NewWriter(zwr)
 
 		for i, j := range instances {
+			unix.Statfs(wd, &stat)
+			freeMegabytesLeft = (stat.Bavail * uint64(stat.Bsize)) / 1024 / 1024
 			log.Printf("%4d/%-4d %5d/%-5d %4d %s %s", wi, len(keys), i, len(instances), freeMegabytesLeft, j.Name(), instDirNameToDate(j.Name()).String())
 			filepath.Walk(path.Join(*instancesFolderPath, j.Name()), func(file string, fi os.FileInfo, err error) error {
 				must(err)
@@ -141,9 +143,8 @@ func main() {
 
 		for _, i := range instances {
 			log.Println("Removing", path.Join(*instancesFolderPath, i.Name()))
-			// os.RemoveAll(path.Join(*instancesFolderPath, i.Name()))
+			os.RemoveAll(path.Join(*instancesFolderPath, i.Name()))
 		}
-		break
 	}
 
 	// log.Println("Connecting to database...")
