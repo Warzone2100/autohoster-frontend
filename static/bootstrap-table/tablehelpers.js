@@ -28,11 +28,11 @@ function nameFormatter(value, row) {
 	ret += `</td><td rowspan="3" class="rank-medal">`;
 	if(Autoplayed > 4) {
 		if(Autolost == 0) {
-		} else if(Autowon > 24 && Autowon/Autolost > 12) {
+		} else if(Autowon >= 24 && Autowon/Autolost > 12) {
 			ret += `<object class="rank rank-medalGold"></object>`;
-		} else if(Autowon > 12 && Autowon/Autolost > 6) {
+		} else if(Autowon >= 12 && Autowon/Autolost > 6) {
 			ret += `<object class="rank rank-medalDouble"></object>`;
-		} else if(Autowon > 6 && Autowon/Autolost > 3) {
+		} else if(Autowon >= 6 && Autowon/Autolost > 3) {
 			ret += `<object class="rank rank-medalSilver"></object>`;
 		}
 	} else {
