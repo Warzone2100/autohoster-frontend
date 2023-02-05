@@ -419,9 +419,9 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 			if dal == 0 {
 				dal = 1
 			}
-			if daw >= 24 && float64(daw)/float64(dal) > 12.0 {
+			if daw >= 24 && float64(daw)/float64(dal) > 6.0 {
 				m.Medal = 1
-			} else if daw >= 12 && float64(daw)/float64(dal) > 6.0 {
+			} else if daw >= 12 && float64(daw)/float64(dal) > 4.0 {
 				m.Medal = 2
 			} else if daw >= 6 && float64(daw)/float64(dal) > 3.0 {
 				m.Medal = 3
