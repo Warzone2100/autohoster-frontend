@@ -399,7 +399,7 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 		if m.Elo == "" {
 			var pc string
 			if dap > 0 {
-				pc = fmt.Sprintf("%.1f%%", 100*(float64(daw)/float64(dap)))
+				pc = fmt.Sprintf("%.1f%%", float64(100)*(float64(daw)/float64(daw+dal)))
 			} else {
 				pc = "-"
 			}
