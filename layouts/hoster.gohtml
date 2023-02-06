@@ -306,9 +306,9 @@ var presets = [
 					{{if le .Autoplayed 4}}
 					<object class="rank rank-pacifier"></object>
 					{{else if eq .Autolost 0}}
-					{{else if and (ge .Autowon 24) (gt (divtf64 .Autowon .Autolost) 12.0)}}
+					{{else if and (ge .Autowon 24) (gt (divtf64 .Autowon .Autolost) 4.0)}}
 					<object class="rank rank-medalGold"></object>
-					{{else if and (ge .Autowon 12) (gt (divtf64 .Autowon .Autolost) 6.0)}}
+					{{else if and (ge .Autowon 12) (gt (divtf64 .Autowon .Autolost) 4.0)}}
 					<object class="rank rank-medalDouble"></object>
 					{{else if and (ge .Autowon 6) (gt (divtf64 .Autowon .Autolost) 3.0)}}
 					<object class="rank rank-medalSilver"></object>
