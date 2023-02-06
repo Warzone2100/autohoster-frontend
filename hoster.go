@@ -233,7 +233,25 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 					newwzid, sessionManager.GetString(r.Context(), "User.Username"))
 				if derr != nil {
 					log.Println(derr.Error())
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+					newmsg := "confirm-" + generateRandomString(18)
+					tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+						newmsg, sessionManager.GetString(r.Context(), "User.Username"))
+					if derr != nil {
+						log.Println(derr.Error())
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+						return
+					}
+					if tag.RowsAffected() != 1 {
+						log.Println(derr.Error())
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+						return
+					}
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+						"msg": template.HTML(`Profile already linked to an account. Contact Autohoster Administrator to resolve a conflict.
+								<br>We created new link code for you: <code>` + newmsg + `</code>
+								<br>Send it to any Autohoster room with profile you want to link selected.
+								<br>Refresh this page after you sent the message.`),
+					})
 					return
 				}
 				if tag.RowsAffected() != 1 {
