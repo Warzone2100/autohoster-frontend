@@ -315,11 +315,11 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": template.HTML("We created new link code for you: <code>" + newmsg + "</code><br>Send it to any Autohoster room with profile you want to link selected."),
+				"msg": template.HTML("We created new link code for you: <code>" + newmsg + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
 			})
 		} else {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": template.HTML("Your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected."),
+				"msg": template.HTML("Your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
 			})
 		}
 	} else {
@@ -341,7 +341,7 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": template.HTML("You are linked to profile " + strconv.Itoa(profilenum) + "<br>If you want to merge profiles into existing one your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected."),
+				"msg": template.HTML("You are linked to profile " + strconv.Itoa(profilenum) + "<br>If you want to merge profiles into existing one your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
 			})
 		} else {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
