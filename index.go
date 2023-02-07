@@ -31,7 +31,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	eloTransferred := 0
 	ratingTransferred := 0
 	gamesGraph := []byte("[]")
-	err := RequestMultiple(func(ech chan<- error) {
+	err := RequestMultiple(func(_ chan<- error) {
 		rows, err := dbpool.Query(r.Context(), `select title, content, posttime, color from news order by posttime desc limit 25;`)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {

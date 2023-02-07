@@ -58,7 +58,7 @@ func APIcall(c func(http.ResponseWriter, *http.Request) (int, interface{})) func
 	}
 }
 
-func APItryReachMultihoster(w http.ResponseWriter, r *http.Request) {
+func APItryReachMultihoster(w http.ResponseWriter, _ *http.Request) {
 	s, m := RequestStatus()
 	io.WriteString(w, m)
 	if s {
@@ -68,7 +68,7 @@ func APItryReachMultihoster(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func APIgetGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j string
@@ -108,7 +108,7 @@ func getDatesGraphData(ctx context.Context, interval string) ([]map[string]int, 
 	return ret, nil
 }
 
-func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetDatesGraphData(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	ret, err := getDatesGraphData(r.Context(), mux.Vars(r)["interval"])
 	if err != nil {
 		return 500, err
@@ -116,7 +116,7 @@ func APIgetDatesGraphData(w http.ResponseWriter, r *http.Request) (int, interfac
 	return 200, ret
 }
 
-func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetDayAverageByHour(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(r.Context(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
 	if derr != nil {
 		return 500, derr
@@ -134,7 +134,7 @@ func APIgetDayAverageByHour(w http.ResponseWriter, r *http.Request) (int, interf
 	return 200, re
 }
 
-func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(r.Context(),
 		`SELECT
 			b::TEXT,
@@ -163,7 +163,7 @@ func APIgetUniquePlayersPerDay(w http.ResponseWriter, r *http.Request) (int, int
 	return 200, re
 }
 
-func APIgetMapNameCount(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetMapNameCount(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(r.Context(), `select mapname, count(*) as c from games group by mapname order by c desc`)
 	if derr != nil {
 		return 500, derr
@@ -227,7 +227,7 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{})
 	return -1, nil
 }
 
-func APIgetClassChartGame(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	reslog := "0"
@@ -279,7 +279,7 @@ func APIgetPlayerLinked(w http.ResponseWriter, r *http.Request) (int, interface{
 	return -1, nil
 }
 
-func APIgetLinkedPlayers(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetLinkedPlayers(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	hashes := []string{}
 	rows, err := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2;`)
 	if err != nil {
@@ -297,7 +297,7 @@ func APIgetLinkedPlayers(w http.ResponseWriter, r *http.Request) (int, interface
 	return 200, hashes
 }
 
-func APIgetISPbypassHashes(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetISPbypassHashes(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	hashes := []string{}
 	rows, err := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2 where users.bypass_ispban = true;`)
 	if err != nil {
@@ -328,7 +328,7 @@ func APIgetISPbypassHash(w http.ResponseWriter, r *http.Request) (int, interface
 	return -1, nil
 }
 
-func APIgetAllowedModerators(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetAllowedModerators(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2 where users.allow_preset_request = true;`)
 	if derr != nil {
 		return 500, derr
@@ -390,7 +390,7 @@ func CountClassification(c []map[string]string, resl []resEntry) (ret map[int]ma
 	return
 }
 
-func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetClassChartPlayer(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	pid, err := strconv.Atoi(params["pid"])
 	if err != nil {
@@ -496,7 +496,7 @@ func APIgetClassChartPlayer(w http.ResponseWriter, r *http.Request) (int, interf
 	return 200, ret
 }
 
-func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetElodiffChartPlayer(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	pid, err := strconv.Atoi(params["pid"])
 	if err != nil {
@@ -516,7 +516,6 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) (int, inte
 			AND calculated = true
 			AND hidden = false
 			AND deleted = false
-			AND id > 200
 		order by timestarted asc`, pid)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
@@ -571,7 +570,7 @@ func APIgetElodiffChartPlayer(w http.ResponseWriter, r *http.Request) (int, inte
 	return 200, h
 }
 
-func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
 	// dbLimit := parseQueryInt(r, "limit", 5)
 	// dbOffset := parseQueryInt(r, "offset", 0)
@@ -603,7 +602,7 @@ func APIgetLeaderboard(w http.ResponseWriter, r *http.Request) (int, interface{}
 	return 200, P
 }
 
-func APIgetGames(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	reqLimit := parseQueryInt(r, "limit", 50)
 	if reqLimit > 200 {
 		reqLimit = 200

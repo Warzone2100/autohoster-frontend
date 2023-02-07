@@ -232,7 +232,6 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
 					newwzid, sessionManager.GetString(r.Context(), "User.Username"))
 				if derr != nil {
-					log.Println(derr.Error())
 					newmsg := "confirm-" + generateRandomString(18)
 					tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
 						newmsg, sessionManager.GetString(r.Context(), "User.Username"))

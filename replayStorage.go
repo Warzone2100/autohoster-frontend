@@ -126,7 +126,7 @@ func checkReplayExistsInStorage(gid int) bool {
 	return true
 }
 
-func replayMoveHandler(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func replayMoveHandler(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	if sessionGetUsername(r) != "Flex seal" {
 		return 401, nil
 	}

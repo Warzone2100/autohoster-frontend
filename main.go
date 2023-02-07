@@ -297,7 +297,7 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	return a
 }
 
-func robotsHandler(w http.ResponseWriter, r *http.Request) {
+func robotsHandler(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprint(w, "User-agent: *\nDisallow: /\n\n\n")
 }
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -463,7 +463,7 @@ func (w *statusRespWr) writeHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-func customLogger(writer io.Writer, params handlers.LogFormatterParams) {
+func customLogger(_ io.Writer, params handlers.LogFormatterParams) {
 	r := params.Request
 	ip := r.Header.Get("CF-Connecting-IP")
 	geo := r.Header.Get("CF-IPCountry")
