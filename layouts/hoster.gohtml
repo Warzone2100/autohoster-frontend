@@ -316,8 +316,12 @@ var presets = [
 				</td>
 				<!-- name -->
 				<td rowspan="3" class="rank-link">
-					{{if and (avail "Userid" .) (gt .Userid 0)}}
+					{{if avail "Userid" .}}
+					{{if gt .Userid 0}}
 					<a class="rank-name-checkmark" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
+					{{else}}
+					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
+					{{end}}
 					{{else}}
 					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
 					{{end}}
