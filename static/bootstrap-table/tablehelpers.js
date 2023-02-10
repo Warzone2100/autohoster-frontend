@@ -39,10 +39,7 @@ function nameFormatter(value, row) {
 		ret += `<object class="rank rank-pacifier"></object>`;
 	}
 	ret += `</td><td rowspan="3" class="rank-link">`;
-	ret += `<a href="/players/${ID}" title="Hash: ${Hash}">${Name}</a>`;
-	if(Userid > 0) {
-		ret += `<text class="games-winner-name">✔</text>`;
-	}
+	ret += `<a href="/players/${ID}" ${Userid>0?'class="rank-name-checkmark" ':""} title="Hash: ${Hash}">${Name}</a>`;
 	ret += `<br>${Elo}`;
 	if(EloDiff != undefined && EloDiff != 0) {
 		ret += "&nbsp;";

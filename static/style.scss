@@ -91,6 +91,16 @@
   color: lightgreen;
 }
 
+.rank-name-checkmark:after {
+  content: '\2713';
+  display: inline-block;
+  color: green;
+}
+
+.rank-name-checkmark {
+  display: inline-block;
+  padding-right: 24px;
+}
 
 .wz-color-background-0 { background-color: rgba(16, 112, 16, 0.15);}
 .wz-color-background-1 { background-color: rgba(255, 176, 53, 0.15);}
