@@ -582,10 +582,15 @@ func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}
 	// 	"Name":       "name",
 	// 	"ID":         "id",
 	// })
+	filterOnlyRegistered := ""
+	if parseQueryStringFiltered(r, "OnlyRegistered", "true", "false") == "true" {
+		filterOnlyRegistered = "AND users.id != -1"
+	}
 	rows, derr := dbpool.Query(r.Context(), `
-	SELECT id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1), timeplayed
+	SELECT players.id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce(users.id, -1) as userid, timeplayed
 	FROM players
-	WHERE autoplayed > 0`)
+	FULL OUTER JOIN users on players.id = users.wzprofile2
+	WHERE autoplayed > 0 `+filterOnlyRegistered)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
