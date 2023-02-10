@@ -102,7 +102,7 @@
 }
 
 .rank-name-checkmark:after {
-  content: '\2713';
+  content: '\2714';
   display: inline-block;
   color: green;
   width: 24px;
