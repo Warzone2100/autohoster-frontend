@@ -1,14 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -73,6 +77,10 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(200)
+		err = modSendWebhook(sessionGetUsername(r), r.FormValue("param"), r.FormValue("val"), r.FormValue("name"))
+		if err != nil {
+			log.Println(err)
+		}
 		if r.FormValue("param") == "norequest_reason" {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": "Success"})
 			w.Header().Set("Refresh", "1; /moderation/users")
@@ -107,6 +115,35 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			"Users": users,
 		})
 	}
+}
+
+func modSendWebhook(performer, param, action, target string) error {
+	b, err := json.Marshal(map[string]interface{}{
+		"username": "Frontend",
+		"content":  fmt.Sprintf("Administrator `%s` changed `%s` to `%s` for user `%s`.", performer, param, action, target),
+	})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", os.Getenv("DISCORD_WEBHOOK"), bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	c := http.Client{Timeout: 5 * time.Second}
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 204 {
+		defer resp.Body.Close()
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf(string(responseBody))
+	}
+	return nil
 }
 
 func modMergeHandler(w http.ResponseWriter, r *http.Request) {
