@@ -144,14 +144,6 @@ func generateRandomString(slen int) string {
 	return s
 }
 
-var regexName = regexp.MustCompile(`^[a-zA-Z ]*$`)
-
-func validateName(u string) bool {
-	if len(u) < 3 || len(u) > 25 || !regexName.MatchString(u) {
-		return false
-	}
-	return true
-}
 func validateUsername(u string) bool {
 	if len(u) < 3 || len(u) > 25 {
 		return false

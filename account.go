@@ -83,23 +83,17 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		type LastAttemptS struct {
-			Fname    string
-			Lname    string
 			Username string
 			Password string
 			Email    string
 		}
-		la := LastAttemptS{r.PostFormValue("fname"), r.PostFormValue("lname"), r.PostFormValue("username"), r.PostFormValue("password"), r.PostFormValue("email")}
+		la := LastAttemptS{r.PostFormValue("username"), r.PostFormValue("password"), r.PostFormValue("email")}
 		if !validateUsername(r.PostFormValue("username")) {
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Username length must be between 3 and 25", "LastAttempt": la})
 			return
 		}
 		if !validatePassword(r.PostFormValue("password")) {
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Password length must be between 6 and 25", "LastAttempt": la})
-			return
-		}
-		if !validateName(r.PostFormValue("fname")) || !validateName(r.PostFormValue("lname")) {
-			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Name length must be between 3 and 25 and can only contain a-z, A-Z characters and space", "LastAttempt": la})
 			return
 		}
 		if r.PostFormValue("password") != r.PostFormValue("confirm-password") {
@@ -113,8 +107,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		requname := r.PostFormValue("username")
 		requpass := hashPassword(r.PostFormValue("password"))
 		reqemail := r.PostFormValue("email")
-		reqfname := r.PostFormValue("fname")
-		reqlname := r.PostFormValue("lname")
 		reqemailcode := generateRandomString(50)
 
 		log.Printf("Register attempt: [%s] [%s]", requname, reqemail)
@@ -150,7 +142,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tag, derr := dbpool.Exec(r.Context(), "INSERT INTO users (username, password, fname, lname, email, emailconfirmcode) VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING", requname, requpass, reqfname, reqlname, reqemail, reqemailcode)
+		tag, derr := dbpool.Exec(r.Context(), "INSERT INTO users (username, password, email, emailconfirmcode) VALUES($1, $2, $3, $4) ON CONFLICT DO NOTHING", requname, requpass, reqemail, reqemailcode)
 		if derr != nil {
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Database call error: " + derr.Error(), "LastAttempt": la})
 			return

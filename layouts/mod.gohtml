@@ -81,10 +81,10 @@
 			<table class="table">
 				<tr>
 					<td>Id<br>term</td>
-					<td>Username<br>last seen<br>name</td>
+					<td>Username<br>last seen</td>
 					<td>Email<br>confirm<br>code</td>
 					<td>Preset</td>
-					<td>Any</td>
+					{{/* <td>Any</td> */}}
 					<td>ISP bypass</td>
 					<td>Reason</td>
 					<td>Last Request</td>
@@ -98,15 +98,14 @@
 						</button>
 					</td>
 					<td>{{$e.username}}<br>
-					{{if $e.last_seen}}{{$e.last_seen}}{{else}}&#60;10 October 2022{{end}}<br>
-					{{$e.fname}} {{$e.lname}}</td>
+					{{if $e.last_seen}}{{$e.last_seen}}{{else}}No records{{end}}</td>
 					<td>{{$e.email}}<br>{{$e.email_confirmed}}<br>{{strcut $e.emailconfirmcode 16}}</td>
 					<td><button class="btn btn-outline-{{if $e.allow_preset_request}}success{{else}}danger{{end}} btn-sm" data-value="{{$e.allow_preset_request}}" onclick="SendToggleRequest(this, 'allow_preset_request', '{{$e.username}}');">
 							{{if $e.allow_preset_request}}Yes{{else}}No{{end}}
 					</button></td>
-					<td><button class="btn btn-outline-{{if $e.allow_host_request}}success{{else}}danger{{end}} btn-sm" data-value="{{$e.allow_host_request}}" onclick="SendToggleRequest(this, 'allow_host_request', '{{$e.username}}');">
+					{{/* <td><button class="btn btn-outline-{{if $e.allow_host_request}}success{{else}}danger{{end}} btn-sm" data-value="{{$e.allow_host_request}}" onclick="SendToggleRequest(this, 'allow_host_request', '{{$e.username}}');">
 							{{if $e.allow_host_request}}Yes{{else}}No{{end}}
-					</button></td>
+					</button></td> */}}
 					<td><button class="btn btn-outline-{{if $e.bypass_ispban}}success{{else}}danger{{end}} btn-sm" data-value="{{$e.bypass_ispban}}" onclick="SendToggleRequest(this, 'bypass_ispban', '{{$e.username}}');">
 							{{if $e.bypass_ispban}}Yes{{else}}No{{end}}
 					</button></td>

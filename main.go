@@ -200,8 +200,6 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	}
 	var sessid int
 	var sessuname string
-	var sessfname string
-	var sesslname string
 	var sessemail string
 	var sesseconf string
 	var sessdisctoken string
@@ -221,7 +219,7 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 		sessuname = sessionManager.GetString(r.Context(), "User.Username")
 		log.Printf("User: [%s]", sessuname)
 		derr := dbpool.QueryRow(context.Background(), `
-			SELECT id, email, fname, lname,
+			SELECT id, email,
 			coalesce(extract(epoch from email_confirmed), 0)::text,
 			coalesce(discord_token, ''),
 			coalesce(discord_refresh, ''),
@@ -229,7 +227,7 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 			coalesce(wzprofile, -1), coalesce(wzprofile2, -1),
 			coalesce(vk_token, ''), coalesce(vk_uid, -1)
 			FROM users WHERE username = $1`, sessuname).
-			Scan(&sessid, &sessemail, &sessfname, &sesslname, &sesseconf,
+			Scan(&sessid, &sessemail, &sesseconf,
 				&sessdisctoken, &sessdiscrefreshtoken, &sessdiscrefreshwhenepoch,
 				&sesswzprofile, &sesswzprofile2,
 				&sessvktoken, &sessvkuid)
@@ -273,8 +271,6 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	usermap := map[string]interface{}{
 		"Username":   sessuname,
 		"Id":         sessid,
-		"Fname":      sessfname,
-		"Lname":      sesslname,
 		"Email":      sessemail,
 		"Econf":      sesseconf,
 		"WzProfile":  getWzProfile(r.Context(), sesswzprofile, "old_players3"),
