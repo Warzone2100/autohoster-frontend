@@ -88,7 +88,7 @@ func main() {
 	must(err)
 
 	for wi, w := range keys {
-		if currentWeek-w < 3 {
+		if currentWeek-w < 2 {
 			continue
 		}
 		instances := weeks[w]
