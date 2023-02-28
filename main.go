@@ -616,6 +616,7 @@ func main() {
 
 	router.HandleFunc("/legal", basicLayoutHandler("legal"))
 	router.HandleFunc("/about", basicLayoutHandler("about"))
+	router.HandleFunc("/rules", basicLayoutHandler("rules"))
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/logout", logoutHandler)
 	router.HandleFunc("/register", registerHandler)
