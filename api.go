@@ -570,6 +570,24 @@ func APIgetElodiffChartPlayer(_ http.ResponseWriter, r *http.Request) (int, inte
 	return 200, h
 }
 
+func APIgetUsers(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		return 403, nil
+	}
+	var ret []byte
+	derr := dbpool.QueryRow(r.Context(), `
+		SELECT array_to_json(array_agg(row_to_json(t)))
+		FROM (
+			SELECT id, username, email, last_seen, email_confirmed, wzprofile2, account_created,
+				allow_host_request, allow_preset_request, last_host_request, norequest_reason,
+				allow_profile_merge, terminated, bypass_ispban FROM users
+		) as t`).Scan(&ret)
+	if derr != nil {
+		return 500, derr
+	}
+	return 200, ret
+}
+
 func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
 	// dbLimit := parseQueryInt(r, "limit", 5)

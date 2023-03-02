@@ -678,6 +678,7 @@ func main() {
 	router.HandleFunc("/api/elohistory/{pid:[0-9]+}", APIcall(APIgetElodiffChartPlayer)).Methods("GET")
 	router.HandleFunc("/api/players", APIcall(APIgetLeaderboard)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/users", APIcall(APIgetUsers)).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 

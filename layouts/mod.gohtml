@@ -3,9 +3,28 @@
 <html translate="no">
 	<head>
 		{{template "head"}}
+		<title>Mod users</title>
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+		<link href="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
+		<link href="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.css" rel="stylesheet">
+		<link href="/static/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+
+		<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/tableExport.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF/jspdf.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/tableexport.jquery.plugin@1.10.21/libs/jsPDF-AutoTable/jspdf.plugin.autotable.js"></script>
+
+		<script src="/static/bootstrap-table/bootstrap-table.min.js"></script>
+		
+		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js"></script>
 	</head>
 	<body>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
 		<script>
 		function SendToggleRequest(el, param, name) {
@@ -76,50 +95,99 @@
 			XHR.send(FD);
 		}
 		</script>
-		<div class="px-4 py-5 my-5 container">
-			<h3>Users</h3>
-			<table class="table">
-				<tr>
-					<td>Id<br>term</td>
-					<td>Username<br>last seen</td>
-					<td>Email<br>confirm<br>code</td>
-					<td>Preset</td>
-					{{/* <td>Any</td> */}}
-					<td>ISP bypass</td>
-					<td>Reason</td>
-					<td>Last Request</td>
-					<td>WZnew</td>
-				</tr>
-				{{range $i, $e := .Users}}
-				<tr>
-					<td>{{$e.id}}<br>
-						<button class="btn btn-outline-{{if $e.terminated}}danger{{else}}success{{end}} btn-sm" data-value="{{$e.terminated}}" onclick="SendToggleRequest(this, 'terminated', '{{$e.username}}');">
-							{{if $e.terminated}}Yes{{else}}No{{end}}
-						</button>
-					</td>
-					<td>{{$e.username}}<br>
-					{{if $e.last_seen}}{{$e.last_seen}}{{else}}No records{{end}}</td>
-					<td>{{$e.email}}<br>{{$e.email_confirmed}}<br>{{strcut $e.emailconfirmcode 16}}</td>
-					<td><button class="btn btn-outline-{{if $e.allow_preset_request}}success{{else}}danger{{end}} btn-sm" data-value="{{$e.allow_preset_request}}" onclick="SendToggleRequest(this, 'allow_preset_request', '{{$e.username}}');">
-							{{if $e.allow_preset_request}}Yes{{else}}No{{end}}
-					</button></td>
-					{{/* <td><button class="btn btn-outline-{{if $e.allow_host_request}}success{{else}}danger{{end}} btn-sm" data-value="{{$e.allow_host_request}}" onclick="SendToggleRequest(this, 'allow_host_request', '{{$e.username}}');">
-							{{if $e.allow_host_request}}Yes{{else}}No{{end}}
-					</button></td> */}}
-					<td><button class="btn btn-outline-{{if $e.bypass_ispban}}success{{else}}danger{{end}} btn-sm" data-value="{{$e.bypass_ispban}}" onclick="SendToggleRequest(this, 'bypass_ispban', '{{$e.username}}');">
-							{{if $e.bypass_ispban}}Yes{{else}}No{{end}}
-					</button></td>
-					<td><div class="form-inline"><form method="POST" action="/moderation/users" target="_self" enctype="multipart/form-data">
-							<input type="hidden" name="name" value="{{$e.username}}">
-							<input type="hidden" name="param" value="norequest_reason">
-							<input type="text" name="val" value="{{$e.norequest_reason}}">
-							<input type="submit" value="S">
-						</form></div></td>
-					<td>{{$e.last_host_request}}</td>
-					<td><a href="/players/{{$e.wzprofile2}}">{{$e.wzprofile2}}</a></td>
-				</tr>
-				{{end}}
+		<div class="px-4 py container">
+			<div id="table-toolbar">
+				<h4>Users</h4>
+			</div>
+			<noscript>
+				Enable javascript to view table contents
+				<style> yes-script { display:none; } </style>
+			</noscript>
+			<yes-script>
+			<table id="table" class="smart-table"
+			data-url="/api/users"
+			data-filter-control="true"
+			data-sort-name="id"
+			data-sort-order="desc"
+			data-show-refresh="true"
+			data-toolbar="#table-toolbar"
+			data-cache="false"
+			data-toggle="table"
+			data-id-field="ID"
+			data-pagination="true"
+			data-page-size="50"
+			data-page-number="1"
+			data-pagination-loop="false"
+			data-show-extended-pagination="true"
+			data-page-list="[10, 15, 25, 35, 50, 100, all]"
+			data-buttons-prefix="btn-sm btn-primary"
+			data-buttons="buttons"
+			data-classes="table table-striped table-sm"
+			data-search="true"
+			data-show-search-button="true"
+			data-search-on-enter-key="true"
+			{{/* data-side-pagination="server" */}}
+			{{/* data-search-highlight="true" */}}
+			data-show-search-clear-button="true"
+			data-escape="true"
+			data-detail-view="true"
+			data-detail-view-icon="true"
+			data-detail-formatter="detailFormatter"
+			{{/* data-card-view="true" */}}
+			data-show-filter-control-switch="true"
+			data-filter-control-visible="false"
+			data-sticky-header="true">
+				<thead>
+					<tr>
+						<th data-field="id" data-sortable="true" data-filter-control="input" data-formatter="idFormatter">id</th>
+						<th data-field="username" data-sortable="true" data-filter-control="input" data-formatter="usernameFormatter">username</th>
+						<th data-field="email" data-sortable="true" data-filter-control="input" data-formatter="emailFormatter">email</th>
+						{{/* <th data-field="email_confirmed" data-sortable="true" data-filter-control="input">email confirmed</th> */}}
+						<th data-field="wzprofile2" data-sortable="true" data-filter-control="input" data-formatter="profileFormatter">profile</th>
+						<th data-field="allow_preset_request" data-sortable="true" data-filter-control="input" data-formatter="ispAllowPresetFormatter">pres</th>
+						<th data-field="bypass_ispban" data-sortable="true" data-filter-control="input" data-formatter="ispBypassFormatter">isp</th>
+					</tr>
+				</thead>
 			</table>
+			<yes-script>
+		</div>
+		<script>
+		var $table = $('#table')
+		$(function() {
+			$table.bootstrapTable();
+		})
+		function detailFormatter(index, row) {
+			let ret = "";
+			for(const key in row) {
+				ret += '<div><b>' + key + ': </b><code>' + row[key] + '</code></div>';
+			}
+			return ret;
+		}
+		function usernameFormatter(value, row) {
+			return `<b>${value}</b><br>${row.last_seen}`;
+		}
+		function emailFormatter(value, row) {
+			return value + `<br>${row.email_confirmed?row.email_confirmed:"not confirmed"}`;
+		}
+		function profileFormatter(value, row) {
+			if(value == null) {
+				return "NL";
+			}
+			return `<a href="/players/${value}">${value}</a>`;
+		}
+		function idFormatter(value, row) {
+			return `${value}  <button class="btn btn-outline-${row.terminated ? "danger" : "success"} btn-sm" data-value="${row.terminated}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.username}');">` +
+			`${row.terminated ? "Yes" : "No"}</button>`;
+		}
+		function ispBypassFormatter(value, row) {
+			return `<button class="btn btn-outline-${row.bypass_ispban ? "success" : "danger"} btn-sm" data-value="${row.bypass_ispban}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.username}');">` +
+			`${row.bypass_ispban ? "Yes" : "No"}</button>`;
+		}
+		function ispAllowPresetFormatter(value, row) {
+			return `<button class="btn btn-outline-${row.allow_preset_request ? "success" : "danger"} btn-sm" data-value="${row.allow_preset_request}" onclick="SendToggleRequest(this, 'allow_preset_request', '${row.username}');">` +
+			`${row.allow_preset_request ? "Yes" : "No"}</button>`;
+		}
+		</script>
 		</div>
 		<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts-container">
 		</div>
