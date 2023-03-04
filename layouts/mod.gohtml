@@ -176,7 +176,7 @@
 			return `<a href="/players/${value}">${value}</a>`;
 		}
 		function idFormatter(value, row) {
-			return `${value}  <button class="btn btn-outline-${row.terminated ? "danger" : "success"} btn-sm" data-value="${row.terminated}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.username}');">` +
+			return `${value}  <button class="btn btn-outline-${row.terminated ? "danger" : "success"} btn-sm" data-value="${row.terminated}" onclick="SendToggleRequest(this, 'terminated', '${row.username}');">` +
 			`${row.terminated ? "Yes" : "No"}</button>`;
 		}
 		function ispBypassFormatter(value, row) {
