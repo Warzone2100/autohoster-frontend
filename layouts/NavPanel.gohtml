@@ -54,21 +54,18 @@
 		</ul>
 	</div>
 </nav>
-{{if .IsDevWebsite}}<style>
-#devwarn {
-  position: fixed;
-  top: 5px;
-  z-index: 102;
-  outline: 1px solid;
-  background-color: red;
-  color: white;
-  border-radius: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 3px;
-  padding-left: 9px;
-  padding-right: 9px;
-}
-</style>
-<a id="devwarn" href="https://wz2100-autohost.net/">This is a development website</a>{{end}}
+{{if or .IsDevWebsite .IsEloRecalculating}}
+<ul class="nav justify-content-center bg-danger text-white">
+	{{if .IsDevWebsite}}
+	<li class="nav-item">
+		<a class="nav-link" href="https://wz2100-autohost.net/" style="color: white;"><u>This is a development website</u></a>
+	</li>
+	{{end}}
+	{{if .IsEloRecalculating}}
+	<li class="nav-item">
+		<div class="nav-link" title="Rating might be offset or incorrect until calibration is finished" style="color: white;">Rating calibration in progress</div>
+	</li>
+	{{end}}
+</ul>
+{{end}}
 {{end}}

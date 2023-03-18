@@ -38,6 +38,7 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 		if strings.HasPrefix(r.Host, "dev.") {
 			params["IsDevWebsite"] = true
 		}
+		params["IsEloRecalculating"] = isEloRecalculating.Load()
 		sessionAppendUser(r, &params)
 		w.Header().Set("Server", "TacticalPepe webserver "+CommitHash)
 		w.Header().Set("Cache-Control", "no-cache")

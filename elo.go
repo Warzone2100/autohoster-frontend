@@ -8,6 +8,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jackc/pgx/v4"
@@ -265,7 +266,13 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) (calclog string) {
 	return calclog
 }
 
+var isEloRecalculating atomic.Bool
+
 func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
+	if !isEloRecalculating.CompareAndSwap(false, true) {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Already recalculating"})
+		return
+	}
 	rows, derr := dbpool.Query(context.Background(), `
 				SELECT
 					games.id as gid, gametime, alliancetype,
@@ -360,5 +367,6 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	isEloRecalculating.Store(false)
 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + calclog + "</pre>")})
 }
