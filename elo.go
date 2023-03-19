@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 	"math"
 	"net/http"
@@ -268,9 +267,9 @@ func CalcEloForAll(G []*EloGame, P map[int]*Elo) (calclog string) {
 
 var isEloRecalculating atomic.Bool
 
-func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
+func EloRecalcHandler(w http.ResponseWriter, _ *http.Request) {
 	if !isEloRecalculating.CompareAndSwap(false, true) {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Already recalculating"})
+		w.Write([]byte("Already recalculating\n\n"))
 		return
 	}
 	rows, derr := dbpool.Query(context.Background(), `
@@ -286,9 +285,9 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 				ORDER BY timestarted`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
+			w.Write([]byte("No games\n\n"))
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+			w.Write([]byte("Database query error: " + derr.Error() + "\n\n"))
 		}
 		return
 	}
@@ -304,7 +303,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		var alliance int
 		err := rows.Scan(&g.ID, &g.GameTime, &alliance, &players, &teams, &usertype, &playerinfo, &g.Timestarted, &g.Mod)
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
+			w.Write([]byte("Database scan error: " + err.Error() + "\n\n"))
 			return
 		}
 		g.IsFFA = alliance == 0
@@ -312,7 +311,7 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 			var e Elo
 			err := json.Unmarshal([]byte(pv), &e)
 			if err != nil {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json error: " + err.Error()})
+				w.Write([]byte("JSON error: " + err.Error() + "\n\n"))
 				return
 			}
 			Players[e.ID] = &e
@@ -332,21 +331,14 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		Games = append(Games, &g)
 	}
 	calclog := CalcEloForAll(Games, Players)
-	log.Printf("Updating %v players", len(Players))
+	log.Println("Preparing batch update")
+	b := pgx.Batch{}
+	log.Printf("Generating %v player updates", len(Players))
 	for _, p := range Players {
-		// log.Printf("Updating player %d: elo %d elo2 %d autowon %d autolost %d autoplayed %d", p.ID, p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost)
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5, timeplayed = $6 WHERE id = $7",
+		b.Queue("UPDATE players SET elo = $1, elo2 = $2, autoplayed = $3, autowon = $4, autolost = $5, timeplayed = $6 WHERE id = $7",
 			p.Elo, p.Elo2, p.Autoplayed, p.Autowon, p.Autolost, p.Timeplayed, p.ID)
-		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
-			return
-		}
-		if tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database insert error, rows affected " + string(tag)})
-			return
-		}
 	}
-	log.Printf("Updating %v games", len(Games))
+	log.Printf("Generating %v game updates", len(Games))
 	for _, g := range Games {
 		var elodiffs []int
 		for _, p := range g.Players {
@@ -356,17 +348,29 @@ func EloRecalcHandler(w http.ResponseWriter, r *http.Request) {
 		for _, p := range g.Players {
 			ratingdiffs = append(ratingdiffs, p.RatingDiff)
 		}
-		// log.Printf("Updating game %d: elodiff %v ", g.ID, elodiffs)
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE games SET elodiff = $1, ratingdiff = $2 WHERE id = $3", elodiffs, ratingdiffs, g.ID)
-		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
-			return
-		}
-		if tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database insert error, rows affected " + string(tag)})
-			return
+		b.Queue("UPDATE games SET elodiff = $1, ratingdiff = $2 WHERE id = $3", elodiffs, ratingdiffs, g.ID)
+	}
+	log.Println("Resetting all residual values")
+	_, err := dbpool.Exec(context.Background(), "update games set ratingdiff = '{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}', elodiff = '{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}';")
+	if err != nil {
+		log.Println(err)
+	}
+	_, err = dbpool.Exec(context.Background(), "update players set autoplayed = 0, autowon = 0, autolost = 0, elo = 1400, elo2 = 0;")
+	if err != nil {
+		log.Println(err)
+	}
+	log.Printf("Batch executing %v", b.Len())
+	br := dbpool.SendBatch(context.Background(), &b)
+	log.Printf("Batch executed, checking results")
+	for i := 0; i < b.Len(); i++ {
+		_, err := br.Exec()
+		if err != nil {
+			log.Println(err)
+			break
 		}
 	}
+	br.Close()
 	isEloRecalculating.Store(false)
-	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": template.HTML("<pre>" + calclog + "</pre>")})
+	log.Println("Elo recalc done")
+	w.Write([]byte(calclog))
 }
