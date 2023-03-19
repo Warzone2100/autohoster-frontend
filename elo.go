@@ -355,7 +355,7 @@ func EloRecalcHandler(w http.ResponseWriter, _ *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	_, err = dbpool.Exec(context.Background(), "update players set autoplayed = 0, autowon = 0, autolost = 0, elo = 1400, elo2 = 0;")
+	_, err = dbpool.Exec(context.Background(), "update players set autoplayed = 0, autowon = 0, autolost = 0, elo = 1400, elo2 = 1400;")
 	if err != nil {
 		log.Println(err)
 	}
