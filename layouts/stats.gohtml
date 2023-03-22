@@ -161,6 +161,13 @@
 				xhr.open('GET', window.location.origin+'/api/mapcount', true);
 				xhr.send(null);
 			}
+			{{/* SELECT date_trunc('day', g.timestarted)::text || '+00', count(g), sum(abs(g.elodiff[1])), sum(abs(g.ratingdiff[1])), sum(g.gametime), count(distinct p)
+FROM
+	games as g,
+	unnest(players) as p
+WHERE g.timestarted > now() - '0.5 year 7 days'::interval
+GROUP BY date_trunc('day', g.timestarted)
+ORDER BY date_trunc('day', g.timestarted) */}}
 			</script>
 			{{else}}
 			<h4>Please link Warzone profile in order to see this statistics</h4>
