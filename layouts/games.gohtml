@@ -74,7 +74,7 @@
 					<tr>
 						<th data-rowspan="2" data-halign="center" data-formatter="IDFormatter" data-field="ID">ID</th>
 						<th data-rowspan="2" data-halign="center" data-formatter="TimeFormatter" data-field="TimeStarted">Time</th>
-						<th data-rowspan="2" data-halign="center" data-formatter="MapNameFormatter" data-field="MapName" data-filter-control="select" data-filter-data="var:MapsSelection">Map</th>
+						<th data-rowspan="2" data-halign="center" data-formatter="mapNameFormatter" data-field="MapName" data-filter-control="select" data-filter-data="var:MapsSelection">Map</th>
 						<th data-colspan="3" data-halign="center" data-class="noBottomBorder">Settings</th>
 						<th data-colspan="2" data-halign="center" data-class="noBottomBorder" data-formatter="playersFormatter" data-class="width45" data-filter-control="input">Players</th>
 						<th data-rowspan="2" data-halign="center" data-formatter="detailsBtn"></th>
@@ -105,12 +105,6 @@
 				});
 			});
 		})
-		function MapNameFormatter(value, row) {
-			if(row.Mod == 'none' || row.Mod == 'vanilla' || row.Mod == '' || row.Mod === undefined) {
-				return value;
-			}
-			return value + '<br>' + row.Mod;
-		}
 		</script>
 	</body>
 </html>
@@ -185,7 +179,7 @@
 					<thead>
 						<th>Players</th>
 						<th>Position</th>
-						<th>Elo transfer</th>
+						<th>Rating transfer</th>
 						<th>Kills</th>
 						<th>Droid lost</th>
 						<th>Units built</th>
@@ -203,7 +197,7 @@
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
-							<td>{{$player.EloDiff}}</td>
+							<td>{{$player.RatingDiff}}</td>
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>
@@ -224,7 +218,7 @@
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
-							<td>{{$player.EloDiff}}</td>
+							<td>{{$player.RatingDiff}}</td>
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>

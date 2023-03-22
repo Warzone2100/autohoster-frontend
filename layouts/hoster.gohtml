@@ -292,11 +292,11 @@ var presets = [
 			<tr>
 				<td class="rank-star">
 					{{if gt .Autoplayed 4}}
-						{{if gt .Elo 1800}}
+						{{if gt .Elo2 1800}}
 						<object class="rank rank-starGold"></object>
-						{{else if gt .Elo 1550}}
+						{{else if gt .Elo2 1500}}
 						<object class="rank rank-starSilver"></object>
-						{{else if gt .Elo 1400}}
+						{{else if gt .Elo2 1400}}
 						<object class="rank rank-starBronze"></object>
 						{{end}}
 					{{end}}
@@ -325,8 +325,8 @@ var presets = [
 					{{else}}
 					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
 					{{end}}
-					 {{.Elo}}
-					{{if avail "EloDiff" .}}{{if not (eq .EloDiff 0)}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}{{end}}
+					{{if gt .Userid 0}}{{.Elo2}}{{else}}<small class="text-muted">not registered</small>{{end}}
+					{{/* {{if avail "EloDiff" .}}{{if not (eq .EloDiff 0)}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}{{end}} */}}
 					{{if avail "RatingDiff" .}}{{if not (eq .RatingDiff 0)}}({{if ge .RatingDiff 1}}+{{end}}{{.RatingDiff}}){{end}}{{end}}
 				</td>
 			</tr><tr>

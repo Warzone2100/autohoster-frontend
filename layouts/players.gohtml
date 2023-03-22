@@ -78,8 +78,8 @@
 					<tr>
 						<th data-formatter="rownumberFormatter" data-cell-style="rownumberStyler" data-class="expandme2"></th>
 						<th data-field="Name" data-sortable="true" data-class="width25" data-filter-control="input" data-formatter="nameFormatter">Name</th>
-						<th data-field="Elo2" data-sortable="true" data-filter-control="input">Rating</th>
-						<th data-field="Elo" data-sortable="true" data-filter-control="input">Elo</th>
+						<th data-field="Elo2" data-sortable="true" data-sorter="elo2Sorter" data-filter-control="input">Rating</th>
+						{{/* <th data-field="Elo" data-sortable="true" data-filter-control="input">Elo</th> */}}
 						<th data-field="Autoplayed" data-sortable="true" data-filter-control="input">Played</th>
 						<th data-field="Autolost" data-sortable="true" data-filter-control="input">Lost</th>
 						<th data-field="Autowon" data-sortable="true" data-filter-control="input">Won</th>
@@ -135,7 +135,7 @@
 	<head>
 		{{template "head"}}
 		<meta content="{{.Player.Name}}" property="og:title">
-		<meta content="Won {{.Player.Autowon}} Lost {{.Player.Autolost}} Played {{.Player.Autoplayed}} Elo {{.Player.Elo}} Rating {{.Player.Elo2}}" property="og:description">
+		<meta content="Won {{.Player.Autowon}} Lost {{.Player.Autolost}} Played {{.Player.Autoplayed}} Rating {{.Player.Elo2}}" property="og:description">
 		<meta content="https://wz2100-autohost.net/players/{{.Player.ID}}" property="og:url">
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -168,7 +168,7 @@
 		<div class="px-4 py-5 my-5 container">
 			<h3 style="padding-bottom:18px">{{template "wzprofile" .Player}}</h3>
 			<button id="BtnClassificationRequestGraphs" class="btn btn-primary" onclick="LoadClassificationGraph()">Load research classification</button>
-			<button id="BtnElodiffRequestGraphs" class="btn btn-primary" onclick="LoadElodiffGraph()">Load Elo history</button>
+			<button id="BtnElodiffRequestGraphs" class="btn btn-primary" onclick="LoadElodiffGraph()">Load Rating history</button>
 			<div id="ElodiffGraphContainingDiv" style="display:none;">
 				<canvas id="ElodiffGraphCanvas">
 			</div>
@@ -184,9 +184,9 @@
 			<table class="table"><tr>
 			<td>Hash: {{.Player.Hash}}<td>
 			<td>Lost: {{.Player.Autolost}}<td></tr><tr>
-			<td>Elo: {{.Player.Elo}}<td>
+			<td>{{if ne .Player.Autoplayed 0}}Winrate: {{f64tostring (multf64 (divtf64 .Player.Autowon .Player.Autoplayed) 100)}}%{{end}}<td>
 			<td>Won: {{.Player.Autowon}}<td></tr><tr>
-			<td>Elo2: {{.Player.Elo2}}<td>
+			<td>Rating: {{if .Player.Elo2}}{{.Player.Elo2}}{{else}}not registered{{end}}<td>
 			<td>Played: {{.Player.Autoplayed}}<td></tr>
 			</table>
 			{{if len .Renames}}
@@ -217,7 +217,6 @@
 			<table id="table" class="smart-table"
 			data-url="/api/games"
 			data-filter-control="true"
-			data-sort-name="Elo"
 			data-sort-order="desc"
 			data-show-refresh="true"
 			data-toolbar="#table-toolbar"
@@ -249,7 +248,7 @@
 					<tr>
 						<th data-rowspan="2" data-halign="center" data-formatter="IDFormatter" data-field="ID">ID</th>
 						<th data-rowspan="2" data-halign="center" data-formatter="TimeFormatter" data-field="TimeStarted">Time</th>
-						<th data-rowspan="2" data-halign="center" data-field="MapName" data-sortable="true" data-filter-control="select">Map</th>
+						<th data-rowspan="2" data-halign="center" data-field="MapName" data-formatter="mapNameFormatter" data-sortable="true" data-filter-control="select">Map</th>
 						<th data-colspan="3" data-halign="center" data-class="noBottomBorder">Settings</th>
 						<th data-colspan="2" data-halign="center" data-class="noBottomBorder" data-formatter="playersFormatter" data-class="width45" data-filter-control="input">Players</th>
 						<th data-rowspan="2" data-halign="center" data-formatter="detailsBtn"></th>
@@ -314,7 +313,7 @@
 				data: {
 					labels: Object.keys(resp),
 					datasets: [
-						{data: Object.values(resp).map(o => o.Elo), label: 'Elo', borderColor: '#0d6efd'},
+						{{/* {data: Object.values(resp).map(o => o.Elo), label: 'Elo', borderColor: '#0d6efd'}, */}}
 						{data: Object.values(resp).map(o => o.Rating), label: 'Rating', borderColor: '#aa0303'},
 					]
 				},
@@ -370,7 +369,7 @@
 			document.getElementById(`BtnElodiffRequestGraphs`).style.display = `none`;
 			document.getElementById('ElodiffGraphCanvas').style.height = "400px";
 			doXHR("GET", window.location.origin+'/api/elohistory/{{.Player.ID}}', function(resp) {
-				PlotLinearData(resp, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Elo history');
+				PlotLinearData(resp, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Rating history');
 			});
 		}
 		</script>

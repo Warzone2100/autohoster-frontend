@@ -17,11 +17,11 @@ function nameFormatter(value, row) {
 	EloDiff = row.EloDiff !== undefined ? row.EloDiff : row.elodiff
 	RatingDiff = row.RatingDiff !== undefined ? row.RatingDiff : row.ratingdiff
 	if(Autoplayed > 4) {
-		if(Elo > 1800) {
+		if(Elo2 > 1800) {
 			ret += `<object class="rank rank-starGold"></object>`;
-		} else if(Elo > 1550) {
+		} else if(Elo2 > 1550) {
 			ret += `<object class="rank rank-starSilver"></object>`;
-		} else if(Elo > 1400) {
+		} else if(Elo2 > 1400) {
 			ret += `<object class="rank rank-starBronze"></object>`;
 		}
 	}
@@ -40,14 +40,18 @@ function nameFormatter(value, row) {
 	}
 	ret += `</td><td rowspan="3" class="rank-link">`;
 	ret += `<a href="/players/${ID}" ${Userid>0?'class="rank-name-checkmark" ':""} title="Hash: ${Hash}">${Name}</a>`;
-	ret += `<br>${Elo}`;
-	if(EloDiff != undefined && EloDiff != 0) {
-		ret += "&nbsp;";
-		if(EloDiff >= 1) {
-			ret += "+";
-		}
-		ret += EloDiff;
+	if(Userid <= 0) {
+		ret += '<br><small class="text-muted">not registered</small>';
+	} else {
+		ret += `<br>${Elo2}`;
 	}
+	// if(EloDiff != undefined && EloDiff != 0) {
+	// 	ret += "&nbsp;";
+	// 	if(EloDiff >= 1) {
+	// 		ret += "+";
+	// 	}
+	// 	ret += EloDiff;
+	// }
 	if(RatingDiff != undefined && RatingDiff != 0) {
 		ret += "&nbsp;";
 		if(RatingDiff >= 1) {
@@ -55,12 +59,6 @@ function nameFormatter(value, row) {
 		}
 		ret += RatingDiff;
 	}
-			// {{if avail "EloDiff" .}}
-			// {{if not (eq .EloDiff 0)}}
-			// 	({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}})
-			// 	{{end}}
-			// {{end}}
-			// {{if avail "RatingDiff" .}}{{if not (eq .RatingDiff 0)}}({{if ge .RatingDiff 1}}+{{end}}{{.RatingDiff}}){{end}}{{end}}
 	ret += `</td></tr><tr><td class="rank-star">`;
 	if(Autoplayed > 60) {
 		ret += `<object class="rank rank-starGold"></object>`;
@@ -198,6 +196,11 @@ function winrateSorter(a, b, ra, rb) {
 	if ((ra.Autowon/(ra.Autowon+ra.Autolost+0.05)) < (rb.Autowon/(rb.Autowon+rb.Autolost+0.05))) return -1;
 	return 0;
 }
+function winrateSorter(a, b, ra, rb) {
+	if ((ra.Autowon/(ra.Autowon+ra.Autolost+0.05)) > (rb.Autowon/(rb.Autowon+rb.Autolost+0.05))) return 1;
+	if ((ra.Autowon/(ra.Autowon+ra.Autolost+0.05)) < (rb.Autowon/(rb.Autowon+rb.Autolost+0.05))) return -1;
+	return 0;
+}
 function timeplayedFormatter(value, row) {
 	if(value === undefined) {
 		return "???"
@@ -213,4 +216,10 @@ function timeplayedFormatter(value, row) {
 		answer += ":" + (secondsLeft< 10 ? "0" + secondsLeft : secondsLeft);
 		return answer;
 	}
+}
+function mapNameFormatter(value, row) {
+	if(row.Mod == 'none' || row.Mod == 'vanilla' || row.Mod == '' || row.Mod === undefined) {
+		return value;
+	}
+	return value + '<br>' + row.Mod;
 }

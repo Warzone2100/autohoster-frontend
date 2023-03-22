@@ -77,6 +77,9 @@ var layoutFuncs = template.FuncMap{
 	"mult": func(a int, b int) int {
 		return a * b
 	},
+	"multf64": func(a float64, b float64) float64 {
+		return a * b
+	},
 	"rem": func(a int, b int) int {
 		return a % b
 	},
@@ -377,24 +380,24 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 		}
 	} else {
 		if m.Details == "" {
-			m.Details = fmt.Sprintf("%s\nPlayed: %d\n", dname, dap)
-			m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
 			if dui != -1 && dui != 0 {
-				m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
 				m.Level = 8
 				if dallowed {
 					m.Details += "Allowed to moderate and request rooms\n"
 				}
+				m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
+				m.Details = fmt.Sprintf("%s\nPlayed: %d\n", dname, dap)
+				m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
 			} else {
 				m.Details += "Not registered user.\n"
 			}
-			m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
 			if len(drenames) > 0 {
 				m.Details += "Other names:"
 				for _, v := range drenames {
 					m.Details += "\n" + v
 				}
 			}
+			// m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
 		}
 		if m.Elo == "" {
 			var pc string
@@ -404,12 +407,12 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 				pc = "-"
 			}
 			if dui != -1 && dui != 0 {
-				m.Elo = fmt.Sprintf("R[%d] E[%d] %d %s", de2, de, dap, pc)
+				m.Elo = fmt.Sprintf("R[%d] %d %s", de2, dap, pc)
 			} else {
-				m.Elo = fmt.Sprintf("unapproved E[%d] %d %s", de, dap, pc)
+				m.Elo = "Unauthorized player"
 			}
 		}
-		if dap < 5 {
+		if dap < 5 || dui <= 0 {
 			m.Dummy = true
 		} else {
 			m.Dummy = false
@@ -617,6 +620,7 @@ func main() {
 	router.HandleFunc("/legal", basicLayoutHandler("legal"))
 	router.HandleFunc("/about", basicLayoutHandler("about"))
 	router.HandleFunc("/rules", basicLayoutHandler("rules"))
+	router.HandleFunc("/rules/ru", basicLayoutHandler("rulesRU"))
 	router.HandleFunc("/login", loginHandler)
 	router.HandleFunc("/logout", logoutHandler)
 	router.HandleFunc("/register", registerHandler)

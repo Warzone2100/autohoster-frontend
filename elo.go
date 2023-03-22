@@ -52,10 +52,6 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 		calclog += "Game is too fast to be calculated\n"
 		return
 	}
-	for _, p := range G.Players {
-		P[p.ID].Autoplayed++
-		P[p.ID].Timeplayed += G.GameTime / 1000
-	}
 	if G.Mod == "masterbal" && G.Timestarted > 1666528200 {
 		calclog += "Game is played with draft balance\n"
 		return
@@ -215,11 +211,15 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 	}
 	for pi, p := range G.Players {
 		calclog += fmt.Sprintf("Updating player %d (id %d)\n", pi, p.ID)
+		if calcelo2 {
+			P[p.ID].Autoplayed++
+			P[p.ID].Timeplayed += G.GameTime / 1000
+		}
 		if p.Usertype == "winner" {
-			P[p.ID].Autowon++
 			P[p.ID].Elo += Additive
 			G.Players[pi].EloDiff = Additive
 			if calcelo2 {
+				P[p.ID].Autowon++
 				P[p.ID].Elo2 += RAdditive
 				G.Players[pi].RatingDiff = RAdditive
 				calclog += fmt.Sprintf("Player %d won %d elo and %d rating\n", pi, Additive, RAdditive)
@@ -227,11 +227,11 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 				calclog += fmt.Sprintf("Player %d won %d elo\n", pi, Additive)
 			}
 		} else if p.Usertype == "loser" {
-			P[p.ID].Autolost++
 			P[p.ID].Elo -= Additive
 			G.Players[pi].EloDiff = -Additive
 			// P[p.ID].Elo += int(math.Round((float64(Timeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 			if calcelo2 {
+				P[p.ID].Autolost++
 				P[p.ID].Elo2 -= RAdditive
 				// P[p.ID].Elo2 += int(math.Round((float64(RTimeitive) / float64(60)) * (float64(G.GameTime) / (float64(90000) - 10))))
 				G.Players[pi].RatingDiff = -RAdditive
