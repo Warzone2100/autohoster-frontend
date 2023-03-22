@@ -197,10 +197,10 @@ function winrateSorter(a, b, ra, rb) {
 	return 0;
 }
 function elo2Sorter(a, b, ra, rb) {
-	if (ra == 0 || rb == 0) {
-		return 0;
+	if (ra.Userid <= 0 || rb.Userid <= 0) {
+		return -1;
 	}
-	let d = ra - rb;
+	let d = ra.Elo2 - rb.Elo2;
 	if (d < 0) {
 		return -1;
 	}
