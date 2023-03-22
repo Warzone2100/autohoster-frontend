@@ -196,10 +196,15 @@ function winrateSorter(a, b, ra, rb) {
 	if ((ra.Autowon/(ra.Autowon+ra.Autolost+0.05)) < (rb.Autowon/(rb.Autowon+rb.Autolost+0.05))) return -1;
 	return 0;
 }
-function winrateSorter(a, b, ra, rb) {
-	if ((ra.Autowon/(ra.Autowon+ra.Autolost+0.05)) > (rb.Autowon/(rb.Autowon+rb.Autolost+0.05))) return 1;
-	if ((ra.Autowon/(ra.Autowon+ra.Autolost+0.05)) < (rb.Autowon/(rb.Autowon+rb.Autolost+0.05))) return -1;
-	return 0;
+function elo2Sorter(a, b, ra, rb) {
+	if (ra == 0 || rb == 0) {
+		return 0;
+	}
+	let d = ra - rb;
+	if (d < 0) {
+		return -1;
+	}
+	return d > 0;
 }
 function timeplayedFormatter(value, row) {
 	if(value === undefined) {
