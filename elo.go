@@ -249,11 +249,7 @@ func CalcElo(G *EloGame, P map[int]*Elo) (calclog string) {
 func CalcEloForAll(G []*EloGame, P map[int]*Elo) (calclog string) {
 	for _, p := range P {
 		p.Elo = 1400
-		if p.Userid != -1 && p.Userid != 0 {
-			p.Elo2 = 1400
-		} else {
-			p.Elo2 = 0
-		}
+		p.Elo2 = 1400
 		p.Autowon = 0
 		p.Autolost = 0
 		p.Autoplayed = 0
