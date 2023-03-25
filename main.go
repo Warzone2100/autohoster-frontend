@@ -267,9 +267,13 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 		sessvk = VKGetUInfo(sessvktoken)
 	}
 	wzprofile := getWzProfile(r.Context(), sesswzprofile, "old_players3")
-	wzprofile["Userid"] = sessid
+	if wzprofile != nil {
+		wzprofile["Userid"] = sessid
+	}
 	wzprofile2 := getWzProfile(r.Context(), sesswzprofile2, "players")
-	wzprofile2["Userid"] = sessid
+	if wzprofile2 != nil {
+		wzprofile2["Userid"] = sessid
+	}
 	usermap := map[string]interface{}{
 		"Username":   sessuname,
 		"Id":         sessid,
