@@ -168,17 +168,13 @@ func ByteCountIEC(b uint64) string {
 }
 
 func getWzProfile(context context.Context, id int, table string) map[string]interface{} {
-	var name string
-	var hash string
-	var played int
-	var wins int
-	var losses int
-	var elo int
+	var name, hash string
+	var played, wins, losses, elo, elo2 int
 	var pl map[string]interface{}
 	var derr error
-	req := "SELECT name, hash, autoplayed, autowon, autolost, elo FROM " + table + " WHERE id = $1"
+	req := "SELECT name, hash, autoplayed, autowon, autolost, elo, coalesce(elo2, 1400) FROM " + table + " WHERE id = $1"
 	derr = dbpool.QueryRow(context, req, id).
-		Scan(&name, &hash, &played, &wins, &losses, &elo)
+		Scan(&name, &hash, &played, &wins, &losses, &elo, &elo2)
 	if derr != nil {
 		if derr != pgx.ErrNoRows {
 			log.Println("getWzProfile: " + derr.Error())
@@ -193,6 +189,7 @@ func getWzProfile(context context.Context, id int, table string) map[string]inte
 		"Autowon":    wins,
 		"Autolost":   losses,
 		"Elo":        elo,
+		"Elo2":       elo2,
 	}
 	return pl
 }
@@ -218,66 +215,68 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	var sessvkuid int
 	var sessvk map[string]interface{}
 
-	if sessionManager.Exists(r.Context(), "User.Username") {
-		sessuname = sessionManager.GetString(r.Context(), "User.Username")
-		log.Printf("User: [%s]", sessuname)
-		derr := dbpool.QueryRow(context.Background(), `
-			SELECT id, email,
-			coalesce(extract(epoch from email_confirmed), 0)::text,
-			coalesce(discord_token, ''),
-			coalesce(discord_refresh, ''),
-			coalesce(extract(epoch from discord_refresh_date), 0)::int,
-			coalesce(wzprofile, -1), coalesce(wzprofile2, -1),
-			coalesce(vk_token, ''), coalesce(vk_uid, -1)
-			FROM users WHERE username = $1`, sessuname).
-			Scan(&sessid, &sessemail, &sesseconf,
-				&sessdisctoken, &sessdiscrefreshtoken, &sessdiscrefreshwhenepoch,
-				&sesswzprofile, &sesswzprofile2,
-				&sessvktoken, &sessvkuid)
-		if derr != nil {
-			log.Println("sessionAppendUser: " + derr.Error())
+	sessuname = sessionManager.GetString(r.Context(), "User.Username")
+	log.Printf("User: [%s]", sessuname)
+	derr := dbpool.QueryRow(context.Background(), `
+		SELECT id, email,
+		coalesce(extract(epoch from email_confirmed), 0)::text,
+		coalesce(discord_token, ''),
+		coalesce(discord_refresh, ''),
+		coalesce(extract(epoch from discord_refresh_date), 0)::int,
+		coalesce(wzprofile, -1), coalesce(wzprofile2, -1),
+		coalesce(vk_token, ''), coalesce(vk_uid, -1)
+		FROM users WHERE username = $1`, sessuname).
+		Scan(&sessid, &sessemail, &sesseconf,
+			&sessdisctoken, &sessdiscrefreshtoken, &sessdiscrefreshwhenepoch,
+			&sesswzprofile, &sesswzprofile2,
+			&sessvktoken, &sessvkuid)
+	if derr != nil {
+		log.Println("sessionAppendUser: " + derr.Error())
+	}
+	sessdiscrefreshwhen := time.Unix(int64(sessdiscrefreshwhenepoch), 0)
+	if sessdisctoken == "" || sessdiscrefreshtoken == "" {
+		sessdiscstate = generateRandomString(32)
+		sessdiscurl = DiscordGetUrl(sessdiscstate)
+		sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
+	} else {
+		token := oauth2.Token{AccessToken: sessdisctoken, RefreshToken: sessdiscrefreshtoken, Expiry: sessdiscrefreshwhen}
+		tokenold := token
+		sessdisc = DiscordGetUInfo(&token)
+		if token.AccessToken != tokenold.AccessToken || token.RefreshToken != tokenold.RefreshToken || token.Expiry != tokenold.Expiry {
+			log.Println("Discord token refreshed")
+			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
+			if derr != nil {
+				log.Println("Database call error: " + derr.Error())
+			}
+			if tag.RowsAffected() != 1 {
+				log.Println("Database update error, rows affected " + string(tag))
+			}
 		}
-		sessdiscrefreshwhen := time.Unix(int64(sessdiscrefreshwhenepoch), 0)
-		if sessdisctoken == "" || sessdiscrefreshtoken == "" {
+		if token.AccessToken == "" {
 			sessdiscstate = generateRandomString(32)
 			sessdiscurl = DiscordGetUrl(sessdiscstate)
 			sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
-		} else {
-			token := oauth2.Token{AccessToken: sessdisctoken, RefreshToken: sessdiscrefreshtoken, Expiry: sessdiscrefreshwhen}
-			tokenold := token
-			sessdisc = DiscordGetUInfo(&token)
-			if token.AccessToken != tokenold.AccessToken || token.RefreshToken != tokenold.RefreshToken || token.Expiry != tokenold.Expiry {
-				log.Println("Discord token refreshed")
-				tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
-				if derr != nil {
-					log.Println("Database call error: " + derr.Error())
-				}
-				if tag.RowsAffected() != 1 {
-					log.Println("Database update error, rows affected " + string(tag))
-				}
-			}
-			if token.AccessToken == "" {
-				sessdiscstate = generateRandomString(32)
-				sessdiscurl = DiscordGetUrl(sessdiscstate)
-				sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
-			}
-			sessdisctoken = token.AccessToken
 		}
-		if sessvktoken == "" {
-			sessvkstate := generateRandomString(32)
-			sessionManager.Put(r.Context(), "User.VK.State", sessvkstate)
-			sessvkurl = VKGetUrl(sessvkstate)
-		} else {
-			sessvk = VKGetUInfo(sessvktoken)
-		}
+		sessdisctoken = token.AccessToken
 	}
+	if sessvktoken == "" {
+		sessvkstate := generateRandomString(32)
+		sessionManager.Put(r.Context(), "User.VK.State", sessvkstate)
+		sessvkurl = VKGetUrl(sessvkstate)
+	} else {
+		sessvk = VKGetUInfo(sessvktoken)
+	}
+	wzprofile := getWzProfile(r.Context(), sesswzprofile, "old_players3")
+	wzprofile["Userid"] = sessid
+	wzprofile2 := getWzProfile(r.Context(), sesswzprofile2, "players")
+	wzprofile2["Userid"] = sessid
 	usermap := map[string]interface{}{
 		"Username":   sessuname,
 		"Id":         sessid,
 		"Email":      sessemail,
 		"Econf":      sesseconf,
-		"WzProfile":  getWzProfile(r.Context(), sesswzprofile, "old_players3"),
-		"WzProfile2": getWzProfile(r.Context(), sesswzprofile2, "players"),
+		"WzProfile":  wzprofile,
+		"WzProfile2": wzprofile2,
 		"Discord": map[string]interface{}{
 			"Token":   sessdisctoken,
 			"AuthUrl": sessdiscurl,
