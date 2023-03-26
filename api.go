@@ -664,9 +664,9 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	pid := parseQueryInt(r, "player", -1)
 	if pid > 0 {
 		if wherecase == "" {
-			wherecase = fmt.Sprintf("WHERE %d = any(games.players)", pid)
+			wherecase = fmt.Sprintf("WHERE %d = p.id", pid)
 		} else {
-			wherecase += fmt.Sprintf(" AND %d = any(games.players)", pid)
+			wherecase += fmt.Sprintf(" AND %d = p.id", pid)
 		}
 	}
 	whereargs := []interface{}{}
@@ -675,16 +675,30 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		if ok {
 			whereargs = append(whereargs, val)
 			if wherecase == "" {
-				wherecase = "WHERE mapname = $1"
+				wherecase = "WHERE g.mapname = $1"
 			} else {
-				wherecase += " AND mapname = $1"
+				wherecase += " AND g.mapname = $1"
 			}
+		}
+	}
+
+	reqSearch := parseQueryString(r, "search", "")
+
+	similarity := 0.3
+
+	if reqSearch != "" {
+		whereargs = append(whereargs, reqSearch)
+		if wherecase == "" {
+			wherecase = fmt.Sprintf("WHERE similarity(p.name, $1::text) > %f", similarity)
+		} else {
+			wherecase += fmt.Sprintf(" AND similarity(p.name, $%d::text) > %f", len(whereargs), similarity)
 		}
 	}
 
 	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
 	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
 	offset := fmt.Sprintf("OFFSET %d", reqOffset)
+	joincase := "JOIN players AS p ON p.id = any(g.players)"
 
 	totalsc := make(chan int)
 	var totals int
@@ -714,7 +728,9 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	}()
 	go func() {
 		var c int
-		derr := dbpool.QueryRow(r.Context(), `select count(games) from games `+wherecase+`;`, whereargs...).Scan(&c)
+		req := `select count(distinct g.id) from games as g ` + joincase + ` ` + wherecase + `;`
+		derr := dbpool.QueryRow(r.Context(), req, whereargs...).Scan(&c)
+		// log.Println(req)
 		if derr != nil {
 			echan <- derr
 			return
@@ -723,13 +739,14 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	}()
 	go func() {
 		req := `SELECT
-			id, finished, to_char(timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(timeended, 'YYYY-MM-DD HH24:MI'), '==='), gametime,
-			players, teams, colour, usertype,
-			mapname, maphash,
-			baselevel, powerlevel, scavs, alliancetype,
-			coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-			hidden, calculated, debugtriggered, coalesce(version, '???'), mod
-		FROM games ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + `;`
+			g.id, g.finished, to_char(g.timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(g.timeended, 'YYYY-MM-DD HH24:MI'), '==='), g.gametime,
+			g.players, g.teams, g.colour, g.usertype,
+			g.mapname, g.maphash,
+			g.baselevel, g.powerlevel, g.scavs, g.alliancetype,
+			coalesce(g.elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(g.ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
+			g.hidden, g.calculated, g.debugtriggered, coalesce(g.version, '???'), g.mod
+		FROM games as g ` + joincase + ` ` + wherecase + ` GROUP BY g.id ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
+		// log.Println(req)
 		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
 		if derr != nil {
 			echan <- derr
@@ -783,7 +800,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		FROM players as p
 		LEFT JOIN users as u ON u.wzprofile2 = p.id
 		WHERE p.id = any((select distinct unnest(a.players)
-				FROM (SELECT players FROM games ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + `) as a));`
+				FROM (SELECT players FROM games as g ` + joincase + ` ` + wherecase + `  GROUP BY g.id ` + ordercase + ` ` + offset + ` ` + limiter + `) as a));`
 		// log.Println(req)
 		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
 		if derr != nil {
