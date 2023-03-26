@@ -48,7 +48,7 @@
 			data-show-refresh="true"
 			data-toolbar="#table-toolbar"
 			data-cache="false"
-			data-toggle="table"
+			{{/* data-toggle="table" */}}
 			data-id-field="ID"
 			data-pagination="true"
 			data-page-size="50"
@@ -92,19 +92,23 @@
 			</yes-script>
 		</div>
 		<script>
-		var MapsSelection = {
-		{{range $k, $v := .Maps}}
-			"{{$v}}": "{{$v}}",
-		{{end}}};
+		var MapsSelection = { {{range $k, $v := .Maps}}
+			"{{$v}}": "{{$v}}",{{end}}
+		};
 		$(function() {
-			$('#table').bootstrapTable()
-			$("#table").on("page-change.bs.table", function (number, size) {
-				window.scrollTo({
-					top: 0,
-					left: 0,
-					behavior: 'smooth'
-				});
+			console.log("AAAA");
+			$('#table').bootstrapTable({
+				onPageChange: function (number, size) {
+					window.scrollTo({
+						top: 0, left: 0,
+						behavior: 'smooth'
+					});
+				},
+				formatSearch: function () {
+					return 'Search participants';
+				}
 			});
+			console.log("BBBB");
 		})
 		</script>
 	</body>
