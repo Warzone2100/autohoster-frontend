@@ -296,6 +296,9 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 		"UserAuthorized": "True",
 		"User":           usermap,
 	})
+	if isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		(*a)["IsSuperadmin"] = true
+	}
 	return a
 }
 
@@ -643,6 +646,7 @@ func main() {
 	router.HandleFunc("/moderation/users", modUsersHandler)
 	router.HandleFunc("/moderation/merge", modMergeHandler)
 	router.HandleFunc("/moderation/news", modNewsHandler)
+	router.HandleFunc("/moderation/logs", basicLayoutHandler("modLogs"))
 	router.HandleFunc("/moderation", basicLayoutHandler("modMain"))
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
@@ -686,6 +690,7 @@ func main() {
 	router.HandleFunc("/api/players", APIcall(APIgetLeaderboard)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/users", APIcall(APIgetUsers)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/logs", APIcall(APIgetLogs)).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 

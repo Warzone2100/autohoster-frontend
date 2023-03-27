@@ -9,8 +9,8 @@
 		<div class="navbar-nav me-auto">
 			<a class="nav-link {{ if eq .NavWhere "index" }} active {{ end }}" href="/">Home</a>
 			<li class="nav-item dropdown">
-				<a class="nav-link dropdown-toggle" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Autorating</a>
-				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="profileDropdown">
+				<a class="nav-link dropdown-toggle" id="autoratingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Autorating</a>
+				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="autoratingDropdown">
 					<li><a class="dropdown-item {{ if eq .NavWhere "players" }} active {{ end }}" href="/players">Player leaderboard</a></li>
 					<li><a class="dropdown-item {{ if eq .NavWhere "games2" }} active {{ end }}" href="/games">Recent games</a></li>
 					<div class="dropdown-divider"></div>
@@ -21,6 +21,17 @@
 			<a class="nav-link {{ if eq .NavWhere "about" }} active {{ end }}" href="/about">About</a>
 			<a class="nav-link {{ if eq .NavWhere "rules" }} active {{ end }}" href="/rules">Rules</a>
 			<a class="nav-link {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/lobby">Lobby</a>
+			{{if .IsSuperadmin}}
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
+				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="adminDropdown">
+					<li><a class="dropdown-item {{ if eq .NavWhere "modLogs" }} active {{ end }}" href="/moderation/logs">Logs</a></li>
+					<li><a class="dropdown-item {{ if eq .NavWhere "modUsers" }} active {{ end }}" href="/moderation/users">Users</a></li>
+					<li><a class="dropdown-item {{ if eq .NavWhere "modMerge" }} active {{ end }}" href="/moderation/merge">Merge</a></li>
+					<li><a class="dropdown-item {{ if eq .NavWhere "modNews" }} active {{ end }}" href="/moderation/news">News</a></li>
+				</ul>
+			</li>
+			{{end}}
 		</div>
 		<ul class="navbar-nav">
 			<li class="nav-item dropdown">

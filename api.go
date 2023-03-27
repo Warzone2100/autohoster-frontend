@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
@@ -861,5 +862,127 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		"total":            totals,
 		"totalNotFiltered": totalsNoFilter,
 		"rows":             gms,
+	}
+}
+
+func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		return 403, nil
+	}
+	reqLimit := parseQueryInt(r, "limit", 50)
+	if reqLimit > 500 {
+		reqLimit = 500
+	}
+	if reqLimit <= 0 {
+		reqLimit = 1
+	}
+	reqOffset := parseQueryInt(r, "offset", 0)
+	if reqOffset < 0 {
+		reqOffset = 0
+	}
+	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	reqSortField := parseQueryStringFiltered(r, "sort", "id", "whensent")
+
+	wherecase := ""
+	whereargs := []interface{}{}
+
+	reqSearch := parseQueryString(r, "search", "")
+
+	similarity := 0.3
+
+	if reqSearch != "" {
+		whereargs = append(whereargs, reqSearch)
+		if wherecase == "" {
+			wherecase = fmt.Sprintf("WHERE similarity(msg, $1::text) > %f", similarity)
+		} else {
+			wherecase += fmt.Sprintf(" AND similarity(msg, $%d::text) > %f", len(whereargs), similarity)
+		}
+	}
+
+	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
+	offset := fmt.Sprintf("OFFSET %d", reqOffset)
+
+	totalsc := make(chan int)
+	var totals int
+	totalspresent := false
+
+	totalsNoFilterc := make(chan int)
+	var totalsNoFilter int
+	totalsNoFilterpresent := false
+
+	type DbLogEntry struct {
+		ID       int       `json:"id"`
+		Whensent time.Time `json:"whensent"`
+		Hash     string    `json:"hash"`
+		Name     string    `json:"name"`
+		Msg      string    `json:"msg"`
+	}
+
+	lrowc := make(chan []DbLogEntry)
+	var ls []DbLogEntry
+	lpresent := false
+
+	echan := make(chan error)
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(r.Context(), `select count(composelog) from composelog;`).Scan(&c)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsNoFilterc <- c
+	}()
+	go func() {
+		var c int
+		req := `select count(composelog) from composelog ` + wherecase + `;`
+		derr := dbpool.QueryRow(r.Context(), req, whereargs...).Scan(&c)
+		// log.Println(req)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsc <- c
+	}()
+	go func() {
+		req := `SELECT id, whensent, hash, name, msg FROM composelog ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
+		// log.Println(req)
+		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		defer rows.Close()
+		lStage := []DbLogEntry{}
+		for rows.Next() {
+			l := DbLogEntry{}
+			err := rows.Scan(&l.ID, &l.Whensent, &l.Hash, &l.Name, &l.Msg)
+			if err != nil {
+				echan <- err
+				return
+			}
+			lStage = append(lStage, l)
+		}
+		lrowc <- lStage
+	}()
+	for !(lpresent && totalspresent && totalsNoFilterpresent) {
+		select {
+		case derr := <-echan:
+			if derr == pgx.ErrNoRows {
+				return 200, []byte(`{"total": 0, "totalNotFiltered": 0, "rows": []}`)
+			}
+			return 500, derr
+		case ls = <-lrowc:
+			lpresent = true
+		case totals = <-totalsc:
+			totalspresent = true
+		case totalsNoFilter = <-totalsNoFilterc:
+			totalsNoFilterpresent = true
+		}
+	}
+	return 200, map[string]interface{}{
+		"total":            totals,
+		"totalNotFiltered": totalsNoFilter,
+		"rows":             ls,
 	}
 }
