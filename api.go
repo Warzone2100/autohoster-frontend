@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
@@ -886,6 +885,37 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	wherecase := ""
 	whereargs := []interface{}{}
 
+	reqFilterJ := parseQueryString(r, "filter", "")
+	reqFilterFields := map[string]string{}
+	reqDoFilters := false
+	if reqFilterJ != "" {
+		err := json.Unmarshal([]byte(reqFilterJ), &reqFilterFields)
+		if err == nil && len(reqFilterFields) > 0 {
+			reqDoFilters = true
+		}
+	}
+
+	if reqDoFilters {
+		val, ok := reqFilterFields["name"]
+		if ok {
+			whereargs = append(whereargs, val)
+			if wherecase == "" {
+				wherecase = "WHERE name = $1"
+			} else {
+				wherecase += " AND name = $1"
+			}
+		}
+		val, ok = reqFilterFields["hash"]
+		if ok {
+			whereargs = append(whereargs, val)
+			if wherecase == "" {
+				wherecase = "WHERE starts_with(hash, $1)"
+			} else {
+				wherecase += fmt.Sprintf(" AND starts_with(hash, $%d)", len(whereargs))
+			}
+		}
+	}
+
 	reqSearch := parseQueryString(r, "search", "")
 
 	similarity := 0.3
@@ -912,11 +942,11 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	totalsNoFilterpresent := false
 
 	type DbLogEntry struct {
-		ID       int       `json:"id"`
-		Whensent time.Time `json:"whensent"`
-		Hash     string    `json:"hash"`
-		Name     string    `json:"name"`
-		Msg      string    `json:"msg"`
+		ID       int    `json:"id"`
+		Whensent string `json:"whensent"`
+		Hash     string `json:"hash"`
+		Name     string `json:"name"`
+		Msg      string `json:"msg"`
 	}
 
 	lrowc := make(chan []DbLogEntry)
@@ -945,7 +975,7 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		totalsc <- c
 	}()
 	go func() {
-		req := `SELECT id, whensent, hash, name, msg FROM composelog ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
+		req := `SELECT id, to_char(whensent, 'YYYY-MM-DD_HH24:MI:SS'), hash, name, msg FROM composelog ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
 		// log.Println(req)
 		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
 		if derr != nil {
