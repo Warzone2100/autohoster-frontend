@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"io"
 	"log"
 	"math/big"
-	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -124,55 +121,4 @@ func checkReplayExistsInStorage(gid int) bool {
 		return false
 	}
 	return true
-}
-
-func replayMoveHandler(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
-	if sessionGetUsername(r) != "Flex seal" {
-		return 401, nil
-	}
-	rows, err := dbpool.Query(context.Background(), "SELECT id, gamedir FROM games WHERE finished = true AND gamedir != '-1'")
-	if err != nil {
-		log.Println("Error in gamedir request: ", err)
-		return 500, nil
-	}
-	for rows.Next() {
-		var gamedir string
-		var gid int
-		err = rows.Scan(&gid, &gamedir)
-		if err != nil {
-			log.Println("Failed to scan row:", err)
-			return 500, nil
-		}
-		log.Println("Moving replay for gid [", gid, "] gamedir [", gamedir, "]")
-		rpath, err := findReplayByConfigFolder(gamedir)
-		if err == errReplayNotFound {
-			log.Println("Replay gor gid", gid, "not found!")
-			continue
-		}
-		if err != nil {
-			log.Println("Error searching for replay file: ", err)
-			return 500, nil
-		}
-		log.Println("Gamedir: [", rpath, "]")
-		log.Println("Storage replay path: [", getStorageReplayPath(gid), "]")
-		rcontent, err := os.ReadFile(rpath)
-		if err != nil {
-			log.Println("Failed to read replay: ", err)
-			return 500, nil
-		}
-		err = sendReplayToStorage(rpath, gid)
-		if err != nil {
-			log.Println("Error moving to storage: ", err)
-			return 500, nil
-		}
-		rcheck, err := getReplayFromStorage(gid)
-		if err != nil {
-			log.Println("Error getting from storage: ", err)
-			return 500, nil
-		}
-		if !bytes.Equal(rcontent, rcheck) {
-			log.Println("Comapre check failed!")
-		}
-	}
-	return 200, nil
 }
