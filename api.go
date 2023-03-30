@@ -265,7 +265,7 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			'ispbypass', coalesce((SELECT bypass_ispban FROM users WHERE op.id = users.wzprofile2), false),
 			'banned', coalesce((SELECT CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END FROM bans WHERE op.hash = bans.hash ORDER BY whenbanned DESC LIMIT 1), false),
 			'banreason', (SELECT reason FROM bans WHERE op.hash = bans.hash),
-			'bandate', (SELECT whenbanned FROM bans WHERE op.hash = bans.hash),
+			'bandate', (SELECT to_char(whenbanned, 'DD Mon YYYY HH12:MI:SS') FROM bans WHERE op.hash = bans.hash),
 			'banid', (SELECT 'M-' || bans.id FROM bans WHERE op.hash = bans.hash),
 			'banexpiery', (SELECT duration FROM bans WHERE op.hash = bans.hash),
 			'banexpierystr', (SELECT to_char(whenbanned + (duration || ' second')::interval, 'DD Mon YYYY HH12:MI:SS') FROM bans WHERE op.hash = bans.hash)
