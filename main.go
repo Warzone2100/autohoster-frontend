@@ -679,6 +679,7 @@ func main() {
 	router.HandleFunc("/api/playersavg", APIcall(APIgetUniquePlayersPerDay)).Methods("GET")
 	router.HandleFunc("/api/mapcount", APIcall(APIgetMapNameCount)).Methods("GET")
 	router.HandleFunc("/api/replay/{gid:[0-9]+}", APIcall(APIgetReplayFile)).Methods("GET")
+	router.HandleFunc("/api/hashinfo/{hash:[0-9a-z]+}", APIcall(APIgetHashInfo)).Methods("GET")
 	router.HandleFunc("/api/allowjoining/{hash:[0-9a-z]+}", APIcall(APIgetPlayerAllowedJoining)).Methods("GET")
 	router.HandleFunc("/api/approvedhashes", APIcall(APIgetAllowedModerators)).Methods("GET")
 	router.HandleFunc("/api/linkedhashes", APIcall(APIgetLinkedPlayers)).Methods("GET")

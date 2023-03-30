@@ -253,6 +253,28 @@ func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, interfac
 	return 200, CountClassification(c, resl)
 }
 
+func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+	params := mux.Vars(r)
+	phash := params["hash"]
+	var resp []byte
+	derr := dbpool.QueryRow(r.Context(),
+		`SELECT json_build_object(
+			'hash', op.hash, 'id', op.id, 'name', op.name,
+			'spam', (SELECT COUNT(*) FROM games WHERE op.id = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true),
+			'ispbypass', (SELECT bypass_ispban FROM users WHERE op.id = users.wzprofile2),
+			'banned', (SELECT CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END FROM bans WHERE op.hash = bans.hash ORDER BY whenbanned DESC LIMIT 1),
+			'banreason', (SELECT reason FROM bans WHERE op.hash = bans.hash),
+			'bandate', (SELECT whenbanned FROM bans WHERE op.hash = bans.hash),
+			'banid', (SELECT 'M-' || bans.id FROM bans WHERE op.hash = bans.hash),
+			'banexpiery', (SELECT duration FROM bans WHERE op.hash = bans.hash),
+			'banexpierystr', (SELECT to_char(whenbanned + (duration || ' second')::interval, 'DD Mon YYYY HH12:MI:SS') FROM bans WHERE op.hash = bans.hash)
+		) FROM players AS op WHERE hash = $1`, phash).Scan(&resp)
+	if derr != nil {
+		return 500, derr
+	}
+	return 200, resp
+}
+
 func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, interface{}) {
 	params := mux.Vars(r)
 	phash := params["hash"]
