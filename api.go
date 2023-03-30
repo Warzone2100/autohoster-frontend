@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -261,7 +262,7 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		`SELECT json_build_object(
 			'hash', op.hash, 'id', op.id, 'name', op.name,
 			'spam', (SELECT COUNT(*) FROM games WHERE op.id = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true),
-			'ispbypass', (SELECT bypass_ispban FROM users WHERE op.id = users.wzprofile2),
+			'ispbypass', coalesce((SELECT bypass_ispban FROM users WHERE op.id = users.wzprofile2), false),
 			'banned', coalesce((SELECT CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END FROM bans WHERE op.hash = bans.hash ORDER BY whenbanned DESC LIMIT 1), false),
 			'banreason', (SELECT reason FROM bans WHERE op.hash = bans.hash),
 			'bandate', (SELECT whenbanned FROM bans WHERE op.hash = bans.hash),
@@ -270,7 +271,18 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			'banexpierystr', (SELECT to_char(whenbanned + (duration || ' second')::interval, 'DD Mon YYYY HH12:MI:SS') FROM bans WHERE op.hash = bans.hash)
 		) FROM players AS op WHERE hash = $1`, phash).Scan(&resp)
 	if derr != nil {
-		return 500, derr
+		if errors.Is(derr, pgx.ErrNoRows) {
+			return 200, map[string]any{
+				"hash":      phash,
+				"id":        0,
+				"name":      "Noname",
+				"spam":      0,
+				"ispbypass": false,
+				"banned":    false,
+			}
+		} else {
+			return 500, derr
+		}
 	}
 	return 200, resp
 }
