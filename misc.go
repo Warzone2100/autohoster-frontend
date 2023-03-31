@@ -255,3 +255,8 @@ func sendgridRecoverRequest(email string, code string) bool {
 	log.Println("response Body:", string(body))
 	return resp.Status == "200 Success" || resp.Status == "202 Accepted"
 }
+
+func isAprilFools() bool {
+	t := time.Now()
+	return t.Month() == 4 && ((t.Day() == 1 && t.Hour() >= 2) || (t.Day() == 2 && t.Hour() < 2))
+}

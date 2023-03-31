@@ -405,6 +405,13 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 			}
 			// m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
 		}
+		if isAprilFools() {
+			dbpool.QueryRow(context.Background(), `select elo2, autoplayed, autolost, autowon from players join users on users.wzprofile2 = players.id where autoplayed > 5 and users.id != 0 order by random() limit 1;`).Scan(&de2, &dap, &dal, &daw)
+			m.Level = rand.Intn(8)
+			if dui == 14 || dui == 17 {
+				m.Level = 8
+			}
+		}
 		if m.Elo == "" {
 			var pc string
 			if dap > 0 {
@@ -432,11 +439,11 @@ where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep,
 			} else if daw >= 6 && float64(daw)/float64(dal) > 3.0 {
 				m.Medal = 3
 			}
-			if de > 1800 {
+			if de2 > 1800 {
 				m.Star[0] = 1
-			} else if de > 1550 {
+			} else if de2 > 1550 {
 				m.Star[0] = 2
-			} else if de > 1400 {
+			} else if de2 > 1400 {
 				m.Star[0] = 3
 			}
 			if dap > 60 {
