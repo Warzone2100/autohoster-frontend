@@ -647,7 +647,7 @@ func main() {
 	router.HandleFunc("/moderation/merge", modMergeHandler)
 	router.HandleFunc("/moderation/news", modNewsHandler)
 	router.HandleFunc("/moderation/logs", basicLayoutHandler("modLogs"))
-	router.HandleFunc("/moderation", basicLayoutHandler("modMain"))
+	router.HandleFunc("/moderation/bans", modBansHandler)
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating/", ratingHandler)
@@ -691,6 +691,7 @@ func main() {
 	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/users", APIcall(APIgetUsers)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/logs", APIcall(APIgetLogs)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/bans", APIcall(APIgetBans)).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 

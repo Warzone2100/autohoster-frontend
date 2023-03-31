@@ -30,10 +30,6 @@ func isSuperadmin(context context.Context, username string) bool {
 }
 
 func modUsersHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkUserAuthorized(r) {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
-		return
-	}
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		w.WriteHeader(http.StatusForbidden)
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
@@ -147,10 +143,6 @@ func modSendWebhook(performer, param, action, target string) error {
 }
 
 func modMergeHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkUserAuthorized(r) {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
-		return
-	}
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		w.WriteHeader(http.StatusForbidden)
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
@@ -220,10 +212,6 @@ func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func modNewsHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkUserAuthorized(r) {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
-		return
-	}
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		w.WriteHeader(http.StatusForbidden)
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
@@ -248,5 +236,197 @@ func modNewsHandler(w http.ResponseWriter, r *http.Request) {
 			"msg": msg})
 	} else {
 		basicLayoutLookupRespond("modNews", w, r, map[string]interface{}{})
+	}
+}
+
+func modBansHandler(w http.ResponseWriter, r *http.Request) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		w.WriteHeader(http.StatusForbidden)
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
+		return
+	}
+	if r.Method == "POST" {
+		err := r.ParseForm()
+		if err != nil {
+			w.WriteHeader(400)
+			w.Write([]byte("Failed to parse form: " + err.Error()))
+			return
+		}
+		tag, err := dbpool.Exec(r.Context(), `insert into bans (hash, duration, reason) values ($1, $2, $3)`, r.FormValue("hash"), r.FormValue("duration"), r.FormValue("reason"))
+		result := ""
+		if err != nil {
+			result = err.Error()
+		} else {
+			result = tag.String()
+		}
+		msg := template.HTML(result + `<br><a href="/moderation/bans">back</a>`)
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true, "msg": msg})
+	} else {
+		basicLayoutLookupRespond("modBans", w, r, map[string]interface{}{})
+	}
+}
+
+func APIgetBans(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		return 403, nil
+	}
+	var ret []byte
+	derr := dbpool.QueryRow(r.Context(), `SELECT array_to_json(array_agg(to_json(bans))) FROM bans;`).Scan(&ret)
+	if derr != nil {
+		return 500, derr
+	}
+	return 200, ret
+}
+
+func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		return 403, nil
+	}
+	reqLimit := parseQueryInt(r, "limit", 50)
+	if reqLimit > 500 {
+		reqLimit = 500
+	}
+	if reqLimit <= 0 {
+		reqLimit = 1
+	}
+	reqOffset := parseQueryInt(r, "offset", 0)
+	if reqOffset < 0 {
+		reqOffset = 0
+	}
+	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	reqSortField := parseQueryStringFiltered(r, "sort", "id", "whensent")
+
+	wherecase := ""
+	whereargs := []interface{}{}
+
+	reqFilterJ := parseQueryString(r, "filter", "")
+	reqFilterFields := map[string]string{}
+	reqDoFilters := false
+	if reqFilterJ != "" {
+		err := json.Unmarshal([]byte(reqFilterJ), &reqFilterFields)
+		if err == nil && len(reqFilterFields) > 0 {
+			reqDoFilters = true
+		}
+	}
+
+	if reqDoFilters {
+		val, ok := reqFilterFields["name"]
+		if ok {
+			whereargs = append(whereargs, val)
+			if wherecase == "" {
+				wherecase = "WHERE name = $1"
+			} else {
+				wherecase += " AND name = $1"
+			}
+		}
+		val, ok = reqFilterFields["hash"]
+		if ok {
+			whereargs = append(whereargs, val)
+			if wherecase == "" {
+				wherecase = "WHERE starts_with(hash, $1)"
+			} else {
+				wherecase += fmt.Sprintf(" AND starts_with(hash, $%d)", len(whereargs))
+			}
+		}
+	}
+
+	reqSearch := parseQueryString(r, "search", "")
+
+	similarity := 0.3
+
+	if reqSearch != "" {
+		whereargs = append(whereargs, reqSearch)
+		if wherecase == "" {
+			wherecase = fmt.Sprintf("WHERE similarity(msg, $1::text) > %f", similarity)
+		} else {
+			wherecase += fmt.Sprintf(" AND similarity(msg, $%d::text) > %f", len(whereargs), similarity)
+		}
+	}
+
+	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
+	offset := fmt.Sprintf("OFFSET %d", reqOffset)
+
+	totalsc := make(chan int)
+	var totals int
+	totalspresent := false
+
+	totalsNoFilterc := make(chan int)
+	var totalsNoFilter int
+	totalsNoFilterpresent := false
+
+	type DbLogEntry struct {
+		ID       int    `json:"id"`
+		Whensent string `json:"whensent"`
+		Hash     string `json:"hash"`
+		Name     string `json:"name"`
+		Msg      string `json:"msg"`
+	}
+
+	lrowc := make(chan []DbLogEntry)
+	var ls []DbLogEntry
+	lpresent := false
+
+	echan := make(chan error)
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(r.Context(), `select count(composelog) from composelog;`).Scan(&c)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsNoFilterc <- c
+	}()
+	go func() {
+		var c int
+		req := `select count(composelog) from composelog ` + wherecase + `;`
+		derr := dbpool.QueryRow(r.Context(), req, whereargs...).Scan(&c)
+		// log.Println(req)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsc <- c
+	}()
+	go func() {
+		req := `SELECT id, to_char(whensent, 'YYYY-MM-DD_HH24:MI:SS'), hash, name, msg FROM composelog ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
+		// log.Println(req)
+		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		defer rows.Close()
+		lStage := []DbLogEntry{}
+		for rows.Next() {
+			l := DbLogEntry{}
+			err := rows.Scan(&l.ID, &l.Whensent, &l.Hash, &l.Name, &l.Msg)
+			if err != nil {
+				echan <- err
+				return
+			}
+			lStage = append(lStage, l)
+		}
+		lrowc <- lStage
+	}()
+	for !(lpresent && totalspresent && totalsNoFilterpresent) {
+		select {
+		case derr := <-echan:
+			if derr == pgx.ErrNoRows {
+				return 200, []byte(`{"total": 0, "totalNotFiltered": 0, "rows": []}`)
+			}
+			return 500, derr
+		case ls = <-lrowc:
+			lpresent = true
+		case totals = <-totalsc:
+			totalspresent = true
+		case totalsNoFilter = <-totalsNoFilterc:
+			totalsNoFilterpresent = true
+		}
+	}
+	return 200, map[string]interface{}{
+		"total":            totals,
+		"totalNotFiltered": totalsNoFilter,
+		"rows":             ls,
 	}
 }
