@@ -157,10 +157,11 @@
 			$table.bootstrapTable();
 		})
 		function detailFormatter(index, row) {
-			let ret = "";
+			let ret = "<table>";
 			for(const key in row) {
-				ret += '<div><b>' + key + ': </b><code>' + row[key] + '</code></div>';
+				ret += '<tr><td><b>' + key + ': </b></td><td><code>' + row[key] + '</code></td></tr>';
 			}
+			ret += "</table>";
 			return ret;
 		}
 		function usernameFormatter(value, row) {
