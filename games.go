@@ -144,7 +144,6 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			g.Players[slot] = np[gpi]
-			g.Players[slot].Name = Bifly(g.Players[slot].Name)
 			g.Players[slot].Team = plteam[slot]
 			g.Players[slot].Colour = plcolour[slot]
 			g.Players[slot].Position = slot

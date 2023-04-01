@@ -260,14 +260,3 @@ func isAprilFools() bool {
 	t := time.Now()
 	return t.Month() == 4 && ((t.Day() == 1 && t.Hour() >= 2) || (t.Day() == 2 && t.Hour() < 2))
 }
-
-func Bifly(s string) string {
-	return strings.Map(Bmapper, s)
-}
-
-func Bmapper(r rune) rune {
-	if r == 'B' || r == 'В' || r == 'ᴮ' || r == 'b' || r == 'в' {
-		return '🅱'
-	}
-	return r
-}
