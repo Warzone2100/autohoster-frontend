@@ -375,6 +375,7 @@ from (
    from players
 ) result
 where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep, &drp, &dpi, &dname, &drenames)
+	dname = Bifly(dname)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if m.Elo == "" {

@@ -654,6 +654,7 @@ func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}
 	for rows.Next() {
 		var pp PlayerLeaderboard
 		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed)
+		pp.Name = Bifly(pp.Name)
 		P = append(P, pp)
 	}
 	return 200, P
@@ -805,6 +806,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 				echan <- err
 				return
 			}
+			g.MapName = Bifly(g.MapName)
 			for i, p := range splayers {
 				if p == -1 {
 					continue
@@ -850,6 +852,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 				echan <- err
 				return
 			}
+			p.Name = Bifly(p.Name)
 			pmapStage[p.ID] = p
 		}
 		pmapc <- pmapStage
