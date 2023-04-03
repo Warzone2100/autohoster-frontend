@@ -647,6 +647,7 @@ func main() {
 	router.HandleFunc("/request", hostRequestHandler)
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
+	router.HandleFunc("/wzrecover", wzProfileRecoveryHandlerGET)
 	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
 	router.HandleFunc("/preset-edit", presetEditorHandler)
 
