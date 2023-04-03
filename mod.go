@@ -73,7 +73,7 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(200)
-		err = modSendWebhook(sessionGetUsername(r), r.FormValue("param"), r.FormValue("val"), r.FormValue("name"))
+		err = modSendWebhook(fmt.Sprintf("Administrator `%s` changed `%s` to `%s` for user `%s`.", sessionGetUsername(r), r.FormValue("param"), r.FormValue("val"), r.FormValue("name")))
 		if err != nil {
 			log.Println(err)
 		}
@@ -113,10 +113,10 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func modSendWebhook(performer, param, action, target string) error {
+func modSendWebhook(content string) error {
 	b, err := json.Marshal(map[string]interface{}{
 		"username": "Frontend",
-		"content":  fmt.Sprintf("Administrator `%s` changed `%s` to `%s` for user `%s`.", performer, param, action, target),
+		"content":  content,
 	})
 	if err != nil {
 		return err
@@ -205,6 +205,7 @@ func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 			report += fmt.Sprintf("Moving games: %s\n", tag)
 		}
 		report += fmt.Sprintf("Done! Total games affected: %d\n", totalgames)
+		modSendWebhook(fmt.Sprintf("Administrator `%s` merged `%v` into `%d`", sessionGetUsername(r), fromIDs, intoID))
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true, "msg": report})
 	} else {
 		basicLayoutLookupRespond("modMerge", w, r, map[string]interface{}{})
@@ -252,7 +253,7 @@ func modBansHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Failed to parse form: " + err.Error()))
 			return
 		}
-		tag, err := dbpool.Exec(r.Context(), `insert into bans (hash, duration, reason) values ($1, $2, $3)`, r.FormValue("hash"), r.FormValue("duration"), r.FormValue("reason"))
+		tag, err := dbpool.Exec(r.Context(), `insert into bans (hash, duration, reason, userid) values ($1, $2, $3, (select id from players where hash = $1))`, r.FormValue("hash"), r.FormValue("duration"), r.FormValue("reason"))
 		result := ""
 		if err != nil {
 			result = err.Error()
@@ -260,6 +261,7 @@ func modBansHandler(w http.ResponseWriter, r *http.Request) {
 			result = tag.String()
 		}
 		msg := template.HTML(result + `<br><a href="/moderation/bans">back</a>`)
+		modSendWebhook(fmt.Sprintf("Administrator `%s` banned `%v` for `%v` duration `%v`", sessionGetUsername(r), r.FormValue("hash"), r.FormValue("reason"), r.FormValue("duration")))
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true, "msg": msg})
 	} else {
 		basicLayoutLookupRespond("modBans", w, r, map[string]interface{}{})
