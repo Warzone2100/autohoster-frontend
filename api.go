@@ -260,16 +260,22 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	var resp []byte
 	derr := dbpool.QueryRow(r.Context(),
 		`SELECT json_build_object(
-			'hash', op.hash, 'id', op.id, 'name', op.name,
-			'spam', (SELECT COUNT(*) FROM games WHERE op.id = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true),
-			'ispbypass', coalesce((SELECT bypass_ispban FROM users WHERE op.id = users.wzprofile2), false),
-			'banned', coalesce((SELECT CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END FROM bans WHERE op.hash = bans.hash ORDER BY whenbanned DESC LIMIT 1), false),
-			'banreason', (SELECT reason FROM bans WHERE op.hash = bans.hash),
-			'bandate', (SELECT to_char(whenbanned, 'DD Mon YYYY HH12:MI:SS') FROM bans WHERE op.hash = bans.hash),
-			'banid', (SELECT 'M-' || bans.id FROM bans WHERE op.hash = bans.hash),
-			'banexpiery', (SELECT duration FROM bans WHERE op.hash = bans.hash),
-			'banexpierystr', (SELECT to_char(whenbanned + (duration || ' second')::interval, 'DD Mon YYYY HH12:MI:SS') FROM bans WHERE op.hash = bans.hash)
-		) FROM players AS op WHERE hash = $1`, phash).Scan(&resp)
+			'hash', $1::text,
+			'id', players.id,
+			'name', players.name,
+			'spam', COALESCE((SELECT COUNT(*) FROM games WHERE players.id = ANY(games.players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true), 0),
+			'ispbypass', COALESCE(users.bypass_ispban, false),
+			'banned', CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END,
+			'banreason', bans.reason,
+			'bandate', to_char(whenbanned, 'DD Mon YYYY HH12:MI:SS'),
+			'banid', 'M-' || bans.id,
+			'banexpiery', bans.duration,
+			'banexpierystr', CASE WHEN bans.duration = 0 THEN 'never' ELSE to_char(whenbanned + (duration || ' second')::interval, 'DD Mon YYYY HH12:MI:SS') END
+		)
+		FROM bans
+		LEFT OUTER JOIN players ON bans.playerid = players.id
+		LEFT OUTER JOIN users ON players.id = users.wzprofile2 
+		WHERE bans.hash = $1::text OR players.hash = $1::text`, phash).Scan(&resp)
 	if derr != nil {
 		if errors.Is(derr, pgx.ErrNoRows) {
 			return 200, map[string]any{

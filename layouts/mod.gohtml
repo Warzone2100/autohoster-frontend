@@ -492,6 +492,7 @@
 						<th data-field="id" data-sortable="true">id</th>
 						<th data-field="whenbanned" data-filter-control="input">whenbanned</th>
 						<th data-field="hash" data-formatter="hashFormatter" data-filter-control="input">hash</th>
+						<th data-field="playerid" data-formatter="playeridFormatter" data-filter-control="input">playerid</th>
 						<th data-field="duration">duration</th>
 						<th data-field="reason" data-class="w-100">reason</th>
 					</tr>
@@ -506,6 +507,9 @@
 		})
 		function hashFormatter(value, row) {
 			return `<a href="/api/hashinfo/${value}" title="${value}"><code>${value.slice(0, 10)}</code></a>`;
+		}
+		function playeridFormatter(value, row) {
+			return `<a href="/players/${value}">${value}</a>`;
 		}
 		</script>
 		</div>
