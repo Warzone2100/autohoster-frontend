@@ -265,17 +265,17 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			'name', players.name,
 			'spam', COALESCE((SELECT COUNT(*) FROM games WHERE players.id = ANY(games.players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true), 0),
 			'ispbypass', COALESCE(users.bypass_ispban, false),
-			'banned', CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END,
+			'banned', COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false),
 			'banreason', bans.reason,
 			'bandate', to_char(whenbanned, 'DD Mon YYYY HH12:MI:SS'),
 			'banid', 'M-' || bans.id,
 			'banexpiery', bans.duration,
 			'banexpierystr', CASE WHEN bans.duration = 0 THEN 'never' ELSE to_char(whenbanned + (duration || ' second')::interval, 'DD Mon YYYY HH12:MI:SS') END
 		)
-		FROM bans
-		LEFT OUTER JOIN players ON bans.playerid = players.id
-		LEFT OUTER JOIN users ON players.id = users.wzprofile2 
-		WHERE bans.hash = $1::text OR players.hash = $1::text`, phash).Scan(&resp)
+		FROM players
+		LEFT OUTER JOIN bans ON players.id = bans.playerid
+		LEFT OUTER JOIN users ON players.id = users.wzprofile2
+		WHERE players.hash = $1::text OR bans.hash = $1::text`, phash).Scan(&resp)
 	if derr != nil {
 		if errors.Is(derr, pgx.ErrNoRows) {
 			return 200, map[string]any{
