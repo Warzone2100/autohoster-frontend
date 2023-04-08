@@ -165,6 +165,12 @@
 					<img src="https://wz2100.euphobos.ru/maps/preview/{{.MapHash}}.png">
 				</div>
 			</div>
+			{{if $.IsSuperadmin}}
+			<p style="border-left: 3px solid red;padding-left: 1rem;">
+				Game directory: <code>{{.Gamedir}}</code><br>
+				Archive: <code>{{GameDirToWeek .Gamedir}}</code>
+			</p>
+			{{end}}
 			<div class="container"><p>
 				{{$first_specs_printed := "false"}}
 				{{range $k, $player := .Players}}

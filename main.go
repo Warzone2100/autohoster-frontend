@@ -124,6 +124,7 @@ var layoutFuncs = template.FuncMap{
 	},
 	"GameTimeToString":  GameTimeToString,
 	"GameTimeToStringI": GameTimeToStringI,
+	"GameDirToWeek":     GameDirToWeek,
 	"strcut": func(str string, num int) string { // https://play.golang.org/p/EzvhWMljku
 		bnoden := str
 		if len(str) > num {

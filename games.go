@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"regexp"
 	_ "sort"
 	"strconv"
 	"time"
@@ -76,7 +78,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames,
 		score, kills, power, units, unitslost, unitbuilt, structs, structbuilt, structurelost, rescount, coalesce(researchlog, '{}'),
 		coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-		coalesce(gamedir), calculated, hidden, debugtriggered, coalesce(version, '???'), mod
+		coalesce(gamedir, 'no gamedir'), calculated, hidden, debugtriggered, coalesce(version, '???'), mod
 	FROM games
 	JOIN players as p ON p.id = any(games.players)
 	WHERE deleted = false AND hidden = false AND games.id = $1
@@ -253,4 +255,20 @@ func SecondsInterToString(t interface{}) string {
 	} else {
 		return "invalid"
 	}
+}
+
+var GameDirRegex = regexp.MustCompile(`\./tmp/wz-(\d+)/`)
+
+func GameDirToWeek(p string) int {
+	matches := GameDirRegex.FindStringSubmatch(p)
+	if len(matches) != 2 {
+		log.Println("No match for game directory")
+		return -1
+	}
+	num, err := strconv.Atoi(matches[1])
+	if err != nil {
+		log.Printf("Error atoi: %#+v %#+v", matches, err)
+		return -1
+	}
+	return num / (7 * 24 * 60 * 60)
 }
