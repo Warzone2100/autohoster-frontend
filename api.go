@@ -137,13 +137,11 @@ func APIgetDayAverageByHour(_ http.ResponseWriter, r *http.Request) (int, interf
 
 func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	rows, derr := dbpool.Query(r.Context(),
-		`SELECT
-			b::TEXT,
-			(SELECT COUNT(c) FROM
-				(SELECT DISTINCT UNNEST(players)
-					FROM games
-					WHERE date_trunc('day', timestarted) = date_trunc('day', b)) AS c)
-		FROM generate_series((select min(timestarted) from games), now(), '1 day'::INTERVAL) AS b;`)
+		`SELECT d::text, count(r.p)
+		FROM (SELECT distinct unnest(gg.players) as p, date_trunc('day', gg.timestarted) AS d FROM games AS gg) as r
+		WHERE d > now() - '1 year 7 days'::interval
+		GROUP BY d
+		ORDER BY d DESC`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
@@ -165,7 +163,7 @@ func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, int
 }
 
 func APIgetMapNameCount(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
-	rows, derr := dbpool.Query(r.Context(), `select mapname, count(*) as c from games group by mapname order by c desc`)
+	rows, derr := dbpool.Query(r.Context(), `select mapname, count(*) as c from games group by mapname order by c desc limit 30`)
 	if derr != nil {
 		return 500, derr
 	}
