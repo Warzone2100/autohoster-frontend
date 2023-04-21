@@ -21,10 +21,6 @@ var regexMaphash = regexp.MustCompile(`^[a-zA-Z0-9-]*$`)
 var regexAlliances = regexp.MustCompile(`^[0-2]$`)
 var regexLevelbase = regexp.MustCompile(`^[1-3]$`)
 var regexScav = regexp.MustCompile(`^[0-1]$`)
-var regexOnlyregistered = regexp.MustCompile(`^[0-1]$`)
-
-// func ExecReq(r http.Request) (*http.Response, interface{}) {
-// }
 
 func hosterHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
@@ -51,10 +47,6 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if !regexScav.MatchString(r.PostFormValue("scav")) {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "scav must match `^[0-1]$`, got [" + r.PostFormValue("scav") + "]"})
-			return
-		}
-		if !regexOnlyregistered.MatchString(r.PostFormValue("onlyregistered")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "onlyregistered must match `^[0-1]$`, got [" + r.PostFormValue("onlyregistered") + "]"})
 			return
 		}
 		var mapname string
@@ -155,6 +147,10 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		if r.PostFormValue("AddBalance") == "on" {
 			mixmod += "masterbal"
 		}
+		onlyregistered := "0"
+		if r.PostFormValue("onlyregistered") == "on" {
+			onlyregistered = "1"
+		}
 		alliancen, err := strconv.Atoi(r.PostFormValue("alliances"))
 		if err != nil {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Malformed alliances field: " + err.Error()})
@@ -170,7 +166,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
 			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
-			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever, r.PostFormValue("onlyregistered"))
+			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever, onlyregistered)
 		log.Printf("Host request: [%s] [%s]", sessionManager.Get(r.Context(), "User.Username"), mapname)
 		if s {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": reqres})
