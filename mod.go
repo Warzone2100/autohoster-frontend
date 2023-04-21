@@ -253,7 +253,7 @@ func modBansHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Failed to parse form: " + err.Error()))
 			return
 		}
-		tag, err := dbpool.Exec(r.Context(), `insert into bans (hash, duration, reason, userid) values ($1, $2, $3, (select id from players where hash = $1))`, r.FormValue("hash"), r.FormValue("duration"), r.FormValue("reason"))
+		tag, err := dbpool.Exec(r.Context(), `insert into bans (hash, duration, reason, playerid) values ($1, $2, $3, (select id from players where hash = $1))`, r.FormValue("hash"), r.FormValue("duration"), r.FormValue("reason"))
 		result := ""
 		if err != nil {
 			result = err.Error()
