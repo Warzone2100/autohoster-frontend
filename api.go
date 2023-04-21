@@ -263,6 +263,7 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			'name', players.name,
 			'spam', COALESCE((SELECT COUNT(*) FROM games WHERE players.id = ANY(games.players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true), 0),
 			'ispbypass', COALESCE(users.bypass_ispban, false),
+			'userid', COALESCE(users.id, -1),
 			'banned', COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false),
 			'banreason', bans.reason,
 			'bandate', to_char(whenbanned, 'DD Mon YYYY HH12:MI:SS'),
@@ -282,6 +283,7 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 				"name":      "Noname",
 				"spam":      0,
 				"ispbypass": false,
+				"userid":    -1,
 				"banned":    false,
 			}
 		} else {
