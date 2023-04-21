@@ -21,6 +21,7 @@ var regexMaphash = regexp.MustCompile(`^[a-zA-Z0-9-]*$`)
 var regexAlliances = regexp.MustCompile(`^[0-2]$`)
 var regexLevelbase = regexp.MustCompile(`^[1-3]$`)
 var regexScav = regexp.MustCompile(`^[0-1]$`)
+var regexOnlyregistered = regexp.MustCompile(`^[0-1]$`)
 
 // func ExecReq(r http.Request) (*http.Response, interface{}) {
 // }
@@ -50,6 +51,10 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if !regexScav.MatchString(r.PostFormValue("scav")) {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "scav must match `^[0-1]$`, got [" + r.PostFormValue("scav") + "]"})
+			return
+		}
+		if !regexOnlyregistered.MatchString(r.PostFormValue("onlyregistered")) {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "onlyregistered must match `^[0-1]$`, got [" + r.PostFormValue("onlyregistered") + "]"})
 			return
 		}
 		var mapname string
@@ -165,7 +170,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
 			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
-			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever)
+			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever, r.PostFormValue("onlyregistered"))
 		log.Printf("Host request: [%s] [%s]", sessionManager.Get(r.Context(), "User.Username"), mapname)
 		if s {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": reqres})
@@ -615,7 +620,7 @@ func RequestStatus() (bool, string) {
 	return MultihosterRequest("status")
 }
 
-func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, mods, ver string) (bool, string) {
+func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, mods, ver, onlyregistered string) (bool, string) {
 	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"request-room", nil)
 	if err != nil {
 		log.Print(err)
@@ -632,6 +637,7 @@ func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, 
 	q.Add("roomname", name)
 	q.Add("mod", mods)
 	q.Add("version", ver)
+	q.Add("onlyregistered", onlyregistered)
 	req.URL.RawQuery = q.Encode()
 	var netClient = &http.Client{
 		Timeout: time.Second * 2,
