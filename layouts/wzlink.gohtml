@@ -60,25 +60,45 @@
 <html translate="no">
 	<head>
 		{{template "head"}}
-		<!-- <meta content="404" property="og:title">
-		<meta content="wrong url man" property="og:description"> -->
 	</head>
 	<body>
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
-		<div class="container" style="max-width: 940px;">
-			<table class="table">
-				<thead>
-					<td colspan="2" class="text-center">
-						Warzone profile link confirm
-					</td>
-				</thead>
-				<tr>
-					<td>To link new profile send following message in chat of any Autohoster room:</td>
-					<td><code style="user-select: all;">{{.WzConfirmCode}}</code></td>
-					<td><b>Refresh this page after you sent the message.<b></td>
-				</tr>
-			</table>
+		<div class="container text-center py-2" style="max-width: 750px;">
+			{{if eq .LinkStatus "done"}}
+			<p>You successfully linked your account to in-game profile:</p>
+			Hash: <code>{{.PlayerHash}}</code><br>
+			Player ID: <code>{{.PlayerID}}</code><br>
+			Player name: <code>{{.PlayerName}}</code>
+			{{else}}
+			<h2>Warzone 2100 Profile linking</h2>
+			<p><b>WARNING:</b> Anyone who sees this code is capable of taking over your account, games and rating!
+			And administration will be unable to help you in such case. Your .sta2 file has same power as combination of your login and password!
+			You must be the first one who sends this code!</p>
+			<p>Due to not synchronized identity handshake it is advised to wait 2-5 seconds before sending the message.</p>
+			<p><b>Refresh this page after you sent the message.</b></p>
+			<p>There will be no indication in-game that you sent the code, just refresh this page once you sent it. No need to send it multiple times.</p>
+			<style>.hiddenConfirmCode { display: none; }</style>
+			<noscript>
+				<style>yes-script { display: none; }</style>
+				<style>.hiddenConfirmCode { display: block; }</style>
+			</noscript>
+			<script>
+			function showConfirmCode() {
+				document.getElementById("showBlock").style = "display: block;";
+				document.getElementById("hideBlock").style = "display: none;";
+			}
+			</script>
+			<yes-script>
+			<div id="hideBlock">
+			<button class="btn btn-primary" onClick="showConfirmCode()">I read and understood what is said above, show me the code</button>
+			</div>
+			</yes-script>
+			<div id="showBlock" class="hiddenConfirmCode">
+			<p>To link an in-game profile to your account send following message in chat of any Autohoster room:<p>
+			<code>{{.WzConfirmCode}}</code>
+			</div>
+			{{end}}
 		</div>
 	</body>
 </html>
@@ -107,6 +127,7 @@
 			by the rating string "Unknown player" (don't mistake it with "Unauthorized player"). Due to not synchronized identity
 			handshake it is advised to wait 2-5 seconds before sending the message.</p>
 			<p><b>Refresh this page after you sent the message.</b></p>
+			<p>There will be no indication in-game that you sent the code, just refresh this page once you sent it. No need to send it multiple times.</p>
 			<p>Your ID, games and rating will remain intact. Your hash will be changed instantly upon refreshing the page, rejoin Autohoster or visit website to see the effect.</p>
 			<style>.hiddenConfirmCode { display: none; }</style>
 			<noscript>
@@ -126,7 +147,7 @@
 			</yes-script>
 			<div id="showBlock" class="hiddenConfirmCode">
 			<p>To reset profile's hash send following message in chat of any Autohoster room:<p>
-			<code style="user-select: all;">{{.WzConfirmCode}}</code>
+			<code>{{.WzConfirmCode}}</code>
 			</div>
 			{{end}}
 		</div>

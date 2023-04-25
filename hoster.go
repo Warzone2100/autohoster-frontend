@@ -208,7 +208,7 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if confirmcode != "" && (allow_profile_merge || profilenum == -1) {
 		var loghash, logname, logip string
 		derr := dbpool.QueryRow(context.Background(), `SELECT hash, ip::text, name FROM chatlog WHERE msg = $1 LIMIT 1`,
-			confirmcode).Scan(&loghash, &logip, &logname)
+			"/hostmsg "+confirmcode).Scan(&loghash, &logip, &logname)
 		if derr != nil && derr != pgx.ErrNoRows {
 			log.Println(derr.Error())
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
@@ -233,35 +233,15 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
 					newwzid, sessionManager.GetString(r.Context(), "User.Username"))
 				if derr != nil {
-					newmsg := "confirm-" + generateRandomString(18)
-					tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
-						newmsg, sessionManager.GetString(r.Context(), "User.Username"))
-					if derr != nil {
-						log.Println(derr.Error())
-						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
-						return
-					}
-					if tag.RowsAffected() != 1 {
-						log.Println(derr.Error())
-						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
-						return
-					}
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-						"msg": template.HTML(`Profile already linked to an account. Contact Autohoster Administrator to resolve a conflict.
-								<br>We created new link code for you: <code>` + newmsg + `</code>
-								<br>Send it to any Autohoster room with profile you want to link selected.
-								<br>Refresh this page after you sent the message.`),
-					})
-					return
+					log.Println(derr.Error())
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
 				}
 				if tag.RowsAffected() != 1 {
 					log.Println(derr.Error())
 					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 					return
 				}
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-					"msg": "We successfully linked your account to warzone profile (" + strconv.Itoa(newwzid) + ") " + logname + " [" + loghash + "]",
-				})
+				basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]interface{}{"LinkStatus": "done", "PlayerID": newwzid, "PlayerHash": loghash, "PlayerName": logname})
 				return
 			} else {
 				if allow_profile_merge {
@@ -280,7 +260,7 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-							"msg": template.HTML("You tried to merge same profile into existing one. That does nothing. New code: <code>" + newmsg + "</code>"),
+							"msg": template.HTML("You tried to merge same profile into existing one. That does nothing. New code: <code>/hostmsg " + newmsg + "</code>"),
 						})
 						return
 					}
@@ -315,7 +295,6 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-
 	}
 	if profilenum == -1 {
 		if confirmcode == "" {
@@ -332,13 +311,9 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 				return
 			}
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": template.HTML("We created new link code for you: <code>" + newmsg + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
-			})
+			basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]interface{}{"LinkStatus": "code", "WzConfirmCode": "/hostmsg " + newmsg})
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": template.HTML("Your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
-			})
+			basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]interface{}{"LinkStatus": "code", "WzConfirmCode": "/hostmsg " + confirmcode})
 		}
 	} else {
 		if allow_profile_merge {
@@ -359,11 +334,11 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": template.HTML("You are linked to profile " + strconv.Itoa(profilenum) + "<br>If you want to merge profiles into existing one your link code is: <code>" + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
+				"msg": template.HTML("You are linked to profile " + strconv.Itoa(profilenum) + "<br>If you want to merge profiles into existing one your link code is: <code>/hostmsg " + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
 			})
 		} else {
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
-				"msg": template.HTML("Sorry, you can not merge any profiles. Contact us to learn more about profile linkage."),
+				"msg": template.HTML("You are already linked to an in-game profile, if you lost it please use recovery procedure."),
 			})
 		}
 	}
@@ -693,15 +668,15 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 			log.Println("Update recovery code ", tag)
 			return
 		}
-		basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "code", "WzConfirmCode": recoveryCode})
+		basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
 		return
 	}
 	var newHash string
-	err = dbpool.QueryRow(context.Background(), `SELECT hash FROM chatlog WHERE TRIM(msg) = $1 ORDER BY whensent ASC LIMIT 1`, recoveryCode).Scan(&newHash)
+	err = dbpool.QueryRow(context.Background(), `SELECT hash FROM chatlog WHERE TRIM(msg) = $1 ORDER BY whensent ASC LIMIT 1`, "/hostmsg "+recoveryCode).Scan(&newHash)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			log.Println("Hash not found")
-			basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "code", "WzConfirmCode": recoveryCode})
+			basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
 			return
 		}
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
@@ -731,7 +706,7 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 			log.Println("Update recovery code ", tag)
 			return
 		}
-		basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "collision", "WzConfirmCode": recoveryCode})
+		basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "collision", "WzConfirmCode": "/hostmsg " + recoveryCode})
 		return
 	}
 	tx, err := dbpool.Begin(context.Background())
