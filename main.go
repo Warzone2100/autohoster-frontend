@@ -665,7 +665,7 @@ func main() {
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
 	router.HandleFunc("/players", basicLayoutHandler("players"))
 	router.HandleFunc("/players/{id:[0-9]+}", PlayersHandler)
-	router.HandleFunc("/stats", basicLayoutHandler("stats"))
+	router.HandleFunc("/stats", statsHandler)
 	router.HandleFunc("/resstat", resstatHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)

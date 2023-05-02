@@ -3,90 +3,165 @@
 <html translate="no">
 	<head>
 		{{template "head"}}
-		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
-		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>
 		<title>Autohoster statistics</title>
 	</head>
 	<body>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
-		<div class="container px-4 py-5 my-5 text-center">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js" integrity="sha512-UXumZrZNiOwnTcZSHLOfcTs0aos2MzBWHXOHOuB0J/R44QB0dwY5JgfbvljXcklVf65Gc4El6RjZ+lnwd2az2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.umd.min.js" integrity="sha512-TJ7U6JRJx5IpyvvO9atNnBzwJIoZDaQnQhb0Wmw32Rj5BQHAmJG16WzaJbDns2Wk5VG6gMt4MytZApZG47rCdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js" integrity="sha512-wUYbRPLV5zs6IqvWd88HIqZU/b8TBx+I8LEioQ/UC0t5EMCLApqhIAnUg7EsAzdbhhdgW07TqYDdH3QEXRcPOQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/2.2.1/chartjs-plugin-annotation.min.js" integrity="sha512-qF3T5CaMgSRNrxzu69V3ZrYGnrbRMIqrkE+OrE01DDsYDNo8R1VrtYL8pk+fqhKxUBXQ2z+yV/irk+AbbHtBAg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<div class="px-4 py-1 my-1 text-center">
 			{{if ne .User.WzProfile2.ID -1}}
-			<h3>Autohoster statistics</h3>
-			<div class="graphContainerGamesPerHour" style="height:500px">
-				<canvas id="GraphCanvasGamesPerHour"></canvas>
-			</div>
-			<div class="graphContainerUniquePlayersPerDay" style="height:500px">
-				<canvas id="GraphCanvasUniquePlayersPerDay"></canvas>
-			</div>
-			<div class="graphContainerMapCount" style="height:500px">
-				<canvas id="GraphCanvasMapCount"></canvas>
+			<div class="d-flex justify-content-evenly">
+				<div class="flex-fill">
+					<h3>Autohoster statistics</h3>
+					<div class="d-flex justify-content-evenly" style="height:400px">
+						<div class="flex-fill graphContainerGamesPerHour"><canvas id="GraphCanvasGamesPerHour"></canvas></div>
+						<div class="flex-fill graphContainerGamesPerWeekday"><canvas id="GraphCanvasGamesPerWeekday"></canvas></div>
+					</div>
+					<div class="graphContainerUniquePlayersPerDay" style="height:400px">
+						<canvas id="GraphCanvasUniquePlayersPerDay"></canvas>
+					</div>
+					<div class="graphContainerMapCount" style="height:500px">
+						<canvas id="GraphCanvasMapCount"></canvas>
+					</div>
+				</div>
+				<div style="min-width:16rem;margin-right:1rem;margin-left:1rem">
+					<p>Recent players (7d):</p>
+					<table>
+						<thead>
+							<tr><td>Name</td><td>Games</td></tr>
+						</thead>
+						<tbody style="text-align:left;white-space: nowrap;">
+							{{range .LastPlayers}}
+							<tr><td><a href="/players/{{.ID}}">{{.Name}}</a></td><td>{{.Count}}</td></tr>
+							{{end}}
+						</tbody>
+					</table>
+				</div>
 			</div>
 			<script>
-			window.onload = function () {
-				LoadGraphGamesPerHour();
-				LoadGraphUniquePlayersPerDay();
-				LoadGraphMapCount();
-			}
-			function PlotDataGamesPerHour(JsonData) {
-				const resp = JSON.parse(JsonData);
-				var ctx = document.getElementById('GraphCanvasGamesPerHour').getContext('2d');
-				var labels = Object.keys(resp);
-				chart = new Chart(ctx, {
+			window.addEventListener("load", PlotDataGamesPerHour, {once: true});
+			window.addEventListener("load", PlotDataUniquePlayersPerDay, {once: true});
+			window.addEventListener("load", PlotDataMapCount, {once: true});
+			window.addEventListener("load", PlotDataGamesPerWeekday, {once: true});
+			function PlotDataGamesPerHour() {
+				const resp = {{.GamesByHour}};
+				const respR = {{.RatingGamesByHour}};
+				chart = new Chart(document.getElementById('GraphCanvasGamesPerHour').getContext('2d'), {
 					type: 'line', parsing: false, normalized: true,
-					data: {labels: labels, datasets: [{
-						label: 'Count',
+					data: {labels: Object.keys(resp), datasets: [{
+						label: 'All games',
 						data: resp,
 						borderColor: 'rgba(0, 119, 204, 1)',
-						backgroundColor: 'rgba(0, 119, 204, 1)'
+						backgroundColor: 'rgba(0, 119, 204, 1)',
+						yAxisID: 'y',
+					},{
+						label: 'Rating games',
+						data: respR,
+						borderColor: 'rgba(250, 65, 65, 1)',
+						backgroundColor: 'rgba(250, 65, 65, 1)',
+						yAxisID: 'y1',
 					}]},
 					options: {spanGaps: true, showLine: true,
 						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
 						plugins: {
 							legend: {position: 'top'},
 							title: {display: true, text: 'Game count by hour', position: 'top'},
-							zoom: {
-								pan: {enabled: true, mode: 'x'},
-								zoom: {
-									wheel: {enabled: true},
-									pinch: {enabled: true},
-									mode: 'x',
-								}
-							}
 						}, radius: 4,
 						scales: {
+							y: {
+								type: 'linear',
+								display: true,
+								position: 'left',
+								title: {
+									display: true,
+									text: 'All games',
+									color: 'rgba(0, 119, 204, 1)',
+									padding: {top: 30, left: 0, right: 0, bottom: 0}
+								}
+							},
+							y1: {
+								type: 'linear',
+								display: true,
+								position: 'right',
+								title: {
+									display: true,
+									text: 'Rating games',
+									color: 'rgba(250, 65, 65, 1)',
+									padding: {top: 30, left: 0, right: 0, bottom: 0}
+								},
+								grid: {
+									drawOnChartArea: false,
+								},
+							}
 						}
 					}
 				});
 			}
-			function LoadGraphGamesPerHour() {
-				var xhr = new XMLHttpRequest();
-				xhr.onreadystatechange = function() {
-					if (xhr.readyState === 4 && xhr.status === 200) {
-						PlotDataGamesPerHour(xhr.response);
-					}
-				}
-				xhr.open('GET', window.location.origin+'/api/dayavg', true);
-				xhr.send(null);
-			}
-			function PlotDataUniquePlayersPerDay(JsonData) {
-				const resp = JSON.parse(JsonData);
-				var ctx = document.getElementById('GraphCanvasUniquePlayersPerDay').getContext('2d');
+			function PlotDataGamesPerWeekday() {
+				const resp = {{.GamesByWeekday}};
+				const respL = {{.GamesByWeekdayLast}};
+				var ctx = document.getElementById('GraphCanvasGamesPerWeekday').getContext('2d');
 				var labels = Object.keys(resp);
 				chart = new Chart(ctx, {
-					type: 'line', parsing: false, normalized: true,
-					data: {labels: labels, datasets: [{
+					type: 'pie', parsing: false, normalized: true,
+					data: {
+					 labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+					 datasets: [{
+						label: 'Count past 2 weeks',
+						data: Object.values(respL),
+					},{
 						label: 'Count',
-						data: resp,
-						borderColor: 'rgba(0, 119, 204, 1)',
-						backgroundColor: 'rgba(0, 119, 204, 1)'
+						data: Object.values(resp),
 					}]},
-					options: {spanGaps: true, showLine: true,
+					options: {
 						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
 						plugins: {
 							legend: {position: 'top'},
-							title: {display: true, text: 'Unique players played by day', position: 'top'},
+							title: {display: true, text: 'Game count by weekday', position: 'top'},
+						},
+					}
+				});
+			}
+			function PlotDataUniquePlayersPerDay() {
+				let data = {{.PlayersByDay}};
+				let avgData = {{.PlayersByDayAvg}};
+				let rdata = {{.RatingPlayersByDay}};
+				let ravgData = {{.RatingPlayersByDayAvg}};
+				var ctx = document.getElementById('GraphCanvasUniquePlayersPerDay').getContext('2d');
+				chart = new Chart(ctx, {
+					type: 'line', parsing: false, normalized: true,
+					data: {labels: Object.keys(avgData), datasets: [{
+						label: 'Player count',
+						data: data,
+						borderColor: 'rgba(0, 119, 204, 0.3)',
+						backgroundColor: 'rgba(0, 119, 204, 0.3)'
+					},{
+						label: 'Players 7 day average',
+						data: avgData,
+						borderColor: 'rgba(0, 119, 204, 1)',
+						backgroundColor: 'rgba(0, 119, 204, 1)',
+						tension: 0.4
+					},{
+						label: 'Registered players',
+						data: rdata,
+						borderColor: 'rgba(250, 65, 65, 0.3)',
+						backgroundColor: 'rgba(250, 65, 65, 0.3)',
+						tension: 0.4
+					},{
+						label: 'Registered players 7 day average',
+						data: ravgData,
+						borderColor: 'rgba(250, 65, 65, 1)',
+						backgroundColor: 'rgba(250, 65, 65, 1)',
+						tension: 0.4
+					}]},
+					options: {spanGaps: true, showLine: true,
+						animation: {duration: 450}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Unique players count', position: 'top'},
 							zoom: {
 								pan: {enabled: true, mode: 'x'},
 								zoom: {
@@ -95,40 +170,22 @@
 									mode: 'x',
 								}
 							}
-						}, radius: 0,
+						}, radius: 1,
 						scales: {
-							x: {title: {display: true, text: 'time'}},
-							y : {stacked: false,
-								title: {display: true, text: 'Value'}
-							}
 						}
 					}
 				});
 			}
-			function LoadGraphUniquePlayersPerDay() {
-				var xhr = new XMLHttpRequest();
-				xhr.onreadystatechange = function() {
-					if (xhr.readyState === 4 && xhr.status === 200) {
-						PlotDataUniquePlayersPerDay(xhr.response);
-					}
-				}
-				xhr.open('GET', window.location.origin+'/api/playersavg', true);
-				xhr.send(null);
-			}
-			function PlotDataMapCount(JsonData) {
-				let resp = JSON.parse(JsonData);
+			function PlotDataMapCount() {
+				let resp = {{.MapCounts}};
 				var ctx = document.getElementById('GraphCanvasMapCount').getContext('2d');
 				var labels = Object.keys(resp);
 				labels.sort((a, b) => {return resp[b] - resp[a]})
-				let data = [];
-				for(let a in labels) {
-					data.push({x: labels[a], y: resp[labels[a]]});
-				}
 				chart = new Chart(ctx, {
 					type: 'bar', parsing: false, normalized: true,
 					data: {labels: labels, datasets: [{
 						label: 'Maps',
-						data: data,
+						data: resp,
 						borderColor: 'rgba(0, 119, 204, 1)',
 						backgroundColor: 'rgba(0, 119, 204, 1)'
 					}]},
@@ -151,23 +208,6 @@
 					}
 				});
 			}
-			function LoadGraphMapCount() {
-				var xhr = new XMLHttpRequest();
-				xhr.onreadystatechange = function() {
-					if (xhr.readyState === 4 && xhr.status === 200) {
-						PlotDataMapCount(xhr.response);
-					}
-				}
-				xhr.open('GET', window.location.origin+'/api/mapcount', true);
-				xhr.send(null);
-			}
-			{{/* SELECT date_trunc('day', g.timestarted)::text || '+00', count(g), sum(abs(g.elodiff[1])), sum(abs(g.ratingdiff[1])), sum(g.gametime), count(distinct p)
-FROM
-	games as g,
-	unnest(players) as p
-WHERE g.timestarted > now() - '0.5 year 7 days'::interval
-GROUP BY date_trunc('day', g.timestarted)
-ORDER BY date_trunc('day', g.timestarted) */}}
 			</script>
 			{{else}}
 			<h4>Please link Warzone profile in order to see this statistics</h4>

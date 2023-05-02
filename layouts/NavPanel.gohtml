@@ -1,4 +1,7 @@
 {{define "NavPanel"}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js" integrity="sha512-pumBsjNRGGqkPzKHndZMaAG+bir374sORyzM3uulLV14lN5LyykqNk8eEeUlUkB3U0M4FApyaHraT65ihJhDpQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.7/umd/popper.min.js" integrity="sha512-uaZ0UXmB7NHxAxQawA8Ow2wWjdsedpRu7nJRSoI2mjnwtY8V5YiCWavoIpo1AhWPMLiW5iEeavmA3JJ2+1idUg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js" integrity="sha512-1/RvZTcCDEUjY/CypiMz+iqqtaoQfAITmNSJY17Myp4Ms5mdxPS5UV7iOfdZoxcGhzFbOm6sntTKJppjvuhg4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="PageTop">
 	{{ noescape "<!-- uptimerobot hv9a1mjn9xyaf8vq390hf7h6zr5a512enogo9a3 -->"}}
 	<div class="container-fluid">
@@ -6,75 +9,81 @@
 			<img src="/static/favicon.ico" alt="" width="24" height="24">
 			Warzone 2100 Autohoster
 		</a>
-		<div class="navbar-nav me-auto">
-			<a class="nav-link {{ if eq .NavWhere "index" }} active {{ end }}" href="/">Home</a>
-			<li class="nav-item dropdown">
-				<a class="nav-link dropdown-toggle" id="autoratingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Autorating</a>
-				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="autoratingDropdown">
-					<li><a class="dropdown-item {{ if eq .NavWhere "players" }} active {{ end }}" href="/players">Player leaderboard</a></li>
-					<li><a class="dropdown-item {{ if eq .NavWhere "games2" }} active {{ end }}" href="/games">Recent games</a></li>
-					<div class="dropdown-divider"></div>
-					<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item {{ if eq .NavWhere "resstat" }} active {{ end }}" href="/resstat">Research leaderboard</a></li>
-					<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item" href="/request"><div class="{{if not .UserAuthorized}}disabled{{end}} btn btn-primary {{ if eq .NavWhere "request" }} active {{ end }}">Room request</div></a></li>
-				</ul>
-			</li>
-			<a class="nav-link {{ if eq .NavWhere "about" }} active {{ end }}" href="/about">About</a>
-			<a class="nav-link {{ if eq .NavWhere "rules" }} active {{ end }}" href="/rules">Rules</a>
-			<a class="nav-link {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/lobby">Lobby</a>
-			{{if .IsSuperadmin}}
-			<li class="nav-item dropdown">
-				<a class="nav-link dropdown-toggle" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
-				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="adminDropdown">
-					<li><a class="dropdown-item {{ if eq .NavWhere "modLogs" }} active {{ end }}" href="/moderation/logs">Logs</a></li>
-					<li><a class="dropdown-item {{ if eq .NavWhere "modUsers" }} active {{ end }}" href="/moderation/users">Users</a></li>
-					<li><a class="dropdown-item {{ if eq .NavWhere "modBans" }} active {{ end }}" href="/moderation/bans">Bans</a></li>
-					<li><a class="dropdown-item {{ if eq .NavWhere "modMerge" }} active {{ end }}" href="/moderation/merge">Merge</a></li>
-					<li><a class="dropdown-item {{ if eq .NavWhere "modNews" }} active {{ end }}" href="/moderation/news">News</a></li>
-				</ul>
-			</li>
-			{{end}}
-		</div>
-		<ul class="navbar-nav">
-			<li class="nav-item dropdown">
-				<a class="nav-link dropdown-toggle position-relative" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-					{{if .UserAuthorized}}
-						{{.User.Username}}
+		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<div class="navbar-nav me-auto">
+				<a class="nav-link {{ if eq .NavWhere "index" }} active {{ end }}" href="/">Home</a>
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" id="autoratingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Autorating</a>
+					<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="autoratingDropdown">
+						<li><a class="dropdown-item {{ if eq .NavWhere "players" }} active {{ end }}" href="/players">Player leaderboard</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "games2" }} active {{ end }}" href="/games">Recent games</a></li>
+						<div class="dropdown-divider"></div>
+						<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item {{ if eq .NavWhere "resstat" }} active {{ end }}" href="/resstat">Research leaderboard</a></li>
+						<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item" href="/request"><div class="{{if not .UserAuthorized}}disabled{{end}} btn btn-primary {{ if eq .NavWhere "request" }} active {{ end }}">Room request</div></a></li>
+					</ul>
+				</li>
+				<a class="nav-link {{ if eq .NavWhere "about" }} active {{ end }}" href="/about">About</a>
+				<a class="nav-link {{ if eq .NavWhere "rules" }} active {{ end }}" href="/rules">Rules</a>
+				<a class="nav-link {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/lobby">Lobby</a>
+				<a class="nav-link {{ if eq .NavWhere "stats" }} active {{ end }}" href="/stats">Stats</a>
+				{{if .IsSuperadmin}}
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
+					<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="adminDropdown">
+						<li><a class="dropdown-item {{ if eq .NavWhere "modLogs" }} active {{ end }}" href="/moderation/logs">Logs</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "modUsers" }} active {{ end }}" href="/moderation/users">Users</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "modBans" }} active {{ end }}" href="/moderation/bans">Bans</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "modMerge" }} active {{ end }}" href="/moderation/merge">Merge</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "modNews" }} active {{ end }}" href="/moderation/news">News</a></li>
+					</ul>
+				</li>
+				{{end}}
+			</div>
+			<ul class="navbar-nav">
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle position-relative" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+						{{if .UserAuthorized}}
+							{{.User.Username}}
+							{{if not .User.WzProfile2}}
+							<span class="position-absolute translate-middle p-2 bg-danger rounded-circle">
+							<span class="visually-hidden">No linked profile</span>
+							</span>
+							{{end}}
+						{{end}}
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
+							<path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"></path>
+						</svg>
+					</a>
+					<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="profileDropdown">
+						{{if .UserAuthorized}}
+						<li><a class="dropdown-item {{ if eq .NavWhere "account" }} active {{ end }}" href="/account">Account</a></li>
+						<li><a class="dropdown-item position-relative {{ if eq .NavWhere "wzlink" }} active {{ end }}" href="/wzlink">
 						{{if not .User.WzProfile2}}
-						<span class="position-absolute translate-middle p-2 bg-danger rounded-circle">
+						<span class="position-absolute top-50 start-0 translate-middle p-2 bg-danger rounded-circle">
 						<span class="visually-hidden">No linked profile</span>
 						</span>
 						{{end}}
-					{{end}}
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
-						<path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"></path>
-					</svg>
-				</a>
-				<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="profileDropdown">
-					{{if .UserAuthorized}}
-					<li><a class="dropdown-item {{ if eq .NavWhere "account" }} active {{ end }}" href="/account">Account</a></li>
-					<li><a class="dropdown-item position-relative {{ if eq .NavWhere "wzlink" }} active {{ end }}" href="/wzlink">
-					{{if not .User.WzProfile2}}
-					<span class="position-absolute top-50 start-0 translate-middle p-2 bg-danger rounded-circle">
-					<span class="visually-hidden">No linked profile</span>
-					</span>
-					{{end}}
-					WZ Profiles</a></li>
-					<div class="dropdown-divider"></div>
-					<li><a class="dropdown-item {{ if eq .NavWhere "logout" }} active {{ end }}" href="/logout">Log out</a></li>
-					{{else}}
-					<li><a class="dropdown-item {{ if eq .NavWhere "login" }} active {{ end }}" href="/login">Login</a></li>
-					<li><a class="dropdown-item {{ if eq .NavWhere "register" }} active {{ end }}" href="/register">Register</a></li>
-					{{end}}
-					<div class="dropdown-divider"></div>
-					<li><a class="dropdown-item">
-						<div class="form-check form-switch">
-							<input type="checkbox" class="form-check-input" id="darkSwitch">
-							<label for="darkSwitch">Dark Mode</label>
-						</div>
-					</a></li>
-				</ul>
-			</li>
-		</ul>
+						WZ Profiles</a></li>
+						<div class="dropdown-divider"></div>
+						<li><a class="dropdown-item {{ if eq .NavWhere "logout" }} active {{ end }}" href="/logout">Log out</a></li>
+						{{else}}
+						<li><a class="dropdown-item {{ if eq .NavWhere "login" }} active {{ end }}" href="/login">Login</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "register" }} active {{ end }}" href="/register">Register</a></li>
+						{{end}}
+						<div class="dropdown-divider"></div>
+						<li><a class="dropdown-item">
+							<div class="form-check form-switch">
+								<input type="checkbox" class="form-check-input" id="darkSwitch">
+								<label for="darkSwitch">Dark Mode</label>
+							</div>
+						</a></li>
+					</ul>
+				</li>
+			</ul>
+		</div>
 	</div>
 </nav>
 {{if or .IsDevWebsite .IsEloRecalculating}}

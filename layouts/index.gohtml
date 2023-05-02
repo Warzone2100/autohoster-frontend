@@ -6,14 +6,14 @@
 		<meta content="Welp, that's a website" property="og:title">
 		<meta content="Index page - it has some useful info on it" property="og:description">
 		<meta content="https://wz2100-autohost.net/" property="og:url">
-		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
-		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>
 		<title>Autohoster main page</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js" integrity="sha512-UXumZrZNiOwnTcZSHLOfcTs0aos2MzBWHXOHOuB0J/R44QB0dwY5JgfbvljXcklVf65Gc4El6RjZ+lnwd2az2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	</head>
 	<body>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
 		{{template "NavPanel" . }}
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.umd.min.js" integrity="sha512-TJ7U6JRJx5IpyvvO9atNnBzwJIoZDaQnQhb0Wmw32Rj5BQHAmJG16WzaJbDns2Wk5VG6gMt4MytZApZG47rCdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js" integrity="sha512-wUYbRPLV5zs6IqvWd88HIqZU/b8TBx+I8LEioQ/UC0t5EMCLApqhIAnUg7EsAzdbhhdgW07TqYDdH3QEXRcPOQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/2.2.1/chartjs-plugin-annotation.min.js" integrity="sha512-qF3T5CaMgSRNrxzu69V3ZrYGnrbRMIqrkE+OrE01DDsYDNo8R1VrtYL8pk+fqhKxUBXQ2z+yV/irk+AbbHtBAg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 		<div class=" py-5 container">
 			<div class="row">
 				<div class="col">
@@ -69,56 +69,41 @@
 				<canvas id="GraphCanvas"></canvas>
 			</div>
 			<script>
-			function PlotData(JsonData) {
-				const resp = JSON.parse(JsonData);
-				let data = {};
-				resp.forEach((i) => {
-					const date = Object.keys(i)[0].split(" ")[0];
-					const count = Object.values(i)[0];
-					Object.assign(data, {[date]: count })
-				});
-				let avgData = {};
-				let avgPast = 7;
-				for(let i = avgPast; i < resp.length; i++) {
-					// console.log(i, resp[i]);
-					let avgv = 0;
-					let avgc = avgPast;
-					for(let j = 0; j < avgPast; j++) {
-						avgv += Object.values(resp[i-j])[0]
-					}
-					const date = Object.keys(resp[i])[0].split(" ")[0];
-					Object.assign(avgData, {[date]: avgv/avgc })
-					// console.log(i, date, avgv/avgc);
-				}
-				let sortedDataKeys = Object.keys(data).sort();
-				for(let i = 0; i <= 6 && i < resp.length; i++) {
-					delete data[sortedDataKeys[i]];
-				}
-				// resp.forEach((i) => {
-				// 	const date = Object.keys(i)[0].split(" ")[0];
-				// 	const count = Object.values(i)[0];
-				// 	Object.assign(data, {[date]: count })
-				// });
+			function PlotData() {
+				let data = {{.GamesGraph}};
+				let avgData = {{.GamesGraphAvg}};
+				let rdata = {{.RatingGamesGraph}};
+				let ravgData = {{.RatingGamesGraphAvg}};
 				var ctx = document.getElementById('GraphCanvas').getContext('2d');
-				document.getElementById('GraphCanvasContainer').classList.add('appear');
-				var labels = Object.keys(data);
 				chart = new Chart(ctx, {
 					type: 'line', parsing: false, normalized: true,
-					data: {labels: labels, datasets: [{
+					data: {labels: Object.keys(avgData), datasets: [{
 						label: 'Games count',
 						data: data,
 						borderColor: 'rgba(0, 119, 204, 0.3)',
-						backgroundColor: 'rgba(0, 119, 204, 0.3)'
-					},
-					{
+						backgroundColor: 'rgba(0, 119, 204, 0.3)',
+						tension: 0.4,
+					},{
 						label: 'Games 7 day average',
 						data: avgData,
 						borderColor: 'rgba(0, 119, 204, 1)',
 						backgroundColor: 'rgba(0, 119, 204, 1)',
+						tension: 0.4,
+					},{
+						label: 'Rating games',
+						data: rdata,
+						borderColor: 'rgba(250, 65, 65, 0.3)',
+						backgroundColor: 'rgba(250, 65, 65, 0.3)',
+						tension: 0.4
+					},{
+						label: 'Rating games 7 day average',
+						data: ravgData,
+						borderColor: 'rgba(250, 65, 65, 1)',
+						backgroundColor: 'rgba(250, 65, 65, 1)',
 						tension: 0.4
 					}]},
 					options: {spanGaps: true, showLine: true,
-						animation: {duration: 450}, responsive: true, maintainAspectRatio: false,
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
 						plugins: {
 							legend: {position: 'top'},
 							title: {display: true, text: 'Games count', position: 'top'},
@@ -136,13 +121,8 @@
 					}
 				});
 			}
-			
-				// x: {title: {display: true, text: 'time'}},
-				// y : {stacked: false,
-				// 	title: {display: true, text: 'Value'}
-				// }
 			document.addEventListener("DOMContentLoaded", function () {
-				PlotData({{.GamesGraph}});
+				PlotData();
 			});
 			</script>
 		</div>
