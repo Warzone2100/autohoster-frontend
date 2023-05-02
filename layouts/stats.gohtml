@@ -28,14 +28,14 @@
 					</div>
 				</div>
 				<div style="min-width:16rem;margin-right:1rem;margin-left:1rem">
-					<p>Recent players (7d):</p>
-					<table>
+					<p>Recent players (7 days):</p>
+					<table style="text-align:left;white-space: nowrap;">
 						<thead>
-							<tr><td>Name</td><td>Games</td></tr>
+							<tr><td>Name</td><td>Games</td><td>Rating</td></tr>
 						</thead>
-						<tbody style="text-align:left;white-space: nowrap;">
+						<tbody>
 							{{range .LastPlayers}}
-							<tr><td><a href="/players/{{.ID}}">{{.Name}}</a></td><td>{{.Count}}</td></tr>
+							<tr><td><a href="/players/{{.ID}}">{{.Name}}</a></td><td>{{.Count}}</td><td>{{.Diff}}</td></tr>
 							{{end}}
 						</tbody>
 					</table>

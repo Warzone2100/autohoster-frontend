@@ -22,6 +22,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		ID    int
 		Name  string
 		Count int
+		Diff  int
 	}{}
 	err := RequestMultiple(func() error {
 		var d, c int
@@ -114,26 +115,27 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		return err
 	}, func() error {
 		var name string
-		var count int
-		var id int
+		var count, id, diff int
 		_, err := dbpool.QueryFunc(ctx, `SELECT
-		p.id, p.name, count(g) AS c
+		p.id, p.name, count(g) AS c, sum(g.ratingdiff[array_position(g.players, p.id)])
 	FROM players AS p
 	JOIN users AS u ON u.wzprofile2 = p.id
-	JOIN (SELECT players FROM games WHERE timestarted + '7 days' > now()) AS g ON p.id = any(g.players)
+	JOIN (SELECT players, ratingdiff FROM games WHERE timestarted + '7 days' > now()) AS g ON p.id = any(g.players)
 	WHERE p.autoplayed > 10
 	GROUP BY p.id
 	ORDER BY c DESC, p.autoplayed DESC`,
-			[]interface{}{}, []interface{}{&id, &name, &count},
+			[]interface{}{}, []interface{}{&id, &name, &count, &diff},
 			func(_ pgx.QueryFuncRow) error {
 				LastPlayers = append(LastPlayers, struct {
 					ID    int
 					Name  string
 					Count int
+					Diff  int
 				}{
 					ID:    id,
 					Name:  name,
 					Count: count,
+					Diff:  diff,
 				})
 				return nil
 			})
