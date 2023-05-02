@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -143,7 +142,6 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	spew.Dump(LastPlayers)
 	basicLayoutLookupRespond("stats", w, r, map[string]interface{}{
 		"GamesByHour":           GamesByHour,
 		"RatingGamesByHour":     RatingGamesByHour,
