@@ -260,13 +260,6 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 		}
 		sessdisctoken = token.AccessToken
 	}
-	if sessvktoken == "" {
-		sessvkstate := generateRandomString(32)
-		sessionManager.Put(r.Context(), "User.VK.State", sessvkstate)
-		sessvkurl = VKGetUrl(sessvkstate)
-	} else {
-		sessvk = VKGetUInfo(sessvktoken)
-	}
 	wzprofile := getWzProfile(r.Context(), sesswzprofile, "old_players3")
 	if wzprofile != nil {
 		wzprofile["Userid"] = sessid
@@ -642,7 +635,6 @@ func main() {
 	router.HandleFunc("/activate", emailconfHandler)
 	router.HandleFunc("/recover", recoverPasswordHandler)
 	router.HandleFunc("/oauth/discord", DiscordCallbackHandler)
-	router.HandleFunc("/oauth/vk", VKCallbackHandler)
 
 	router.HandleFunc("/hoster", hosterHandler)
 	router.HandleFunc("/request", hostRequestHandler)
