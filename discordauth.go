@@ -34,7 +34,13 @@ var discordOauthConfig = &oauth2.Config{
 
 func DiscordVerifyEnv() {
 	discordOauthConfig.ClientID = os.Getenv("DISCORDCLIENTID")
+	if discordOauthConfig.ClientID == "" {
+		log.Println("Discord client ID not set")
+	}
 	discordOauthConfig.ClientSecret = os.Getenv("DISCORDCLIENTSECRET")
+	if discordOauthConfig.ClientSecret == "" {
+		log.Println("Discord client secret not set")
+	}
 }
 
 func DiscordGetUrl(state string) string {
