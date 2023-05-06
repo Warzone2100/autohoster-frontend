@@ -44,7 +44,7 @@ func DiscordGetUrl(state string) string {
 func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
 	res, err := discordOauthConfig.Client(context.Background(), token).Get("https://discord.com/api/users/@me")
 	if err != nil {
-		log.Println("Unauthorized, resetting discord")
+		log.Printf("Unauthorized, resetting discord (%v)", err)
 		token.AccessToken = ""
 		token.RefreshToken = ""
 		token.Expiry = time.Now()
