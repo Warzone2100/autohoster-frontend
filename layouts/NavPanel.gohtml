@@ -63,7 +63,7 @@
 						<li><a class="dropdown-item position-relative {{ if eq .NavWhere "wzlink" }} active {{ end }}" href="/wzlink">
 						{{if not .User.WzProfile2}}
 						<span class="position-absolute top-50 start-0 translate-middle p-2 bg-danger rounded-circle">
-						<span class="visually-hidden">No linked profile</span>
+							<span class="visually-hidden">No linked profile</span>
 						</span>
 						{{end}}
 						WZ Profiles</a></li>
@@ -86,7 +86,7 @@
 		</div>
 	</div>
 </nav>
-{{if or .IsDevWebsite .IsEloRecalculating}}
+{{if or .IsEloRecalculating (or .IsDevWebsite (and .UserAuthorized (not .User.WzProfile2)))}}
 <ul class="nav justify-content-center bg-danger text-white">
 	{{if .IsDevWebsite}}
 	<li class="nav-item">
@@ -96,6 +96,11 @@
 	{{if .IsEloRecalculating}}
 	<li class="nav-item">
 		<div class="nav-link" title="Rating might be offset or incorrect until calibration is finished" style="color: white;">Rating calibration in progress</div>
+	</li>
+	{{end}}
+	{{if (and .UserAuthorized (not .User.WzProfile2))}}
+	<li class="nav-item">
+		<div class="nav-link" style="color: white;">No in-game profile linked: <a href="/wzlinkcheck">Link</a></div>
 	</li>
 	{{end}}
 </ul>
