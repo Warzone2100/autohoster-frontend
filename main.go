@@ -600,7 +600,7 @@ func main() {
 	sessionManager = scs.New()
 	store := pgxstore.New(dbpool)
 	sessionManager.Store = store
-	sessionManager.Lifetime = 14 * 24 * time.Hour
+	sessionManager.Lifetime = time.Hour * 24 * 60
 	defer store.StopCleanup()
 
 	log.Println("Starting websocket hubs")
