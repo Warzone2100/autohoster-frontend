@@ -54,20 +54,24 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		return err
 	}, func() error {
 		return dbpool.QueryRow(r.Context(), `select coalesce(avg(p.elo2), 0)
-		from games as g
-		join players as p on g.players[array_position(g.usertype, 'loser')] = p.id
-		where
-			$1 = any(g.players) and
-			g.usertype[array_position(g.players, $1)] = 'winner' and
-			ratingdiff[1] != 0`, pid).Scan(&pp.Rwon)
+			from games as g
+			cross join unnest(g.players) as up
+			join players as p on up = p.id
+			where
+				$1 = any(g.players) and
+				g.usertype[array_position(g.players, $1)] = 'winner' and
+				g.usertype[array_position(g.players, up)] = 'loser' and
+				ratingdiff[1] != 0`, pid).Scan(&pp.Rwon)
 	}, func() error {
 		return dbpool.QueryRow(r.Context(), `select coalesce(avg(p.elo2), 0)
-		from games as g
-		join players as p on g.players[array_position(g.usertype, 'winner')] = p.id
-		where
-			$1 = any(g.players) and
-			g.usertype[array_position(g.players, $1)] = 'loser' and
-			ratingdiff[1] != 0`, pid).Scan(&pp.Rlost)
+			from games as g
+			cross join unnest(g.players) as up
+			join players as p on up = p.id
+			where
+				$1 = any(g.players) and
+				g.usertype[array_position(g.players, $1)] = 'loser' and
+				g.usertype[array_position(g.players, up)] = 'winner' and
+				ratingdiff[1] != 0`, pid).Scan(&pp.Rlost)
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
