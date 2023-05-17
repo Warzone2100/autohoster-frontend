@@ -163,13 +163,17 @@
 			</div>
 			</table>
 			<table class="table"><tr>
-			<td>Hash: {{.Player.Hash}}<td>
-			<td>Lost: {{.Player.Autolost}}<td></tr><tr>
-			<td>{{if ne .Player.Autoplayed 0}}Winrate: {{f64tostring (multf64 (divtf64 .Player.Autowon (sum .Player.Autowon .Player.Autolost)) 100)}}%{{end}}<td>
-			<td>Won: {{.Player.Autowon}}<td></tr><tr>
-			<td>Rating: {{if .Player.Elo2}}{{.Player.Elo2}}{{else}}not registered{{end}}<td>
-			<td>Played: {{.Player.Autoplayed}}<td></tr>
-			</table>
+				<td colspan="2">Hash: {{.Player.Hash}}</td>
+				<td>Lost: {{.Player.Autolost}}</td>
+			</tr><tr>
+				<td>{{if ne .Player.Autoplayed 0}}Winrate: {{f64tostring (multf64 (divtf64 .Player.Autowon (sum .Player.Autowon .Player.Autolost)) 100)}}%{{end}}</td>
+				<td>Rwon: {{f64tostring .Player.Rwon}}</td>
+				<td>Won: {{.Player.Autowon}}</td>
+			</tr><tr>
+				<td>Rating: {{if .Player.Elo2}}{{.Player.Elo2}}{{else}}not registered{{end}}</td>
+				<td>Rlost: {{f64tostring .Player.Rlost}}</td>
+				<td>Played: {{.Player.Autoplayed}}</td>
+			</tr></table>
 			{{if len .Renames}}
 			<details>
 				<summary>Renames</summary>
