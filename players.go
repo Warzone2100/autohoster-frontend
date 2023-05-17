@@ -53,7 +53,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			})
 		return err
 	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select avg(p.elo2)
+		return dbpool.QueryRow(r.Context(), `select coalesce(avg(p.elo2), 0)
 		from games as g
 		join players as p on g.players[array_position(g.usertype, 'loser')] = p.id
 		where
@@ -61,7 +61,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			g.usertype[array_position(g.players, $1)] = 'winner' and
 			ratingdiff[1] != 0`, pid).Scan(&pp.Rwon)
 	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select avg(p.elo2)
+		return dbpool.QueryRow(r.Context(), `select coalesce(avg(p.elo2), 0)
 		from games as g
 		join players as p on g.players[array_position(g.usertype, 'winner')] = p.id
 		where
