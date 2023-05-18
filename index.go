@@ -21,7 +21,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	timeInterval := "48 hours"
 	news := []article{}
 	gamesPlayed := 0
-	gamesPlayedMasterbal := 0
 	gamesPlayedTiny := 0
 	uniqPlayers := 0
 	gameTime := 0
@@ -59,8 +58,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	}, func() error {
 		return dbpool.QueryRow(r.Context(), `select count(*) from games where timestarted + $1::interval > now() and mod != 'masterbal'`, timeInterval).Scan(&gamesPlayed)
-	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select count(*) from games where timestarted + $1::interval > now() and mod = 'masterbal'`, timeInterval).Scan(&gamesPlayedMasterbal)
 	}, func() error {
 		return dbpool.QueryRow(r.Context(), `select count(*) from games where timestarted + $1::interval > now() and mapname = 'Tiny_VautEdition'`, timeInterval).Scan(&gamesPlayedTiny)
 	}, func() error {
@@ -118,7 +115,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("index", w, r, map[string]interface{}{
 		"News":                news,
 		"LastGames":           gamesPlayed,
-		"LastGamesMasterbal":  gamesPlayedMasterbal,
 		"LastGamesTiny":       gamesPlayedTiny,
 		"LastGamesTinyPrc":    fmt.Sprintf("(%.1f%%)", float64(gamesPlayedTiny)/float64(gamesPlayed)*float64(100)),
 		"LastPlayers":         uniqPlayers,
