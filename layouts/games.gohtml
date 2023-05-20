@@ -544,12 +544,16 @@
 				document.getElementById(`LoadingGraphText`).style.display = `block`;
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
-					if (xhr.readyState === 4 && xhr.status === 200) {
-						document.getElementById(`LoadingGraphText`).innerHTML = "Rendering graph...";
-						PlotData(xhr.response);
-						document.getElementById(`LoadingGraphText`).style.display = `none`;
-					} else if(xhr.readyState === 4 && xhr.status === 500) {
-						document.getElementById(`LoadingGraphText`).innerHTML = "Error occured while trying to get graphs, please let administrators know";
+					if(xhr.readyState === 4) {
+						if (xhr.status === 200) {
+							document.getElementById(`LoadingGraphText`).innerHTML = "Rendering graph...";
+							PlotData(xhr.response);
+							document.getElementById(`LoadingGraphText`).style.display = `none`;
+						} else if(xhr.status === 204) {
+							document.getElementById(`LoadingGraphText`).innerHTML = "Graphs that are older than 1 month are not stored";
+						} else {
+							document.getElementById(`LoadingGraphText`).innerHTML = "Error occured while trying to get graphs, please let administrators know";
+						}
 					}
 				}
 				xhr.addEventListener('loadstart', function(e) {

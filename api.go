@@ -73,12 +73,15 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, interface{}) 
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j string
-	derr := dbpool.QueryRow(r.Context(), `SELECT json_agg(frames)::text FROM frames WHERE game = $1`, gid).Scan(&j)
+	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(json_agg(frames)::text, 'null') FROM frames WHERE game = $1;`, gid).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
 		}
 		return 500, derr
+	}
+	if j == "null" {
+		return 204, nil
 	}
 	return 200, []byte(j)
 }
