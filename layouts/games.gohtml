@@ -175,15 +175,29 @@
 			<div class="container">
 				<table class="table text-nowrap">
 					<thead>
-						<th>Players</th>
-						<th>Position</th>
-						<th>Rating transfer</th>
-						<th>Kills</th>
-						<th>Droid lost</th>
-						<th>Units built</th>
-						<th>Struct built</th>
-						<th>Structure lost</th>
-						<th>Power</th>
+						<tr class="text-center">
+							<th></th>
+							<th></th>
+							<th></th>
+							<th></th>
+							<th colspan="2">Droids</th>
+							<th colspan="2">Structures</th>
+							<th></th>
+							<th></th>
+							<th></th>
+						</tr><tr>
+							<th>Players</th>
+							<th>Position</th>
+							<th>Rating transfer</th>
+							<th>Kills</th>
+							<th>Lost</th>
+							<th>Built</th>
+							<th>Lost</th>
+							<th>Built</th>
+							<th>Power</th>
+							<th title="Power Won Lost - PowerWon/PowerLost">PWL</th>
+							<th title="Lab existing ticks / lab active ticks">Lab activity</th>
+						</tr>
 					</thead>
 					<tbody>
 						<tr><td>Winners</td></tr>
@@ -199,9 +213,11 @@
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>
-							<td>{{$player.StructBuilt}}</td>
 							<td>{{$player.StructLost}}</td>
+							<td>{{$player.StructBuilt}}</td>
 							<td>{{$player.Power}}</td>
+							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}</td>
+							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPotential $player.LabPerformance))}}</td>
 						</tr>
 						{{end}}
 						{{end}}
@@ -220,9 +236,11 @@
 							<td>{{$player.Kills}}</td>
 							<td>{{$player.DroidLost}}</td>
 							<td>{{$player.DroidBuilt}}</td>
-							<td>{{$player.StructBuilt}}</td>
 							<td>{{$player.StructLost}}</td>
+							<td>{{$player.StructBuilt}}</td>
 							<td>{{$player.Power}}</td>
+							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}</td>
+							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPotential $player.LabPerformance))}}</td>
 						</tr>
 						{{end}}
 						{{end}}
