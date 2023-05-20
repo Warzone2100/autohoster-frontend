@@ -110,10 +110,10 @@ type JSONgamePlayer struct {
 	DroidHp        float64 `json:"hp"`             // added in ver 7
 	SummExp        float64 `json:"summExp"`        // added in ver 7
 	OilRigs        float64 `json:"oilRigs"`        // added in ver 7
-	PowerLost      float64 `json:"powerLost"`      // added in ver 8
-	PowerWon       float64 `json:"powerWon"`       // added in ver 8
-	LabPotential   float64 `json:"labPotential"`   // added in ver 8
-	LabPerformance float64 `json:"labPerformance"` // added in ver 8
+	PowerLost      float64 `json:"powerLost"`      // added in ver 10
+	PowerWon       float64 `json:"powerWon"`       // added in ver 10
+	LabPotential   float64 `json:"labPotential"`   // added in ver 10
+	LabPerformance float64 `json:"labPerformance"` // added in ver 10
 }
 
 type JSONgameCore struct {
