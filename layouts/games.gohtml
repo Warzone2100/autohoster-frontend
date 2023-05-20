@@ -490,7 +490,7 @@
 							if(v == 'kd') {
 								dany[v][pln].data.push(invers*(tick.kills[pln]+5)/(tick.droidlost[pln]+5));
 							} else if(v == 'labActivity') {
-								dany[v][pln].data.push(100*invers*(tick.labPerformance[pln]/tick.labPotential[pln]+5));
+								dany[v][pln].data.push(100*invers*(tick.labperformance[pln]/tick.labpotential[pln]+5));
 							} else {
 								dany[v][pln].data.push(invers*tick[v][pln]);
 							}
