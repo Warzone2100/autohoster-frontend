@@ -217,7 +217,7 @@
 							<td>{{$player.StructBuilt}}</td>
 							<td>{{$player.Power}}</td>
 							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}</td>
-							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPotential $player.LabPerformance))}}</td>
+							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}</td>
 						</tr>
 						{{end}}
 						{{end}}
@@ -493,7 +493,7 @@
 							if(v == 'kd') {
 								dany[v][pln].data.push(invers*(tick.kills[pln]+5)/(tick.droidlost[pln]+5));
 							} else if(v == 'labActivity') {
-								dany[v][pln].data.push(100*invers*(tick.labpotential[pln] == 0 ? tick.labperformance[pln]/tick.labpotential[pln] : 0));
+								dany[v][pln].data.push(100*invers*((tick.labperformance[pln]+5)/(tick.labpotential[pln]+5)));
 							} else if(v == 'pwl') {
 								dany[v][pln].data.push(invers*((tick.powerwon[pln]+5)/(tick.powerlost[pln]+5)));
 							} else {
