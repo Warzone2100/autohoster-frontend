@@ -337,17 +337,25 @@
 						<input class="form-check-input" type="checkbox" id="invertedSwitch" onChange="ToggleInverted();" checked>
 						<label class="form-check-label" for="invertedSwitch">Inverted</label>
 					</div>
+					<div class="form-check form-switch form-check-inline">
+						<input class="form-check-input" type="checkbox" id="logarithmicSwitch" onChange="ToggleLogarithmic();">
+						<label class="form-check-label" for="logarithmicSwitch">Logarithmic</label>
+					</div>
 				</div>
 			</div>
 			<script>
 			var colours = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(32, 32, 32)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
+			var borderColours = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(80, 80, 80)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
 			var chart;
+			var darkColorFont = "#eee";
+			var darkColorGridX = "#333";
+			var darkColorGridY = "#555";
 			var dany = {};
 			var dfields =  ['kills', 'power', 'score', 'droid', 'droidlost', 'droidbuilt', 'droidhp', 'struct', 'structbuilt', 'structlost', 'structkilled', 'summexp', 'oilrigs', 'rescount', 'kd', 'powerlost', 'powerwon', 'pwl', 'labActivity'];
 			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Units hp', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio', 'Power lost', 'Power won', 'Power won/lost' , 'Lab activity'];
 			var chartDatasetName = dfields[0];
 			var dtempl = [{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}
-				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: colours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
+				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: borderColours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
 {{end}}{{end}}{{end}}			];
 			function PlotClassData(JsonData) {
 				const resp = JSON.parse(JsonData);
@@ -423,6 +431,12 @@
 						item.fill = document.getElementById("stackedSwitch").checked
 					});
 				}
+				if(document.getElementById("logarithmicSwitch").checked) {
+					chart.options.scales.y.type = 'logarithmic';
+					document.getElementById("invertedSwitch").checked = false;
+				} else {
+					chart.options.scales.y.type = 'linear';
+				}
 				chart.config.data.datasets.forEach((item, i) => {
 					if(chart.config.data.datasets[i].usertype === 'loser') {
 						let shouldInvert = false;
@@ -447,6 +461,22 @@
 						}
 					}
 				});
+				let fontcolor = Chart.defaults.color;
+				let gridcolorX = Chart.defaults.scale.grid.color;
+				let gridcolorY = Chart.defaults.scale.grid.color;
+				if(document.documentElement.dataset["theme"] === "dark") {
+					fontcolor = darkColorFont;
+					gridcolorX = darkColorGridX;
+					gridcolorY = darkColorGridY;
+				}
+				chart.options.color = fontcolor;
+				chart.options.plugins.title.color = fontcolor;
+				chart.options.scales.x.ticks.color = fontcolor;
+				chart.options.scales.x.title.color = fontcolor;
+				chart.options.scales.x.grid.color = gridcolorX;
+				chart.options.scales.y.ticks.color = fontcolor;
+				chart.options.scales.y.title.color = fontcolor;
+				chart.options.scales.y.grid.color = gridcolorY;
 				chart.update();
 			}
 			function ToggleStacked() {
@@ -456,6 +486,9 @@
 				ChartUpdateStyle();
 			}
 			function ToggleInverted() {
+				ChartUpdateStyle();
+			}
+			function ToggleLogarithmic() {
 				ChartUpdateStyle();
 			}
 			function ChangeToName(name) {
@@ -491,25 +524,33 @@
 								dany[v][pln].inverted = false;
 							}
 							if(v == 'kd') {
-								dany[v][pln].data.push(invers*(tick.kills[pln]+5)/(tick.droidlost[pln]+5));
+								dany[v][pln].data.push(invers*(tick.kills[pln])/(tick.droidlost[pln]));
 							} else if(v == 'labActivity') {
-								dany[v][pln].data.push(100*invers*((tick.labperformance[pln]+5)/(tick.labpotential[pln]+5)));
+								dany[v][pln].data.push(100*invers*((tick.labperformance[pln])/(tick.labpotential[pln])));
 							} else if(v == 'pwl') {
-								dany[v][pln].data.push(invers*((tick.powerwon[pln]+5)/(tick.powerlost[pln]+5)));
+								dany[v][pln].data.push(invers*((tick.powerwon[pln])/(tick.powerlost[pln])));
 							} else {
 								dany[v][pln].data.push(invers*tick[v][pln]);
 							}
 						}
 					});
 				});
+				let fontcolor = Chart.defaults.color;
+				let gridcolorX = Chart.defaults.scale.grid.color;
+				let gridcolorY = Chart.defaults.scale.grid.color;
+				if(document.documentElement.dataset["theme"] === "dark") {
+					fontcolor = darkColorFont;
+					gridcolorX = darkColorGridX;
+					gridcolorY = darkColorGridY;
+				}
 				chart = new Chart(ctx, {
 					type: 'line', parsing: false, normalized: true,
 					data: {labels: l, datasets: dany[dfields[0]]},
-					options: {spanGaps: true, showLine: true,
+					options: {spanGaps: true, showLine: true, color: fontcolor,
 						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
 						plugins: {
 							legend: {position: 'top'},
-							title: {display: true, text: 'Game {{.ID}}', position: 'top'},
+							title: {display: true, text: 'Game {{.ID}}', position: 'top', color: fontcolor},
 							zoom: {
 								pan: {enabled: true, mode: 'x'},
 								zoom: {
@@ -520,9 +561,34 @@
 							}
 						}, radius: 0,
 						scales: {
-							x: {title: {display: true, text: 'time'}},
-							y : {stacked: document.getElementById("stackedSwitch").checked,
-								title: {display: true, text: 'Value'}
+							x: {
+								title: {
+									display: true,
+									text: 'Time',
+									color: fontcolor
+								},
+								color: fontcolor,
+								ticks: {
+									color: fontcolor
+								},
+								grid: {
+									color: gridcolorX
+								}
+							},
+							y: {
+								title: {
+									display: true,
+									text: 'Value',
+									color: fontcolor
+								},
+								stacked: document.getElementById("stackedSwitch").checked,
+								color: fontcolor,
+								ticks: {
+									color: fontcolor
+								},
+								grid: {
+									color: gridcolorY
+								}
 							}
 						}
 					}
@@ -575,6 +641,14 @@
 			}
 			window.onload = function () {
 				dtempl.sort((f, s) => { return f.gamePosition - s.gamePosition });
+				let darkSwitch = document.getElementById("darkSwitch");
+				if (darkSwitch) {
+					darkSwitch.addEventListener("click", function () {
+						ChartUpdateStyle();
+					});
+				} else {
+					console.log("Failed to add darkSwitch event listener for graphs!");
+				}
 			}
 			</script>
 			<div class="container graphContainer" id="GraphContainingDiv" style="height:500px;display:none">

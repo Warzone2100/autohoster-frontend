@@ -229,10 +229,6 @@
 [data-theme="dark"] .table {
   color: #ddd;
 }
-[data-theme="dark"] .graphContainer {
-  background-color: #aaa;
-  border-radius: 50px
-}
 [data-theme="dark"] input {
   background-color: #555 !important;
   color: #ddd !important;
@@ -240,6 +236,17 @@
 [data-theme="dark"] select {
   background-color: #555 !important;
   color: #ddd !important;
+}
+[data-theme='dark'] .pagination {
+  --bs-pagination-bg: #252525 !important;
+  --bs-pagination-border-color: #666a6f !important;
+  --bs-pagination-hover-bg: #999ca0 !important;
+  --bs-pagination-hover-border-color: #dee2e6 !important;
+  --bs-pagination-disabled-bg: #1111 !important;
+  --bs-pagination-disabled-border-color: #666a6f !important;
+}
+[data-theme='dark'] .bootstrap-table .fixed-table-container .fixed-table-body .fixed-table-loading {
+	background: #222 !important;
 }
 
 .callout {
