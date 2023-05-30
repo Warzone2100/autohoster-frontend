@@ -350,6 +350,12 @@ func ratingLookup(hash string) Ra {
 		m.Details = "wz2100-autohost.net\n\nTotal games served: " + strconv.Itoa(c) + "\n"
 		m.Elo = "Visit wz2100-autohost.net"
 	}
+	if hash == "21494390542d3bb20bb39c0986c2c6d9a338be2db3f68b47610744be6b2045f2" {
+		m.Autohoster = false
+		m.Details = "Used to be CleptoMantis but now he is fake Autohoster"
+		m.Elo = "Fake autohoster"
+		return m
+	}
 	var de, de2, dap, daw, dal, dui, dep, drp, dpi int
 	var dname string
 	var dallowed bool
@@ -680,6 +686,9 @@ func main() {
 	router.HandleFunc("/api/playersavg", APIcall(APIgetUniquePlayersPerDay)).Methods("GET")
 	router.HandleFunc("/api/mapcount", APIcall(APIgetMapNameCount)).Methods("GET")
 	router.HandleFunc("/api/replay/{gid:[0-9]+}", APIcall(APIgetReplayFile)).Methods("GET")
+	router.HandleFunc("/api/heatmap/{gid:[0-9]+}", APIcall(APIgetReplayHeatmap)).Methods("GET")
+	router.HandleFunc("/api/animatedheatmap/{gid:[0-9]+}", APIcall(APIgetAnimatedReplayHeatmap)).Methods("GET")
+	router.HandleFunc("/api/animatedheatmap/{gid:[0-9]+}", APIcall(APIheadAnimatedReplayHeatmap)).Methods("HEAD")
 	router.HandleFunc("/api/hashinfo/{hash:[0-9a-z]+}", APIcall(APIgetHashInfo)).Methods("GET")
 	router.HandleFunc("/api/allowjoining/{hash:[0-9a-z]+}", APIcall(APIgetPlayerAllowedJoining)).Methods("GET")
 	router.HandleFunc("/api/approvedhashes", APIcall(APIgetAllowedModerators)).Methods("GET")
