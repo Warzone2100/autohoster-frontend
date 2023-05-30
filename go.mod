@@ -16,9 +16,11 @@ require (
 	github.com/imdario/mergo v0.3.13
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/joho/godotenv v1.4.0
+	github.com/maxsupermanhd/go-wz v0.0.0-20230528040716-54c21bffdf28
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/ravener/discord-oauth2 v0.0.0-20210928130214-d7697a35c387
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+	golang.org/x/image v0.7.0
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401
 )
 
@@ -46,7 +48,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect

@@ -200,33 +200,9 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{})
 		return -1, nil
 	} else if err != errReplayNotFound {
 		log.Printf("ERROR getting replay from storage: %v game id is %d", err, gid)
-	}
-	dir := "0"
-	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(gamedir) FROM games WHERE id = $1;`, gid).Scan(&dir)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			return 204, nil
-		}
-		return 500, derr
-	}
-	if dir == "-1" {
-		return 204, nil
-	}
-	replaypath, err := findReplayByConfigFolder(dir)
-	if err != nil {
 		return 500, err
 	}
-	if replaypath == "" {
-		return 204, nil
-	}
-	replaycontent, err = os.ReadFile(replaypath)
-	if err != nil {
-		return 500, err
-	}
-	w.Header().Set("Content-Disposition", "attachment; filename=\"autohoster-game-"+gids+".wzrp\"")
-	w.Header().Set("Content-Length", strconv.Itoa(len(replaycontent)))
-	w.Write(replaycontent)
-	return -1, nil
+	return 204, nil
 }
 
 func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
