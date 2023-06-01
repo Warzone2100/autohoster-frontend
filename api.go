@@ -616,6 +616,7 @@ func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, interfa
 	if err != nil {
 		return 400, nil
 	}
+	modSendWebhook(fmt.Sprintf("Administrator `%s` resent activation email for account `%v`", sessionGetUsername(r), id))
 	return 200, modResendEmailConfirm(id)
 }
 
