@@ -85,6 +85,43 @@
 			XHR.open('POST', '/moderation/users');
 			XHR.send(FD);
 		}
+		function ResendActivationEmail(id) {
+			let t = document.getElementById("toast-templ").content.cloneNode(true).firstElementChild;
+			console.log(t);
+			t.children[1].innerText = `Resending email to ${id}`; 
+			document.getElementById("toasts-container").appendChild(t);
+
+			let a = new bootstrap.Toast(t, {"autohide": false, "delay": 999999});
+			a.show();
+			t.addEventListener('hidden.bs.toast', () => {
+				t.innerHTML = "";
+				document.getElementById("toasts-container").removeChild(t);
+			})
+
+			const XHR = new XMLHttpRequest();
+			XHR.onload = () => {
+				if(XHR.readyState === XHR.DONE) {
+					if(XHR.status == 200) {
+						t.children[1].innerHTML += "<br>Done!";
+						t.className += " border border-success border-2";
+						setTimeout(() => {
+							a.hide();
+						}, "8000");
+					} else {
+						t.children[1].innerHTML += `<br>Something bad happened, code ${XHR.status}, response "${XHR.responseText}"`;
+						t.className += " border border-danger border-3";
+					}
+				}
+			};
+			XHR.onerr = () => {
+				t.children[1].innerHTML += "<br>ERROR!";
+				t.className += " border border-danger border-3";
+			};
+
+			XHR.responseType = 'text';
+			XHR.open('GET', `/moderation/users/resendEmail/${id}`);
+			XHR.send();
+		}
 		</script>
 		<div class="px-4 py container">
 			<div id="table-toolbar">
@@ -152,6 +189,7 @@
 			for(const key in row) {
 				ret += '<tr><td><b>' + key + ': </b></td><td><code>' + row[key] + '</code></td></tr>';
 			}
+			ret += `<tr><td><b>Resend activation email</b></td><td><a class="btn btn-primary btn-sm" onclick="ResendActivationEmail(${row.id})">Resend</button></td></tr>`;
 			ret += "</table>";
 			return ret;
 		}

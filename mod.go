@@ -432,3 +432,15 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		"rows":             ls,
 	}
 }
+
+func modResendEmailConfirm(accountID int) error {
+	var email, emailcode string
+	err := dbpool.QueryRow(context.Background(), `SELECT email, emailconfirmcode FROM users WHERE id = $1`, accountID).Scan(&email, &emailcode)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return errors.New("no account")
+		}
+		return err
+	}
+	return sendgridConfirmcode(email, emailcode)
+}

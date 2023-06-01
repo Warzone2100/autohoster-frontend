@@ -137,7 +137,8 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !sendgridConfirmcode(reqemail, reqemailcode) {
+		if err := sendgridConfirmcode(reqemail, reqemailcode); err != nil {
+			log.Println("Failed to send email: ", err)
 			basicLayoutLookupRespond("register", w, r, map[string]interface{}{"RegisterErrorMsg": "Can't verify email. Contact administrator.", "LastAttempt": la})
 			return
 		}

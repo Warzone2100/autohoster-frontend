@@ -651,6 +651,7 @@ func main() {
 	router.HandleFunc("/preset-edit", presetEditorHandler)
 
 	router.HandleFunc("/moderation/users", modUsersHandler)
+	router.HandleFunc("/moderation/users/resendEmail/{id:[0-9]+}", APIcall(APIresendEmailConfirm))
 	router.HandleFunc("/moderation/merge", modMergeHandler)
 	router.HandleFunc("/moderation/news", modNewsHandler)
 	router.HandleFunc("/moderation/logs", basicLayoutHandler("modLogs"))

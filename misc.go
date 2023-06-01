@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -166,9 +167,8 @@ func validateEmail(u string) bool {
 	return regexEmail.MatchString(u)
 }
 
-func sendgridConfirmcode(email string, code string) bool {
-	sendstr := heredoc.Docf(`
-{
+func sendgridConfirmcode(email string, code string) error {
+	sendstr := fmt.Sprintf(`{
 	"personalizations": [
 		{
 			"to": [
@@ -194,21 +194,29 @@ func sendgridConfirmcode(email string, code string) bool {
 		}
 	]
 }`, email, code, code)
-	req, _ := http.NewRequest("POST", "https://api.sendgrid.com/v3/mail/send", bytes.NewBuffer([]byte(sendstr)))
+	req, err := http.NewRequest("POST", "https://api.sendgrid.com/v3/mail/send", bytes.NewBuffer([]byte(sendstr)))
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Authorization", "Bearer "+os.Getenv("SENDGRID_KEY"))
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
-		return false
+		return err
 	}
 	defer resp.Body.Close()
 	log.Println("response Status:", resp.Status)
 	log.Println("response Headers:", resp.Header)
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 	log.Println("response Body:", string(body))
-	return resp.Status == "200 Success" || resp.Status == "202 Accepted"
+	if resp.StatusCode == 200 || resp.StatusCode == 202 {
+		return nil
+	}
+	return nil
 }
 
 func sendgridRecoverRequest(email string, code string) bool {

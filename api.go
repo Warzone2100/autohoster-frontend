@@ -607,6 +607,18 @@ func APIgetUsers(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	return 200, ret
 }
 
+func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		return 403, nil
+	}
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		return 400, nil
+	}
+	return 200, modResendEmailConfirm(id)
+}
+
 func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
 	// dbLimit := parseQueryInt(r, "limit", 5)
