@@ -194,7 +194,7 @@ var presets = [
 		}
 	}
 	function GetHtmlResults(results) {
-		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Payers<td>Name<td>Actions</thead>"
+		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Players<td>Name<td>Actions</thead>"
 		for (var i = 0; i < results.length; i++) {
 			const result = results[i]
 			html += "<tr><td>"+result.obj.id+"</td>"
@@ -208,7 +208,7 @@ var presets = [
 		return html
 	}
 	function GetHtmlPresets() {
-		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Payers<td>Name<td>Actions</thead>"
+		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Players<td>Name<td>Actions</thead>"
 		for (var i = 0; i < presets.length; i++) {
 			const preset = presets[i]
 			html += "<tr><td>"+preset.id+"</td>"
