@@ -339,9 +339,9 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	if reqSearch != "" {
 		whereargs = append(whereargs, reqSearch)
 		if wherecase == "" {
-			wherecase = fmt.Sprintf("WHERE similarity(msg, $1::text) > %f", similarity)
+			wherecase = fmt.Sprintf("WHERE similarity(msg, $1::text) > %f or msg ~ $1::text", similarity)
 		} else {
-			wherecase += fmt.Sprintf(" AND similarity(msg, $%d::text) > %f", len(whereargs), similarity)
+			wherecase += fmt.Sprintf(" AND similarity(msg, $%d::text) > %f or msg ~ $1::text", len(whereargs), similarity)
 		}
 	}
 
