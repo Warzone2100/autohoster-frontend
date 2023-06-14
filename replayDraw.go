@@ -91,7 +91,14 @@ func genReplayHeatmap(rpl replay.Replay, mapimg image.Image) ([]byte, error) {
 
 	dots := []draw.Image{}
 	for _, v := range rpl.Settings.GameOptions.NetplayPlayers {
-		dots = append(dots, mkDot(dotsize, playerColors[v.Colour]))
+		if !v.Allocated || v.IsSpectator {
+			continue
+		}
+		if v.Colour < 0 || v.Colour >= len(playerColors) {
+			log.Printf("Color overflow: %#v", v)
+		} else {
+			dots = append(dots, mkDot(dotsize, playerColors[v.Colour]))
+		}
 	}
 	dotside := dots[0].Bounds().Max.X
 
@@ -248,20 +255,20 @@ func mkDot(size float64, c color.RGBA) draw.Image {
 }
 
 var playerColors = []color.RGBA{
-	{32, 255, 32, 255},   // green
-	{255, 159, 10, 255},  // orange
-	{144, 144, 144, 255}, // gray
-	{80, 80, 80, 255},    // purple
-	{155, 15, 15, 255},   // blue
-	{39, 49, 185, 255},   // pink
-	{208, 16, 176, 255},  // yellow
-	{32, 208, 208, 255},  // red
-	{240, 232, 16, 255},  // black
-	{112, 0, 116, 255},   // cyan
-	{224, 224, 224, 255},
-	{32, 32, 255, 255},
-	{0, 160, 0, 255},
-	{64, 0, 0, 255},
-	{16, 0, 64, 255},
-	{64, 96, 0, 255},
+	{0, 255, 0, 255},
+	{255, 255, 0, 255},
+	{255, 255, 255, 255},
+	{0, 0, 0, 255},
+	{255, 0, 0, 255},
+	{0, 0, 255, 255},
+	{255, 0, 255, 255},
+	{0, 255, 255, 255},
+	{255, 255, 0, 255},
+	{128, 0, 128, 255},
+	// {224, 224, 224, 255},
+	// {32, 32, 255, 255},
+	// {0, 160, 0, 255},
+	// {64, 0, 0, 255},
+	// {16, 0, 64, 255},
+	// {64, 96, 0, 255},
 }
