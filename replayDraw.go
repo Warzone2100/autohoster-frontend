@@ -45,7 +45,7 @@ func getReplayStuffs(gid int) (rpl *replay.Replay, mapimg image.Image, err error
 		return
 	}
 	log.Println("Fetching map image...")
-	mapimg, err = phobos.FetchMapPreview(maphash, phobos.PreviewTypeHeightmap)
+	mapimg, err = phobos.FetchMapPreview(maphash, phobos.PreviewTypePixelPerfect)
 	if err != nil {
 		return
 	}
@@ -84,7 +84,7 @@ func genReplayHeatmap(rpl replay.Replay, mapimg image.Image) ([]byte, error) {
 	const scale = 16
 	const dotsize = 18
 
-	const mapimgscale = scale / 8
+	const mapimgscale = scale
 
 	img := image.NewRGBA(image.Rectangle{Max: mapimg.Bounds().Max.Mul(mapimgscale)})
 	draw.NearestNeighbor.Scale(img, img.Rect, mapimg, mapimg.Bounds(), draw.Src, nil)
@@ -163,7 +163,7 @@ func genReplayAnimatedHeatmap(ctx context.Context, rpl replay.Replay, mapimg ima
 	const step = 10000
 	const duration = step * 3
 
-	const mapimgscale = scale / 8
+	const mapimgscale = scale
 
 	log.Println("Scaling stuff...")
 	smapimg := image.NewPaletted(image.Rectangle{Max: mapimg.Bounds().Max.Mul(mapimgscale)}, palette.WebSafe)
@@ -248,16 +248,16 @@ func mkDot(size float64, c color.RGBA) draw.Image {
 }
 
 var playerColors = []color.RGBA{
-	{16, 112, 16, 255},
-	{255, 176, 53, 255},
-	{144, 144, 144, 255},
-	{80, 80, 80, 255},
-	{155, 15, 15, 255},
-	{39, 49, 185, 255},
-	{208, 16, 176, 255},
-	{32, 208, 208, 255},
-	{240, 232, 16, 255},
-	{112, 0, 116, 255},
+	{32, 255, 32, 255},   // green
+	{255, 159, 10, 255},  // orange
+	{144, 144, 144, 255}, // gray
+	{80, 80, 80, 255},    // purple
+	{155, 15, 15, 255},   // blue
+	{39, 49, 185, 255},   // pink
+	{208, 16, 176, 255},  // yellow
+	{32, 208, 208, 255},  // red
+	{240, 232, 16, 255},  // black
+	{112, 0, 116, 255},   // cyan
 	{224, 224, 224, 255},
 	{32, 32, 255, 255},
 	{0, 160, 0, 255},

@@ -118,7 +118,6 @@
 	<body>
 		{{template "NavPanel" . }}
 		<div class="px-4 py-5 my-5 container">
-			<!-- <pre>{{.}}</pre> -->
 			{{with .Game}}
 			<div class="row">
 				<div class="col-sm">
@@ -153,6 +152,11 @@
 				<div class="col-sm">
 					<img src="https://wz2100.euphobos.ru/maps/preview/{{.MapHash}}.png">
 				</div>
+				{{if .ReplayFound}}
+				<div class="col-sm" id="HeatmapContainer">
+					<a class="btn btn-primary" href="/api/heatmap/{{.ID}}">Load heatmap</a>
+				</div>
+				{{end}}
 			</div>
 			{{if $.IsSuperadmin}}
 			<p style="border-left: 3px solid red;padding-left: 1rem;">
@@ -278,47 +282,6 @@
 					</tbody>
 				</table>
 			</div>
-			{{/*
-			<div class="container">
-				<table class="table">
-					<thead>
-						<tr>
-							<th>Research</th>
-							{{range $k, $player := .JMap.playerData}}
-							{{if ne $k 0}}
-							<th>{{$player.name}} ({{$player.playnum}})({{$k}})({{$player.position}})</th>
-							{{end}}
-							{{end}}
-						</tr>
-					</thead>
-					<tbody>
-						{{range $n, $p := .ResSorted}}
-						<tr>
-							<td>{{$n}}</td>
-							{{range $nn, $rr := $p}}
-							{{if ne $nn 0}}
-							<td>{{$rr}}</td>
-							{{end}}
-							{{end}}
-						</tr>
-						{{end}}
-					</tbody>
-							<th>time</th>
-						{{range $k, $player := .JMap.playerData}}
-							<th class="wz-color-background-{{$player.colour}}">
-							{{$player.name}}
-							</th>
-						{{end}}
-						</tr>
-					</thead>
-					<tbtbody>
-					{{range $r, $research := (index .Game.Map.extendedPlayerData 1).researchComplite}}
-						<th>{{$r}}</th>
-						<th>{{$research}}</th>
-					{{end}}
-					</tbtbody>
-				</table>
-			</div>*/}}
 			<div class="container">
 				<div id="LoadGraphBtn" class="btn btn-primary" onclick="LoadGraph();document.getElementById(`LoadGraphBtn`).style.display = `none`;">Load graph</div>
 				<div id="LoadingGraphText" style="display:none">Loading graph, please wait...</div>
