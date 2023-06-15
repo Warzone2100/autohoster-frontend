@@ -68,6 +68,8 @@
 						{{end}}
 						WZ Profiles</a></li>
 						<div class="dropdown-divider"></div>
+						<li><a class="dropdown-item {{ if eq .NavWhere "account" }} active {{ end }}" href="/report">Report player</a></li>
+						<div class="dropdown-divider"></div>
 						<li><a class="dropdown-item {{ if eq .NavWhere "logout" }} active {{ end }}" href="/logout">Log out</a></li>
 						{{else}}
 						<li><a class="dropdown-item {{ if eq .NavWhere "login" }} active {{ end }}" href="/login">Login</a></li>

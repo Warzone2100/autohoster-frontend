@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -267,4 +268,37 @@ func sendgridRecoverRequest(email string, code string) bool {
 func isAprilFools() bool {
 	t := time.Now()
 	return t.Month() == 4 && ((t.Day() == 1 && t.Hour() >= 2) || (t.Day() == 2 && t.Hour() < 2))
+}
+
+func escapeBacktick(s string) string {
+	return strings.ReplaceAll(s, "`", "\\`")
+}
+
+func sendWebhook(url, content string) error {
+	b, err := json.Marshal(map[string]interface{}{
+		"username": "Frontend",
+		"content":  content,
+	})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	c := http.Client{Timeout: 5 * time.Second}
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 204 {
+		defer resp.Body.Close()
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf(string(responseBody))
+	}
+	return nil
 }

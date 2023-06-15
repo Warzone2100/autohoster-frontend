@@ -39,7 +39,7 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 			params["IsDevWebsite"] = true
 		}
 		params["IsEloRecalculating"] = isEloRecalculating.Load()
-		sessionAppendUser(r, &params)
+		sessionAppendUser(r, params)
 		w.Header().Set("Server", "TacticalPepe webserver "+CommitHash)
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")

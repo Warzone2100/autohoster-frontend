@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -114,32 +112,7 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func modSendWebhook(content string) error {
-	b, err := json.Marshal(map[string]interface{}{
-		"username": "Frontend",
-		"content":  content,
-	})
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("POST", os.Getenv("DISCORD_WEBHOOK"), bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	c := http.Client{Timeout: 5 * time.Second}
-	resp, err := c.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 200 && resp.StatusCode != 204 {
-		defer resp.Body.Close()
-		responseBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf(string(responseBody))
-	}
-	return nil
+	return sendWebhook(os.Getenv("DISCORD_ADMIN_ACTIONS"), content)
 }
 
 func modMergeHandler(w http.ResponseWriter, r *http.Request) {
@@ -253,7 +226,13 @@ func modBansHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Failed to parse form: " + err.Error()))
 			return
 		}
-		tag, err := dbpool.Exec(r.Context(), `insert into bans (hash, duration, reason, playerid) values ($1, $2, $3, (select id from players where hash = $1))`, r.FormValue("hash"), r.FormValue("duration"), r.FormValue("reason"))
+		dur, err := strconv.Atoi(r.FormValue("duration"))
+		if err != nil {
+			w.WriteHeader(400)
+			w.Write([]byte("Wrong duration: " + err.Error()))
+			return
+		}
+		tag, err := dbpool.Exec(r.Context(), `insert into bans (hash, duration, reason, playerid) values ($1, $2, $3, (select id from players where hash = $1))`, r.FormValue("hash"), dur, r.FormValue("reason"))
 		result := ""
 		if err != nil {
 			result = err.Error()
@@ -261,7 +240,7 @@ func modBansHandler(w http.ResponseWriter, r *http.Request) {
 			result = tag.String()
 		}
 		msg := template.HTML(result + `<br><a href="/moderation/bans">back</a>`)
-		modSendWebhook(fmt.Sprintf("Administrator `%s` banned `%v` for `%v` duration `%v`", sessionGetUsername(r), r.FormValue("hash"), r.FormValue("reason"), r.FormValue("duration")))
+		modSendWebhook(fmt.Sprintf("Administrator `%s` banned `%v` for `%v` duration `%v`", sessionGetUsername(r), r.FormValue("hash"), r.FormValue("reason"), (time.Duration(dur) * time.Second).String()))
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true, "msg": msg})
 	} else {
 		basicLayoutLookupRespond("modBans", w, r, map[string]interface{}{})

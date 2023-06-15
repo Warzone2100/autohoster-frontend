@@ -3,9 +3,6 @@
 <html translate="no">
 	<head>
 		{{template "head"}}
-		<meta content="{{.User.Username}}'s page on Autorating" property="og:title">
-		<meta content="there will be something soon..." property="og:description">
-		<meta content="https://wz2100-autohost.net/about" property="og:url">
 		<title>Autohoster account</title>
 	</head>
 	<body>
@@ -56,6 +53,77 @@
 			<h3>Not Authorized</h3>
 			<a href="/login" class="btn btn-primary">Log in</a>
 			<a href="/register" class="btn btn-primary">Register</a>
+			{{end}}
+		</div>
+	</body>
+</html>
+{{end}}
+{{define "report"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<title>Autohoster reports</title>
+	</head>
+	<body>
+		{{template "NavPanel" . }}
+		<div class="container my-3">
+			{{if not .UserAuthorized}}
+			<div class="text-center">
+			<h3>Not Authorized</h3>
+			<a href="/login" class="btn btn-primary">Log in</a>
+			<a href="/register" class="btn btn-primary">Register</a>
+			</div>
+			{{else}}
+			{{if not .User.WzProfile2}}
+			<div class="text-center">
+			<h4>Please link in-game profile before reporting others.</h4>
+			</div>
+			{{else}}
+			<h2>Player report form</h2>
+			<form action="/report" method="post">
+				<div class="mb-3">
+					<label for="violation" class="form-label">Violation</label>
+					<input type="text" class="form-control" minlength="3" maxlength="80" name="violation"aria-describedby="violationHelpBlock" required>
+					<div id="violationHelpBlock" class="form-text"><small>Specify one or more rule clause. (eg. <kbd>2.1.5</kbd>, <kbd>4.1.1, 4.1.3</kbd>) 80 characters max.</small></div>
+				</div>
+				<div class="mb-3">
+					<label for="violationTime" class="form-label">Violation time</label>
+					<input type="datetime-local" class="form-control" name="violationTime" aria-describedby="violationTimeHelpBlock" required>
+					<div id="violationTimeHelpBlock" class="form-text"><small>Time when violation took place. Correct it to be of a UTC+0 timezone.</small></div>
+					<div class="text-danger">Violations that are older than 1 month will be not be investigated</div>
+				</div>
+				<div class="mb-3">
+					<label for="offender" class="form-label">Offender</label>
+					<input type="text" class="form-control" maxlength="300" name="offender" aria-describedby="offenderHelpBlock" required>
+					<div id="offenderHelpBlock" class="form-text"><small>Hash(es) (all 64 characters), Public key(s) (base64 encoded) and/or ID(s) (as from leader board tables and url of their page on the website). 300 characters max.</small></div>
+				</div>
+				<div class="mb-3">
+					<label for="comment" class="form-label">Comment</label>
+					<textarea class="form-control" maxlength="1500" name="comment" aria-describedby="commentHelpBlock" required autocomplete="off"></textarea>
+					<div id="commentHelpBlock" class="form-text"><small>Any other relevant information (eg. game IDs or player names) that administration should take into account when processing this report. 1500 characters max.</small></div>
+				</div>
+				<div class="mb-3">
+					I understand, that:
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" required autocomplete="off" name="agree1">
+						<label for="agree1" class="form-check-label">Decision of Autohoster administration is final<label>
+					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" required autocomplete="off" name="agree2">
+						<label for="agree2" class="form-check-label">My (reporter's) behavior will be analyzed<label>
+					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" required autocomplete="off" name="agree3">
+						<label for="agree3" class="form-check-label">False and/or mass reporting will be punished<label>
+					</div>
+				</div>
+				<div class="mb-3">
+					<button type="submit" class="btn btn-outline-danger">Report</button>
+					<div class="form-text"><small>You can submit only one report in 12 hours.</small></div>
+				</div>
+			</form>
+			{{end}}
 			{{end}}
 		</div>
 	</body>

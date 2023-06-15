@@ -22,7 +22,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/imdario/mergo"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
@@ -195,7 +194,7 @@ func getWzProfile(context context.Context, id int, table string) map[string]inte
 	return pl
 }
 
-func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]interface{} {
+func sessionAppendUser(r *http.Request, a map[string]interface{}) map[string]interface{} {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 		return nil
 	}
@@ -268,7 +267,7 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 	if wzprofile2 != nil {
 		wzprofile2["Userid"] = sessid
 	}
-	usermap := map[string]interface{}{
+	a["User"] = map[string]interface{}{
 		"Username":   sessuname,
 		"Id":         sessid,
 		"Email":      sessemail,
@@ -286,13 +285,8 @@ func sessionAppendUser(r *http.Request, a *map[string]interface{}) *map[string]i
 			"Data":    sessvk,
 		},
 	}
-	mergo.Merge(a, map[string]interface{}{
-		"UserAuthorized": "True",
-		"User":           usermap,
-	})
-	if isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		(*a)["IsSuperadmin"] = true
-	}
+	a["UserAuthorized"] = "True"
+	a["IsSuperadmin"] = isSuperadmin(r.Context(), sessionGetUsername(r))
 	return a
 }
 
@@ -641,6 +635,8 @@ func main() {
 	router.HandleFunc("/activate", emailconfHandler)
 	router.HandleFunc("/recover", recoverPasswordHandler)
 	router.HandleFunc("/oauth/discord", DiscordCallbackHandler)
+	router.HandleFunc("/report", basicLayoutHandler("report")).Methods("GET")
+	router.HandleFunc("/report", reportHandler).Methods("POST")
 
 	router.HandleFunc("/hoster", hosterHandler)
 	router.HandleFunc("/request", hostRequestHandler)
