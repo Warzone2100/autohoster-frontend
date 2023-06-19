@@ -165,30 +165,53 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 			g.Players[slot].Position = slot
 			if g.Finished {
 				g.Players[slot].Usertype = plusertype[slot]
-				g.Players[slot].Kills = dskills[slot]
-				g.Players[slot].Score = dsscore[slot]
-				g.Players[slot].Droid = dsdroid[slot]
-				g.Players[slot].DroidLost = dsdroidlost[slot]
-				g.Players[slot].DroidBuilt = dsdroidbuilt[slot]
-				g.Players[slot].Kills = dskills[slot]
-				g.Players[slot].Power = dspower[slot]
-				g.Players[slot].Struct = dsstruct[slot]
-				g.Players[slot].StructBuilt = dsstructbuilt[slot]
-				g.Players[slot].StructLost = dsstructlost[slot]
-				g.Players[slot].ResearchCount = dsrescount[slot]
-				g.Players[slot].PowerLost = dspowerlost[slot]
-				g.Players[slot].PowerWon = dspowerwon[slot]
-				g.Players[slot].LabPotential = dslabpot[slot]
-				g.Players[slot].LabPerformance = dslabperf[slot]
+				if len(dskills) > slot {
+					g.Players[slot].Kills = dskills[slot]
+				}
+				if len(dsscore) > slot {
+					g.Players[slot].Score = dsscore[slot]
+				}
+				if len(dsdroid) > slot {
+					g.Players[slot].Droid = dsdroid[slot]
+				}
+				if len(dsdroidlost) > slot {
+					g.Players[slot].DroidLost = dsdroidlost[slot]
+				}
+				if len(dsdroidbuilt) > slot {
+					g.Players[slot].DroidBuilt = dsdroidbuilt[slot]
+				}
+				if len(dspower) > slot {
+					g.Players[slot].Power = dspower[slot]
+				}
+				if len(dsstruct) > slot {
+					g.Players[slot].Struct = dsstruct[slot]
+				}
+				if len(dsstructbuilt) > slot {
+					g.Players[slot].StructBuilt = dsstructbuilt[slot]
+				}
+				if len(dsstructlost) > slot {
+					g.Players[slot].StructLost = dsstructlost[slot]
+				}
+				if len(dsrescount) > slot {
+					g.Players[slot].ResearchCount = dsrescount[slot]
+				}
+				if len(dspowerlost) > slot {
+					g.Players[slot].PowerLost = dspowerlost[slot]
+				}
+				if len(dspowerwon) > slot {
+					g.Players[slot].PowerWon = dspowerwon[slot]
+				}
+				if len(dslabpot) > slot {
+					g.Players[slot].LabPotential = dslabpot[slot]
+				}
+				if len(dslabperf) > slot {
+					g.Players[slot].LabPerformance = dslabperf[slot]
+				}
 				if len(dselodiff) > slot {
 					g.Players[slot].EloDiff = dselodiff[slot]
-				} else {
-					g.Players[slot].EloDiff = 0
 				}
 				if len(dsratingdiff) > slot {
 					g.Players[slot].RatingDiff = dsratingdiff[slot]
-				} else {
-					g.Players[slot].RatingDiff = 0
 				}
 			} else {
 				g.Players[slot].Usertype = "fighter"
