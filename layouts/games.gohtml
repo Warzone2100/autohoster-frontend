@@ -285,9 +285,9 @@
 			<div class="container">
 				<div id="LoadGraphBtn" class="btn btn-primary" onclick="LoadGraph();document.getElementById(`LoadGraphBtn`).style.display = `none`;">Load graph</div>
 				<div id="LoadingGraphText" style="display:none">Loading graph, please wait...</div>
-				<div class="btn-group" role="group" id="Switchbuttons">
-				</div>
 				<div id="GraphTogglesDiv" style="display: none" class="form-inline">
+					<div class="btn-group" role="group" id="Switchbuttons" style="margin-right: 1rem;">
+					</div>
 					<div class="form-check form-switch form-check-inline">
 						<input class="form-check-input" type="checkbox" id="stackedSwitch" onChange="ToggleStacked();">
 						<label class="form-check-label" for="stackedSwitch">Stacked</label>
@@ -467,10 +467,14 @@
 				dfields.forEach((v) => {
 					dany[v] = JSON.parse(JSON.stringify(dtempl));
 				});
+				let xmin = "0:02";
+				let xmax = "0:04";
 				resp.forEach((tick, i) => {
 					let minutes = Math.floor(tick.gametime / 60000);
 					let seconds = ((tick.gametime % 60000) / 1000).toFixed(0);
-					l.push(minutes + ":" + (seconds < 10 ? '0' : '') + seconds);
+					let tstamp = minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+					l.push(tstamp);
+					xmax = tstamp;
 					for (let variable in tick) {
 						if (Array.isArray(tick[variable])) {
 							tick[variable].splice(dtempl.length);
@@ -507,10 +511,15 @@
 					gridcolorY = darkColorGridY;
 				}
 				chart = new Chart(ctx, {
-					type: 'line', parsing: false, normalized: true,
-					data: {labels: l, datasets: dany[dfields[0]]},
+					type: 'line',// parsing: false, normalized: true,
+					data: {labels: l, datasets: dany[dfields[0]]},//, parsing: false, normalized: true},
 					options: {spanGaps: true, showLine: true, color: fontcolor,
 						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						elements: {
+							point: {
+								radius: 0
+							}
+						},
 						plugins: {
 							legend: {position: 'top'},
 							title: {display: true, text: 'Game {{.ID}}', position: 'top', color: fontcolor},
@@ -536,7 +545,9 @@
 								},
 								grid: {
 									color: gridcolorX
-								}
+								},
+								min: xmin,
+								max: xmax
 							},
 							y: {
 								title: {
@@ -559,7 +570,7 @@
 			}
 			function LoadGraph() {
 				let sel = document.createElement("select")
-				sel.classList.add("select")
+				sel.classList.add("form-select-sm")
 				dfields.forEach((item, i) => {
 					let b = document.createElement("option")
 					b.classList.add("option");
