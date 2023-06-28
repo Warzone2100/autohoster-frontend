@@ -632,11 +632,14 @@ func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}
 	// 	"Name":       "name",
 	// 	"ID":         "id",
 	// })
-	rows, derr := dbpool.Query(r.Context(), `
-	SELECT players.id, name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce(users.id, -1) as userid, timeplayed
-	FROM players
-	FULL OUTER JOIN users on players.id = users.wzprofile2
-	WHERE autoplayed > 0 AND users.terminated = false`)
+	rows, derr := dbpool.Query(r.Context(),
+		`SELECT players.id, name, players.hash, elo2, autoplayed, autolost, autowon, coalesce(users.id, -1) as userid, timeplayed
+FROM players
+FULL OUTER JOIN users ON players.id = users.wzprofile2
+FULL OUTER JOIN bans ON players.id = bans.playerid
+WHERE autoplayed > 0 AND users.terminated = false AND NOT COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false)
+GROUP BY players.id, users.id
+ORDER BY elo2 DESC`)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
@@ -647,7 +650,7 @@ func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}
 	var P []PlayerLeaderboard
 	for rows.Next() {
 		var pp PlayerLeaderboard
-		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed)
+		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed)
 		P = append(P, pp)
 	}
 	return 200, P
