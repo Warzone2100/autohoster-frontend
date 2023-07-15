@@ -26,6 +26,10 @@
 					<div class="graphContainerMapCount" style="height:500px">
 						<canvas id="GraphCanvasMapCount"></canvas>
 					</div>
+					<div class="d-flex justify-content-evenly align-content-stretch" style="height:500px">
+						<div class="flex-fill"><canvas id="GraphCanvasGamesByPlayercount"></canvas></div>
+						<div class="flex-fill"><canvas id="GraphCanvasRatingGamesByPlayercount"></canvas></div>
+					</div>
 				</div>
 				<div style="min-width:16rem;margin-right:1rem;margin-left:1rem">
 					<p>Recent players (7 days):</p>
@@ -46,6 +50,8 @@
 			window.addEventListener("load", PlotDataUniquePlayersPerDay, {once: true});
 			window.addEventListener("load", PlotDataMapCount, {once: true});
 			window.addEventListener("load", PlotDataGamesPerWeekday, {once: true});
+			window.addEventListener("load", PlotDataGamesByPlayercount, {once: true});
+			window.addEventListener("load", PlotDataRatingGamesByPlayercount, {once: true});
 			function PlotDataGamesPerHour() {
 				const resp = {{.GamesByHour}};
 				const respR = {{.RatingGamesByHour}};
@@ -121,6 +127,72 @@
 						plugins: {
 							legend: {position: 'top'},
 							title: {display: true, text: 'Game count by weekday', position: 'top'},
+						},
+					}
+				});
+			}
+			function PlotDataGamesByPlayercount() {
+				let cl = {
+					"1x1": 'rgb(201, 203, 207)',
+					"2x2": 'rgb(54, 162, 235)',
+					"3x3": 'rgb(153, 102, 255)',
+					"4x4": 'rgb(75, 192, 152)',
+					"5x5": 'rgb(255, 99, 132)',
+				}
+				const resp = {{.GamesByPlayercount}};
+				const respL = {{.GamesByPlayercountLast}};
+				var ctx = document.getElementById('GraphCanvasGamesByPlayercount').getContext('2d');
+				chart = new Chart(ctx, {
+					type: 'pie', parsing: false, normalized: true,
+					data: {
+					 labels: Object.keys(cl),
+					 datasets: [{
+						label: 'Count past 2 months',
+						data: Object.values(respL),
+						backgroundColor: Object.values(cl),
+					},{
+						label: 'Count',
+						data: Object.values(resp),
+						backgroundColor: Object.values(cl),
+					}]},
+					options: {
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Game count by player count', position: 'top'},
+						},
+					}
+				});
+			}
+			function PlotDataRatingGamesByPlayercount() {
+				let cl = {
+					"1x1": 'rgb(201, 203, 207)',
+					"2x2": 'rgb(54, 162, 235)',
+					"3x3": 'rgb(153, 102, 255)',
+					"4x4": 'rgb(75, 192, 152)',
+					"5x5": 'rgb(255, 99, 132)',
+				}
+				const resp = {{.RatingGamesByPlayercount}};
+				const respL = {{.RatingGamesByPlayercountLast}};
+				var ctx = document.getElementById('GraphCanvasRatingGamesByPlayercount').getContext('2d');
+				chart = new Chart(ctx, {
+					type: 'pie', parsing: false, normalized: true,
+					data: {
+					 labels: Object.keys(cl),
+					 datasets: [{
+						label: 'Count past 2 months',
+						data: Object.values(respL),
+						backgroundColor: Object.values(cl),
+					},{
+						label: 'Count',
+						data: Object.values(resp),
+						backgroundColor: Object.values(cl),
+					}]},
+					options: {
+						animation: {duration: 0}, responsive: true, maintainAspectRatio: false,
+						plugins: {
+							legend: {position: 'top'},
+							title: {display: true, text: 'Rating game count by player count', position: 'top'},
 						},
 					}
 				});
