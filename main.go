@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -13,7 +12,7 @@ import (
 	"reflect"
 
 	//lint:ignore ST1019 warning
-	"strconv"
+
 	_ "strconv"
 	"time"
 
@@ -297,168 +296,6 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./static/favicon.ico")
 }
 
-type Ra struct {
-	Dummy      bool   `json:"dummy"`
-	Autohoster bool   `json:"autohoster"`
-	Star       [3]int `json:"star"`
-	Medal      int    `json:"medal"`
-	Level      int    `json:"level"`
-	Elo        string `json:"elo"`
-	Details    string `json:"details"`
-}
-
-func ratingHandler(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	hash, ok := params["hash"]
-	if !ok {
-		hash = r.Header.Get("WZ-Player-Hash")
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if hash == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("{\"error\": \"Empty hash.\"}"))
-		return
-	}
-	m := ratingLookup(hash)
-	ad, adok := r.URL.Query()["ad"]
-	if adok && len(ad[0]) >= 1 && string(ad[0][0]) == "true" {
-		m.Elo = "Play with me in Autohoster"
-	}
-	j, err := json.Marshal(m)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, string(j))
-}
-
-func ratingLookup(hash string) Ra {
-	m := Ra{true, false, [3]int{0, 0, 0}, 0, -1, "", ""}
-	if hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
-		m.Autohoster = true
-		var c int
-		derr := dbpool.QueryRow(context.Background(), "select count(games) from games where hidden = false and deleted = false;").Scan(&c)
-		if derr != nil {
-			log.Print(derr)
-		}
-		m.Details = "wz2100-autohost.net\n\nTotal games served: " + strconv.Itoa(c) + "\n"
-		m.Elo = "Visit wz2100-autohost.net"
-	}
-	if hash == "21494390542d3bb20bb39c0986c2c6d9a338be2db3f68b47610744be6b2045f2" {
-		m.Autohoster = false
-		m.Details = "Used to be CleptoMantis but now he is fake Autohoster"
-		m.Elo = "Fake autohoster"
-		return m
-	}
-	var de, de2, dap, daw, dal, dui, dep, drp, dpi int
-	var dname string
-	var dallowed bool
-	var drenames []string
-	derr := dbpool.QueryRow(context.Background(), `select elo, elo2, autoplayed, autowon, autolost,
-		coalesce((SELECT id FROM users WHERE result.id = users.wzprofile2), -1),
-		coalesce((SELECT allow_preset_request OR allow_host_request FROM users WHERE result.id = users.wzprofile2), 'false'),
-		elo_position, rating_position, id, name, (select distinct array(select oldname from plrenames where id = result.id group by oldname order by max(time) desc LIMIT 5) from plrenames)
-from (
-   select *,
-        row_number() over(
-           order by elo2 desc
-        ) as rating_position,
-        row_number() over(
-           order by elo desc
-        ) as elo_position
-   from players
-) result
-where hash = $1`, hash).Scan(&de, &de2, &dap, &daw, &dal, &dui, &dallowed, &dep, &drp, &dpi, &dname, &drenames)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			if m.Elo == "" {
-				m.Elo = "Unknown player"
-				m.Details = "Casual noname"
-			}
-		} else {
-			log.Print(derr)
-		}
-	} else {
-		if m.Details == "" {
-			if dui != -1 && dui != 0 {
-				m.Level = 8
-				if dallowed {
-					m.Details += "Allowed to moderate and request rooms\n"
-				}
-				m.Details += fmt.Sprintf("Rating: %d (#%d)\n", de2, drp)
-				m.Details = fmt.Sprintf("%s\nPlayed: %d\n", dname, dap)
-				m.Details += fmt.Sprintf("Won: %d Lost: %d\n", daw, dal)
-			} else {
-				m.Details += "Not registered user.\n"
-			}
-			if len(drenames) > 0 {
-				m.Details += "Other names:"
-				for _, v := range drenames {
-					m.Details += "\n" + v
-				}
-			}
-			// m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
-		}
-		if isAprilFools() {
-			dbpool.QueryRow(context.Background(), `select elo2, autoplayed, autolost, autowon from players join users on users.wzprofile2 = players.id where autoplayed > 5 and users.id != 0 order by random() limit 1;`).Scan(&de2, &dap, &dal, &daw)
-			m.Level = rand.Intn(8)
-			if dui == 14 || dui == 17 {
-				m.Level = 8
-			}
-		}
-		if m.Elo == "" {
-			var pc string
-			if dap > 0 {
-				pc = fmt.Sprintf("%.1f%%", float64(100)*(float64(daw)/float64(daw+dal)))
-			} else {
-				pc = "-"
-			}
-			if dui != -1 && dui != 0 {
-				m.Elo = fmt.Sprintf("R[%d] %d %s", de2, dap, pc)
-			} else {
-				m.Elo = "Unauthorized player"
-			}
-		}
-		if dap < 5 || dui <= 0 {
-			m.Dummy = true
-		} else {
-			m.Dummy = false
-			if dal == 0 {
-				dal = 1
-			}
-			if daw >= 24 && float64(daw)/float64(dal) > 6.0 {
-				m.Medal = 1
-			} else if daw >= 12 && float64(daw)/float64(dal) > 4.0 {
-				m.Medal = 2
-			} else if daw >= 6 && float64(daw)/float64(dal) > 3.0 {
-				m.Medal = 3
-			}
-			if de2 > 1800 {
-				m.Star[0] = 1
-			} else if de2 > 1550 {
-				m.Star[0] = 2
-			} else if de2 > 1400 {
-				m.Star[0] = 3
-			}
-			if dap > 60 {
-				m.Star[1] = 1
-			} else if dap > 30 {
-				m.Star[1] = 2
-			} else if dap > 10 {
-				m.Star[1] = 3
-			}
-			if daw > 60 {
-				m.Star[2] = 1
-			} else if daw > 30 {
-				m.Star[2] = 2
-			} else if daw > 10 {
-				m.Star[2] = 3
-			}
-		}
-	}
-	return m
-}
-
 //lint:ignore U1000 used
 type statusRespWr struct {
 	http.ResponseWriter
@@ -475,7 +312,12 @@ func customLogger(_ io.Writer, params handlers.LogFormatterParams) {
 	ip := r.Header.Get("CF-Connecting-IP")
 	geo := r.Header.Get("CF-IPCountry")
 	ua := r.Header.Get("user-agent")
-	log.Println("["+geo+" "+ip+"]", r.Method, params.StatusCode, r.RequestURI, "["+ua+"]")
+	hash := r.Header.Get("WZ-Player-Hash")
+	if hash != "" {
+		log.Println("["+geo+" "+ip+"]", r.Method, params.StatusCode, r.RequestURI, "["+ua+"]", hash)
+	} else {
+		log.Println("["+geo+" "+ip+"]", r.Method, params.StatusCode, r.RequestURI, "["+ua+"]")
+	}
 }
 
 func shouldCache(maxage int, h http.Handler) http.HandlerFunc {
