@@ -84,7 +84,7 @@
 			<form action="/report" method="post">
 				<div class="mb-3">
 					<label for="violation" class="form-label">Violation</label>
-					<input type="text" onkeypress="return event.charCode == 32 || event.charCode == 46 || event.charCode == 44 || (event.charCode >= 48 && event.charCode <= 57)" class="form-control" minlength="3" maxlength="80" name="violation"aria-describedby="violationHelpBlock" required>
+					<input type="text" onkeypress="return event.charCode == 32 || event.charCode == 46 || event.charCode == 44 || (event.charCode >= 48 && event.charCode <= 57)" class="form-control" minlength="1" maxlength="80" name="violation"aria-describedby="violationHelpBlock" required>
 					<div id="violationHelpBlock" class="form-text"><small>Specify one or more rule clause. (eg. <kbd>2.1.5</kbd>, <kbd>4.1.1, 4.1.3</kbd>) 80 characters max.</small></div>
 				</div>
 				<div class="mb-3">
