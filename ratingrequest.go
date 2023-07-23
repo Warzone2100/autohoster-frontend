@@ -137,7 +137,7 @@ LIMIT 1`, hash).Scan(&dplayerid, &dname, &delo2, &dautoplayed, &dautowon, &dauto
 
 	if m.Elo == "" {
 		var pc string
-		if dautoplayed > 0 {
+		if dautowon+dautolost > 0 {
 			pc = fmt.Sprintf("%.1f%%", float64(100)*(float64(dautowon)/float64(dautowon+dautolost)))
 		} else {
 			pc = "-"
