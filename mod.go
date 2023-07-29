@@ -370,7 +370,7 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		totalsc <- c
 	}()
 	go func() {
-		req := `SELECT id, to_char(whensent, 'YYYY-MM-DD_HH24:MI:SS'), hash, name, msg FROM composelog ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
+		req := `SELECT id, to_char(whensent, 'YYYY-MM-DD_HH24:MI:SS'), hash, coalesce(name, ''), coalesce(msg, '') FROM composelog ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
 		// log.Println(req)
 		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
 		if derr != nil {
