@@ -663,3 +663,11 @@
 .table > :not(caption) > * > * {
   border-bottom: 0;
 }
+
+.hashshort {
+  max-width: 5rem;
+  overflow: hidden;
+  user-select: all;
+  display: block;
+  max-height: 1rem;
+}
