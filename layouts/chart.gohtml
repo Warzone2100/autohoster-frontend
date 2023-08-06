@@ -1,0 +1,21 @@
+{{define "primitiveStackedChart"}}
+<div class="m-2 mx-4 charts-css-axistables" style="min-height: 250px">
+	<table class="charts-css column stacked show-heading show-10-secondary-axes show-labels show-primary-axis data-spacing-1" style="--color: #17fc;">
+		<caption class="text-nowrap">{{.Caption}}</caption>
+		<thead><tr>
+			<th scope="col">{{.AxisY}}</th>
+			<th scope="col">{{.AxisX}}</th>
+		</tr></thead>
+		<tbody>
+			{{range $k, $v := .Data}}<tr>
+				<th scope="row">{{$v.Label}}</th>
+				{{range $kk, $vv := $v.Values}}
+				<td class="data" style="--size: {{divtf64 $vv.Value $.TotalData}}; --color: {{$vv.Color}}"><span class="tooltip">{{$vv.Label}} {{$vv.Value}}</td>
+				{{end}}
+			</tr>{{end}}
+		</tbody>
+	</table>
+	<div class="primary-axis text-nowrap">{{.AxisY}}</div>
+	<div class="data-axis text-nowrap">{{.AxisX}}</div>
+</div>
+{{end}}

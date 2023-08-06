@@ -81,11 +81,13 @@
 }
 
 .rank-star {
+  min-width: 11px;
   width: 11px;
   height: 11px;
 }
 
 .rank-medal {
+  min-width: 16px;
   width: 16px;
   height: 45px;
 }
@@ -670,4 +672,29 @@
   user-select: all;
   display: block;
   max-height: 1rem;
+}
+
+.charts-css-axistables {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  grid-template-columns: 1.5rem 1fr;
+  grid-template-rows: auto 1.5rem;
+  grid-template-areas:
+    "data-axis chart"
+    ".         primary-axis";
+}
+.charts-css-axistables > table > tbody > tr {
+  width: 4ex;
+}
+.charts-css-axistables > table {
+  grid-area: chart;
+}
+.charts-css-axistables > .primary-axis {
+  grid-area: primary-axis;
+}
+.charts-css-axistables > .data-axis {
+  grid-area: data-axis;
+  writing-mode: tb-rl;
+  transform: rotateZ(180deg);
 }

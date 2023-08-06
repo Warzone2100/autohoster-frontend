@@ -327,14 +327,14 @@ var presets = [
 				<td rowspan="3" class="rank-link">
 					{{if avail "Userid" .}}
 					{{if gt .Userid 0}}
-					<a class="rank-name-checkmark" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
+					<a class="text-nowrap rank-name-checkmark" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
 					{{else}}
-					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
+					<a class="text-nowrap" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
 					{{end}}
 					{{else}}
-					<a href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
+					<a class="text-nowrap" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
 					{{end}}
-					{{if gt .Userid 0}}{{.Elo2}}{{else}}<small class="text-muted">not registered</small>{{end}}
+					{{if gt .Userid 0}}{{.Elo2}}{{else}}<small class="text-muted text-nowrap">not registered</small>{{end}}
 					{{/* {{if avail "EloDiff" .}}{{if not (eq .EloDiff 0)}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}{{end}} */}}
 					{{if avail "RatingDiff" .}}{{if not (eq .RatingDiff 0)}}({{if ge .RatingDiff 1}}+{{end}}{{.RatingDiff}}){{end}}{{end}}
 				</td>

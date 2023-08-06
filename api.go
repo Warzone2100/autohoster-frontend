@@ -8,10 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
@@ -219,16 +217,12 @@ func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, interfac
 	if reslog == "-1" {
 		return 204, nil
 	}
-	c, err := LoadClassification()
-	if err != nil {
-		return 500, err
-	}
 	var resl []resEntry
-	err = json.Unmarshal([]byte(reslog), &resl)
+	err := json.Unmarshal([]byte(reslog), &resl)
 	if err != nil {
 		return 500, err
 	}
-	return 200, CountClassification(c, resl)
+	return 200, CountClassification(resl)
 }
 
 func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
@@ -363,230 +357,6 @@ func APIgetAllowedModerators(_ http.ResponseWriter, r *http.Request) (int, inter
 		re = append(re, h)
 	}
 	return 200, re
-}
-
-type resEntry struct {
-	Name     string  `json:"name"`
-	Position float64 `json:"position"`
-	Time     float64 `json:"time"`
-}
-
-func LoadClassification() (ret []map[string]string, err error) {
-	var content []byte
-	content, err = os.ReadFile(os.Getenv("CLASSIFICATIONJSON"))
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(content, &ret)
-	return
-}
-
-// CountClassification in: classification, research out: position[research[time]]
-func CountClassification(c []map[string]string, resl []resEntry) (ret map[int]map[string]int) {
-	cl := map[string]string{}
-	ret = map[int]map[string]int{}
-	for _, b := range c {
-		cl[b["name"]] = b["Subclass"]
-	}
-	for _, b := range resl {
-		if b.Time < 10 {
-			continue
-		}
-		j, f := cl[b.Name]
-		if f {
-			_, ff := ret[int(b.Position)]
-			if !ff {
-				ret[int(b.Position)] = map[string]int{}
-			}
-			_, ff = ret[int(b.Position)][j]
-			if ff {
-				ret[int(b.Position)][j]++
-			} else {
-				ret[int(b.Position)][j] = 1
-			}
-		}
-	}
-	return
-}
-
-func APIgetClassChartPlayer(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
-	params := mux.Vars(r)
-	pid, err := strconv.Atoi(params["pid"])
-	if err != nil {
-		return 400, nil
-	}
-	filteri, err := strconv.Atoi(params["category"])
-	if err != nil {
-		return 400, nil
-	}
-	filter := ""
-	filter2 := ""
-	if filteri == 1 {
-		// filter = " AND array_length(players, 1) = 2 "
-	} else if filteri == 2 {
-		filter = " AND array_length(players, 1) >= 2 AND alliancetype != 2 "
-	} else if filteri == 3 {
-		filter2 = " LIMIT 100 "
-		// filter = " AND array_length(players, 1) = 2 "
-	} else if filteri == 4 {
-		filter2 = " LIMIT 100 "
-		filter = " AND array_length(players, 1) >= 2 AND alliancetype != 2 "
-	}
-	rows, derr := dbpool.Query(r.Context(),
-		`SELECT coalesce(id, -1), coalesce(researchlog, ''), coalesce(players) 
-		FROM games 
-		WHERE 
-			$1 = any(players) `+filter+`
-			AND finished = true 
-			AND calculated = true 
-			AND hidden = false 
-			AND deleted = false 
-			AND id > 2000
-		ORDER BY id desc
-		`+filter2, pid)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			return 204, nil
-		}
-		return 500, derr
-	}
-	defer rows.Close()
-	rowcount := 0
-	researches := []string{}
-	players := []int{}
-	gids := []int{}
-	for rows.Next() {
-		rowcount++
-		var h string
-		var p []int
-		var gid int
-		err := rows.Scan(&gid, &h, &p)
-		if err != nil {
-			return 500, err
-		}
-		playerfound := false
-		playersreallen := 0
-		for i, j := range p {
-			if j != -1 {
-				playersreallen++
-			}
-			if j == pid {
-				players = append(players, i)
-				playerfound = true
-				break
-			}
-		}
-		if (filteri == 1 || filteri == 3) && playersreallen > 2 {
-			continue
-		}
-		if !playerfound {
-			log.Printf("Can not find player %d in game %d THIS MUST NOT HAPPEN", pid, gid)
-			return 500, nil
-		}
-		researches = append(researches, h)
-		gids = append(gids, gid)
-	}
-	if rowcount == 0 {
-		return 204, nil
-	}
-	classif, err := LoadClassification()
-	if err != nil {
-		return 500, err
-	}
-	ret := map[string]int{}
-	for i, j := range researches {
-		var resl []resEntry
-		err = json.Unmarshal([]byte(j), &resl)
-		if err != nil {
-			log.Print(err.Error())
-			log.Printf("Gid: %d", gids[i])
-			log.Print(spew.Sdump(j))
-			continue
-		}
-		cl := CountClassification(classif, resl)
-		for v, c := range cl[players[i]] {
-			if val, ok := ret[v]; ok {
-				ret[v] = val + c
-			} else {
-				ret[v] = c
-			}
-		}
-	}
-	return 200, ret
-}
-
-func APIgetElodiffChartPlayer(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
-	params := mux.Vars(r)
-	pid, err := strconv.Atoi(params["pid"])
-	if err != nil {
-		return 400, nil
-	}
-	rows, derr := dbpool.Query(r.Context(),
-		`SELECT
-			id,
-			coalesce(elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-			coalesce(ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-			to_char(timestarted, 'YYYY-MM-DD HH24:MI'),
-			players
-		FROM games
-		where
-			$1 = any(players)
-			AND finished = true
-			AND calculated = true
-			AND hidden = false
-			AND deleted = false
-		order by timestarted asc`, pid)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			return 204, nil
-		}
-		return 500, derr
-	}
-	defer rows.Close()
-	type eloHist struct {
-		Elo    int
-		Rating int
-	}
-	h := map[string]eloHist{}
-	prevts := ""
-	for rows.Next() {
-		var gid int
-		var ediff []int
-		var rdiff []int
-		var timestarted string
-		var players []int
-		err := rows.Scan(&gid, &ediff, &rdiff, &timestarted, &players)
-		if err != nil {
-			return 500, err
-		}
-		k := -1
-		for i, p := range players {
-			if p == pid {
-				k = i
-				break
-			}
-		}
-		if k < 0 || k >= len(ediff) || k >= len(rdiff) {
-			log.Printf("Game %d is broken (k %d) players %v diffs %v %v", gid, k, players, ediff, rdiff)
-			continue
-		}
-		eDiff := ediff[k]
-		rDiff := rdiff[k]
-		if prevts == "" {
-			h[timestarted] = eloHist{
-				Elo:    1400 + eDiff,
-				Rating: 1400 + rDiff,
-			}
-		} else {
-			ph := h[prevts]
-			h[timestarted] = eloHist{
-				Elo:    ph.Elo + eDiff,
-				Rating: ph.Rating + rDiff,
-			}
-		}
-		prevts = timestarted
-	}
-	return 200, h
 }
 
 func APIgetUsers(_ http.ResponseWriter, r *http.Request) (int, interface{}) {

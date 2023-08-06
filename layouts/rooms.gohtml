@@ -37,7 +37,7 @@
 			<p>Database GID: {{$el.dbgid}}</p>
 			<p>Queue: {{$el.plan.queue}}
 			<p>{{/*$el.plan.power*/}}
-				<img class="icons icons-base{{decf64 $el.plan.base}}">
+				<img class="icons icons-base{{dec $el.plan.base}}">
 				<img class="icons icons-scav{{$el.plan.scavangers}}">
 				<img class="icons icons-alliance{{allianceToClass $el.plan.alliances}}">
 			</p>

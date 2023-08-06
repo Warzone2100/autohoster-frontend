@@ -72,14 +72,43 @@ var layoutFuncs = template.FuncMap{
 	"noescape": func(s string) template.HTML {
 		return template.HTML(s)
 	},
-	"inc": func(i int) int {
-		return i + 1
+	"inc": func(i any) any {
+		switch v := i.(type) {
+		case float32:
+			return v + 1
+		case float64:
+			return v + 1
+		case int:
+			return v + 1
+		case int8:
+			return v + 1
+		case int16:
+			return v + 1
+		case int32:
+			return v + 1
+		case int64:
+			return v + 1
+		}
+		return nil
 	},
-	"dec": func(i int) int {
-		return i - 1
-	},
-	"decf64": func(i float64) float64 {
-		return i - 1
+	"dec": func(i any) any {
+		switch v := i.(type) {
+		case float32:
+			return v - 1
+		case float64:
+			return v - 1
+		case int:
+			return v - 1
+		case int8:
+			return v - 1
+		case int16:
+			return v - 1
+		case int32:
+			return v - 1
+		case int64:
+			return v - 1
+		}
+		return nil
 	},
 	"sum": func(a int, b int) int {
 		return a + b
@@ -112,13 +141,7 @@ var layoutFuncs = template.FuncMap{
 			return a
 		}
 	},
-	"allianceToClassI": func(a int) int {
-		if a == 3 {
-			return 1
-		} else {
-			return a
-		}
-	},
+	"allianceToClassI": templatesAllianceToClassI,
 	"boolto10": func(a bool) int {
 		if !a {
 			return 0
@@ -171,4 +194,12 @@ var layoutFuncs = template.FuncMap{
 	"datefmt": func(val time.Time) string {
 		return val.Format("15:04 02 Jan 2006")
 	},
+}
+
+func templatesAllianceToClassI(a int) int {
+	if a == 3 {
+		return 1
+	} else {
+		return a
+	}
 }

@@ -138,6 +138,7 @@
 		<link href="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
 		<link href="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.css" rel="stylesheet">
 		<link href="/static/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+		<link href="/static/chartscss/charts.min.css" rel="stylesheet">
 	</head>
 	<body>
 		{{template "NavPanel" . }}
@@ -146,34 +147,38 @@
 		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
 		<script src="/static/bootstrap-table/tablehelpers.js"></script>
-		<div class="px-4 py-5 my-5 container">
-			<h3 style="padding-bottom:18px">{{template "wzprofile" .Player}}</h3>
-			<button id="BtnClassificationRequestGraphs" class="btn btn-primary" onclick="LoadClassificationGraph()">Load research classification</button>
-			<button id="BtnElodiffRequestGraphs" class="btn btn-primary" onclick="LoadElodiffGraph()">Load Rating history</button>
-			<div id="ElodiffGraphContainingDiv" style="display:none;">
-				<canvas id="ElodiffGraphCanvas">
+		<div class="px-4 py-2 my-2 container">
+			<div class="d-flex">
+				<h3>{{template "wzprofile" .Player}}</h3>
+				<div class="px-5 d-flex flex-column flex-grow-1 text-center">
+					<code class="m-1">{{.Player.Hash}}</code>
+					<div class="d-flex flex-row justify-content-between flex-wrap">
+						<div class="m-1">Rating: {{if gt .Player.Userid 0}}{{.Player.Elo2}}{{else}}not registered{{end}}</div>
+						<div class="m-1">{{if .Player.Rwon}}Rwon: {{f64tostring .Player.Rwon}}{{end}}</div>
+						<div class="m-1">{{if .Player.Rwon}}Rlost: {{f64tostring .Player.Rlost}}{{end}}</div>
+						<div class="m-1">Played: {{.Player.Autoplayed}}</div>
+						<div class="m-1">Won: {{.Player.Autowon}}</div>
+						<div class="m-1">Lost: {{.Player.Autolost}}</div>
+						<div class="m-1">{{if ne .Player.Autoplayed 0}}Winrate: {{f64tostring (multf64 (divtf64 .Player.Autowon (sum .Player.Autowon .Player.Autolost)) 100)}}%{{end}}</div>
+					</div>
+				</div>
 			</div>
-			<div id="ClassificationGraphContainingDiv" style="display:none;">
-				<table><tr>
-				<td style="height:400px;"><canvas id="ClassificationGraphCanvas"></td>
-				<td style="height:400px;"><canvas id="ClassificationGraphCanvas3"></td>
-				</tr><tr><td style="height:400px;"><canvas id="ClassificationGraphCanvas2"></td>
-				<td style="height:400px;"><canvas id="ClassificationGraphCanvas4"></td>
-				</tr></table>
+			{{if gt .Player.Userid 0}}
+			<div class="d-flex flex-row justify-content-between flex-wrap">
+				<div><canvas id="ClassificationGraphCanvasTotal"></div>
+				<div><canvas id="ClassificationGraphCanvasRecent"></div>
+				<div class="flex-grow-1"><canvas id="ElodiffGraphCanvas" style="height: 300px"></div>
 			</div>
-			</table>
-			<table class="table"><tr>
-				<td colspan="2">Hash: {{.Player.Hash}}</td>
-				<td>Lost: {{.Player.Autolost}}</td>
-			</tr><tr>
-				<td>{{if ne .Player.Autoplayed 0}}Winrate: {{f64tostring (multf64 (divtf64 .Player.Autowon (sum .Player.Autowon .Player.Autolost)) 100)}}%{{end}}</td>
-				<td>{{if .Player.Rwon}}Rwon: {{f64tostring .Player.Rwon}}{{end}}</td>
-				<td>Won: {{.Player.Autowon}}</td>
-			</tr><tr>
-				<td>Rating: {{if gt .Player.Userid 0}}{{.Player.Elo2}}{{else}}not registered{{end}}</td>
-				<td>{{if .Player.Rwon}}Rlost: {{f64tostring .Player.Rlost}}{{end}}</td>
-				<td>Played: {{.Player.Autoplayed}}</td>
-			</tr></table>
+			<div class="d-flex flex-row justify-content-center flex-wrap">
+				{{template "primitiveStackedChart" .ChartGamesByPlayercount}}
+				{{template "primitiveStackedChart" .ChartGamesByBaselevel}}
+				{{template "primitiveStackedChart" .ChartGamesByAlliances}}
+				{{template "primitiveStackedChart" .ChartGamesByScav}}
+				{{/* <div class="flex-grow-1">
+				filler
+				</div> */}}
+			</div>
+			{{end}}
 			{{if len .Renames}}
 			<details>
 				<summary>Renames</summary>
@@ -255,6 +260,11 @@
 			return params
 		}
 		$(function() {
+			{{if gt .Player.Userid 0}}
+			PlotLinearData({{.RatingHistory}}, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Rating history');
+			PlotClassData({{.ResearchClassificationTotal}}, document.getElementById('ClassificationGraphCanvasTotal').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (all time)');
+			PlotClassData({{.ResearchClassificationRecent}}, document.getElementById('ClassificationGraphCanvasRecent').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (last 200 games)');
+			{{end}}
 			$('#table').bootstrapTable()
 			$("#table").on("page-change.bs.table", function (number, size) {
 				window.scrollTo({
@@ -264,8 +274,7 @@
 				});
 			});
 		})
-		function PlotClassData(JsonData, ctx, title, subtitle) {
-			const resp = JSON.parse(JsonData);
+		function PlotClassData(resp, ctx, title, subtitle) {
 			if(Object.keys(resp).length == 0) {
 				return
 			}
@@ -288,8 +297,7 @@
 				}
 			});
 		}
-		function PlotLinearData(JsonData, ctx, title, subtitle) {
-			const resp = JSON.parse(JsonData);
+		function PlotLinearData(resp, ctx, title, subtitle) {
 			if(Object.keys(resp).length == 0) {
 				return
 			}
@@ -298,7 +306,6 @@
 				data: {
 					labels: Object.keys(resp),
 					datasets: [
-						{{/* {data: Object.values(resp).map(o => o.Elo), label: 'Elo', borderColor: '#0d6efd'}, */}}
 						{data: Object.values(resp).map(o => o.Rating), label: 'Rating', borderColor: '#aa0303'},
 					]
 				},
@@ -321,40 +328,6 @@
 						type: "time"
 					}}
 				}
-			});
-		}
-		function doXHR(method, url, fn) {
-			var xhr = new XMLHttpRequest();
-			xhr.onreadystatechange = function() {
-				if (xhr.readyState === 4 && xhr.status === 200) {
-					fn(xhr.response);
-				}
-			}
-			xhr.open(method, url, true);
-			xhr.send(null);
-		}
-		function LoadClassificationGraph() {
-			document.getElementById(`ClassificationGraphContainingDiv`).style.display = `block`;
-			document.getElementById(`BtnClassificationRequestGraphs`).style.display = `none`;
-			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/1', function(resp) {
-				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - duels');
-			});
-			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/2', function(resp) {
-				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas2').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - 2x2+ noshared');
-			});
-			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/3', function(resp) {
-				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas3').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - duels last 100 games');
-			});
-			doXHR("GET", window.location.origin+'/api/classify/player/{{.Player.ID}}/4', function(resp) {
-				PlotClassData(resp, document.getElementById('ClassificationGraphCanvas4').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification - 2x2+ noshared last 100 games');
-			});
-		}
-		function LoadElodiffGraph() {
-			document.getElementById(`ElodiffGraphContainingDiv`).style.display = `block`;
-			document.getElementById(`BtnElodiffRequestGraphs`).style.display = `none`;
-			document.getElementById('ElodiffGraphCanvas').style.height = "400px";
-			doXHR("GET", window.location.origin+'/api/elohistory/{{.Player.ID}}', function(resp) {
-				PlotLinearData(resp, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Rating history');
 			});
 		}
 		</script>

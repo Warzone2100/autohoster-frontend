@@ -279,6 +279,12 @@ func main() {
 	log.Printf("Built %s, Ver %s (%s) Go %s\n", BuildTime, GitTag, CommitHash, GoVersion)
 	log.Println()
 
+	researchClassification, err = LoadClassification()
+	if err != nil {
+		researchClassification = []map[string]string{}
+		log.Println("Failed to load research classification: ", err)
+	}
+
 	log.Println("Loading layouts")
 	layoutsDir := "layouts/"
 	if dirstat, err := os.Stat("layouts-" + BuildType); !os.IsNotExist(err) && dirstat.IsDir() {
@@ -410,7 +416,7 @@ func main() {
 	})
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIcall(APIgetGraphData)).Methods("GET")
 	router.HandleFunc("/api/classify/game/{gid:[0-9]+}", APIcall(APIgetClassChartGame)).Methods("GET")
-	router.HandleFunc("/api/classify/player/{pid:[0-9]+}/{category:[0-9]+}", APIcall(APIgetClassChartPlayer)).Methods("GET")
+	router.HandleFunc("/api/classify/player/{pid:[0-9]+}", APIcall(APIresearchClassification)).Methods("GET")
 	router.HandleFunc("/api/reslog/{gid:[0-9]+}", APIgetResearchlogData).Methods("GET")
 	router.HandleFunc("/api/gamecount/{interval}", APIcall(APIgetDatesGraphData)).Methods("GET")
 	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster).Methods("GET")

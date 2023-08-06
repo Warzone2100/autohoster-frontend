@@ -39,9 +39,9 @@ function nameFormatter(value, row) {
 		ret += `<object class="rank rank-pacifier"></object>`;
 	}
 	ret += `</td><td rowspan="3" class="rank-link">`;
-	ret += `<a href="/players/${ID}" ${Userid>0?'class="rank-name-checkmark" ':""} title="Hash: ${Hash}">${Name}</a>`;
+	ret += `<a href="/players/${ID}" class="text-nowrap${Userid>0?' rank-name-checkmark':""}" title="Hash: ${Hash}">${Name}</a>`;
 	if(Userid <= 0) {
-		ret += '<br><small class="text-muted">not registered</small>';
+		ret += '<br><small class="text-muted class="text-nowrap"">not registered</small>';
 	} else {
 		ret += `<br>${Elo2}`;
 	}
