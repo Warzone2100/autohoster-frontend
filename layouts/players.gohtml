@@ -263,7 +263,7 @@
 			{{if gt .Player.Userid 0}}
 			PlotLinearData({{.RatingHistory}}, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Rating history');
 			PlotClassData({{.ResearchClassificationTotal}}, document.getElementById('ClassificationGraphCanvasTotal').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (all time)');
-			PlotClassData({{.ResearchClassificationRecent}}, document.getElementById('ClassificationGraphCanvasRecent').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (last 200 games)');
+			PlotClassData({{.ResearchClassificationRecent}}, document.getElementById('ClassificationGraphCanvasRecent').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (last 20 games)');
 			{{end}}
 			$('#table').bootstrapTable()
 			$("#table").on("page-change.bs.table", function (number, size) {

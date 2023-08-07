@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
@@ -100,11 +101,11 @@ func getPlayerClassifications(pid int) (total, recent map[string]int, err error)
 	total = map[string]int{}
 	recent = map[string]int{}
 	rows, err := dbpool.Query(context.Background(),
-		`SELECT coalesce(id, -1), coalesce(researchlog, ''), array_position(players, $1)-1
+		`SELECT coalesce(id, -1), coalesce(researchlog, ''), array_position(players, $1)-1, coalesce(timestarted, now())
 		FROM games 
 		WHERE 
 			$1 = any(players)
-			AND array_position(players, -1)-1 = 2
+			AND (array_position(players, -1)-1 = 2 OR alliancetype = 3)
 			AND finished = true 
 			AND calculated = true 
 			AND hidden = false 
@@ -120,13 +121,14 @@ func getPlayerClassifications(pid int) (total, recent map[string]int, err error)
 	type gameResearch struct {
 		gid       int
 		playerpos int
+		when      time.Time
 		research  string
 		cl        map[int]map[string]int
 	}
 	games := []gameResearch{}
 	for rows.Next() {
 		g := gameResearch{}
-		err = rows.Scan(&g.gid, &g.research, &g.playerpos)
+		err = rows.Scan(&g.gid, &g.research, &g.playerpos, &g.when)
 		if err != nil {
 			return
 		}
@@ -148,17 +150,13 @@ func getPlayerClassifications(pid int) (total, recent map[string]int, err error)
 				total[v] = c
 			}
 		}
-	}
-	lastlen := len(games)
-	if lastlen > 200 {
-		lastlen = 200
-	}
-	for _, g := range games[:lastlen] {
-		for v, c := range g.cl[g.playerpos] {
-			if val, ok := recent[v]; ok {
-				recent[v] = val + c
-			} else {
-				recent[v] = c
+		if i < 20 {
+			for v, c := range games[i].cl[g.playerpos] {
+				if val, ok := recent[v]; ok {
+					recent[v] = val + c
+				} else {
+					recent[v] = c
+				}
 			}
 		}
 	}
