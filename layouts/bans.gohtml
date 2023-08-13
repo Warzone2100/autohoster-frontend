@@ -1,0 +1,36 @@
+{{define "bans"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<title>Autohoster issued bans</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js" integrity="sha512-UXumZrZNiOwnTcZSHLOfcTs0aos2MzBWHXOHOuB0J/R44QB0dwY5JgfbvljXcklVf65Gc4El6RjZ+lnwd2az2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	</head>
+	<body>
+		{{template "NavPanel" . }}
+		<div class=" py-5 container">
+			<h2>Issued bans</h2>
+			<table class="table">
+				<thead><tr>
+					<th>№</th>
+					<th>Issued at</th>
+					<th>Expires in</th>
+					<th>Player</th>
+					<th>Reason</th>
+				</tr></thead>
+				<tbody>
+				{{range $k, $v := .Bans}}
+					<tr {{if $v.IsBanned}}style="background-color: #dd111122"{{else}}class="text-muted"{{end}}{{if eq $v.ExpiresAt "Never"}}style="background-color: #8811dd22"{{end}}>
+						<td>M-{{- $v.ID}}</td>
+						<td>{{$v.IssuedAt}}</td>
+						<td>{{$v.ExpiresAt}}</td>
+						<td>{{template "wzprofile" $v.Player}}</td>
+						<td>{{$v.Reason}}</td>
+					</tr>
+				{{end}}
+				</tbody>
+			</table>
+		</div>
+	</body>
+</html>
+{{end}}

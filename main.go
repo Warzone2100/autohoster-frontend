@@ -403,6 +403,7 @@ func main() {
 	router.HandleFunc("/players/{id:[0-f]+}", PlayersHandler)
 	router.HandleFunc("/stats", statsHandler)
 	router.HandleFunc("/resstat", resstatHandler)
+	router.HandleFunc("/bans", bansHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
 	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
