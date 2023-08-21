@@ -170,8 +170,14 @@
 		}
 		ws.onmessage = parsewsmessage
 		ws.onopen = function() {color("red")}
-		ws.onclose = function() {color("grey")}
-		ws.onerror = function() {color("orange")}
+		ws.onclose = function() {
+			color("grey")
+			document.getElementById("LiveBlob").innerHTML = "&nbsp";
+		}
+		ws.onerror = function() {
+			color("orange")
+			document.getElementById("LiveBlob").innerHTML = "&nbsp";
+		}
 		document.getElementById("LiveBlob").onclick = function() {
 			if(ws == null || ws.readyState == 2 || ws.readyState == 3) {
 				color("yellow")
@@ -179,11 +185,19 @@
 				ws = new WebSocket(wsurl)
 				ws.onmessage = parsewsmessage
 				ws.onopen = function() {color("red")}
-				ws.onclose = function() {color("grey")}
+				ws.onclose = function() {
+					color("grey")
+					document.getElementById("LiveBlob").innerHTML = "&nbsp";
+				}
+				ws.onerror = function() {
+					color("orange")
+					document.getElementById("LiveBlob").innerHTML = "&nbsp";
+				}
 			} else {
 				ws.close()
 				ws = null
 				color("grey")
+				document.getElementById("LiveBlob").innerHTML = "&nbsp";
 			}
 		}
 		</script>
