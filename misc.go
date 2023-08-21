@@ -18,6 +18,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func btoi(a uint32) bool {
+	return a != 0
+}
+
 //lint:ignore U1000 for performance
 func measureHandlerTimings(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

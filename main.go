@@ -350,9 +350,9 @@ func main() {
 	go LobbyWSHub.Run()
 	go GamesWSHub.Run()
 
-	log.Println("Starting lobby pooler")
+	log.Println("Starting lobby poller")
 	loadLobbyIgnores(os.Getenv("LOBBYIGNORES"))
-	go lobbyPooler()
+	go lobbyPoller()
 
 	log.Println("Loading research names")
 	prepareStatNames()

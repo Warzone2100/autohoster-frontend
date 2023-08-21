@@ -3,42 +3,16 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
-	"encoding/json"
-	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
-)
 
-type LobbyRoom struct {
-	StructVersion  uint32
-	GameName       [64]byte
-	DW             [2]uint32
-	HostIP         [40]byte
-	MaxPlayers     uint32
-	CurrentPlayers uint32
-	DWFlags        [4]uint32
-	SecHost        [2][40]byte
-	Extra          [159]byte
-	MapName        [40]byte
-	HostName       [40]byte
-	Version        [64]byte
-	Mods           [255]byte
-	VersionMajor   uint32
-	VersionMinor   uint32
-	Private        uint32
-	Pure           uint32
-	ModsCount      uint32
-	GameID         uint32
-	Limits         uint32
-	Future1        uint32
-	Future2        uint32
-}
+	"github.com/maxsupermanhd/go-wz/lobby"
+)
 
 type LobbyRoomPretty struct {
 	GameID         uint32
@@ -54,147 +28,54 @@ type LobbyRoomPretty struct {
 	History        bool
 }
 
-func btoi(a uint32) bool {
-	return a != 0
+func lobbyRoomPrettyfy(room lobby.LobbyRoom) LobbyRoomPretty {
+	return LobbyRoomPretty{
+		room.GameID,
+		string(room.GameName[:bytes.IndexByte(room.GameName[:], 0)]),
+		string(room.MapName[:bytes.IndexByte(room.MapName[:], 0)]),
+		string(room.HostName[:bytes.IndexByte(room.HostName[:], 0)]),
+		string(room.Version[:bytes.IndexByte(room.Version[:], 0)]),
+		btoi(room.Private),
+		btoi(room.Pure),
+		room.MaxPlayers,
+		room.CurrentPlayers,
+		time.Now().Unix(),
+		false,
+	}
 }
 
-var lobbyIgnoreIPS []string
-
-func loadLobbyIgnores(path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	ignored := []string{}
-	for scanner.Scan() {
-		ignored = append(ignored, scanner.Text())
-	}
-	lobbyIgnoreIPS = ignored
-	return scanner.Err()
+type LobbyResponsePretty struct {
+	lobby.LobbyResponse
+	prettyRooms []LobbyRoomPretty
 }
 
-func LobbyLookup() map[string]interface{} {
-	conn, connerr := net.Dial("tcp", "lobby.wz2100.net:9990")
-	if connerr != nil {
-		log.Println(connerr.Error())
-		return map[string]interface{}{}
+func lobbyLookup() (ret LobbyResponsePretty) {
+	lookup, err := lobby.LobbyLookup()
+	ret = LobbyResponsePretty{
+		LobbyResponse: lookup,
+		prettyRooms:   []LobbyRoomPretty{},
 	}
-	defer conn.Close()
-	fmt.Fprintf(conn, "list\n")
-	var count uint32
-	err := binary.Read(conn, binary.BigEndian, &count)
 	if err != nil {
-		fmt.Println(err.Error())
-		return map[string]interface{}{}
+		log.Printf("Error reading lobby: %s", err)
+		return
 	}
-	// log.Println(count)
-	var rooms []LobbyRoomPretty
-	for i := uint32(0); i < count; i++ {
-		var room LobbyRoom
-		err := binary.Read(conn, binary.BigEndian, &room)
-		if err != nil {
-			fmt.Println(err.Error())
-			return map[string]interface{}{}
+	for _, v := range lookup.Rooms {
+		if lobbyIgnores(string(v.HostIP[:bytes.IndexByte(v.HostIP[:], 0)])) {
+			continue
 		}
-		// log.Println(string(room.GameName[:]), string(room.HostName[:]))
-		roomp := LobbyRoomPretty{
-			room.GameID,
-			string(room.GameName[:bytes.IndexByte(room.GameName[:], 0)]),
-			string(room.MapName[:bytes.IndexByte(room.MapName[:], 0)]),
-			string(room.HostName[:bytes.IndexByte(room.HostName[:], 0)]),
-			string(room.Version[:bytes.IndexByte(room.Version[:], 0)]),
-			btoi(room.Private),
-			btoi(room.Pure),
-			room.MaxPlayers,
-			room.CurrentPlayers,
-			time.Now().Unix(),
-			false,
-		}
-		rooms = append(rooms, roomp)
+		ret.prettyRooms = append(ret.prettyRooms, lobbyRoomPrettyfy(v))
 	}
-	var lobbyCode uint32
-	err = binary.Read(conn, binary.BigEndian, &lobbyCode)
-	if err != nil {
-		fmt.Println(err.Error())
-		return map[string]interface{}{}
-	}
-	var motdlen uint32
-	err = binary.Read(conn, binary.BigEndian, &motdlen)
-	if err != nil {
-		fmt.Println(err.Error())
-		return map[string]interface{}{}
-	}
-	motd := make([]byte, motdlen)
-	err = binary.Read(conn, binary.BigEndian, &motd)
-	if err != nil {
-		fmt.Println(err.Error())
-		return map[string]interface{}{}
-	}
-	var r map[string]interface{}
-
-	var lobbyFlags uint32
-	err = binary.Read(conn, binary.BigEndian, &lobbyFlags)
-	if err != nil {
-
-	} else {
-		if (lobbyFlags & 1) == 1 {
-			rooms = []LobbyRoomPretty{}
-		}
-		err := binary.Read(conn, binary.BigEndian, &count)
-		if err != nil {
-			fmt.Println(err.Error())
-			return map[string]interface{}{}
-		}
-		for i := uint32(0); i < count; i++ {
-			var room LobbyRoom
-			err := binary.Read(conn, binary.BigEndian, &room)
-			if err != nil {
-				fmt.Println(err.Error())
-				return map[string]interface{}{}
-			}
-			for _, i := range lobbyIgnoreIPS {
-				s := strings.Split(i, " ")
-				if len(s) > 1 && isMatch(string(room.HostIP[:]), s[1]) {
-					continue
-				}
-			}
-			roomp := LobbyRoomPretty{
-				room.GameID,
-				string(room.GameName[:bytes.IndexByte(room.GameName[:], 0)]),
-				string(room.MapName[:bytes.IndexByte(room.MapName[:], 0)]),
-				string(room.HostName[:bytes.IndexByte(room.HostName[:], 0)]),
-				string(room.Version[:bytes.IndexByte(room.Version[:], 0)]),
-				btoi(room.Private),
-				btoi(room.Pure),
-				room.MaxPlayers,
-				room.CurrentPlayers,
-				time.Now().Unix(),
-				false,
-			}
-			rooms = append(rooms, roomp)
-		}
-	}
-	r = map[string]interface{}{
-		"Rooms": rooms,
-		"Motd":  string(motd[:]),
-	}
-	return r
+	return
 }
 
-func lobbyPooler() {
+func lobbyPoller() {
 	lobbyHistory := []LobbyRoomPretty{}
 	previousLookup := []LobbyRoomPretty{}
 	for {
-		lookup := LobbyLookup()
-		rooms, ok := lookup["Rooms"].([]LobbyRoomPretty)
-		if !ok {
-			continue
-		}
+		lookup := lobbyLookup()
 		for _, vv := range previousLookup {
 			found := false
-			for _, v := range rooms {
+			for _, v := range lookup.prettyRooms {
 				if v.GameID == vv.GameID {
 					found = true
 					break
@@ -208,15 +89,15 @@ func lobbyPooler() {
 		if len(lobbyHistory) > 10 {
 			lobbyHistory = lobbyHistory[:10]
 		}
-		previousLookup = rooms
-		currentRooms := rooms
-		respondRooms := append(currentRooms, lobbyHistory...)
-		// log.Printf("\n")
-		// for _, v := range respondRooms {
-		// 	log.Printf("Room %v %v %v %v\n", v.GameID, v.HostName, v.LastSeen, v.History)
-		// }
-		lookup["Rooms"] = respondRooms
-		WSLobbyUpdateLobby(lookup)
+		previousLookup = lookup.prettyRooms
+		LobbyWSHub.clientsLock.Lock()
+		watchers := len(LobbyWSHub.clients)
+		LobbyWSHub.clientsLock.Unlock()
+		WSLobbyUpdateLobby(map[string]interface{}{
+			"Rooms":    append(lookup.prettyRooms, lobbyHistory...),
+			"MOTD":     lookup.MOTD,
+			"Watching": watchers,
+		})
 		time.Sleep(1 * time.Second)
 	}
 }
@@ -229,7 +110,7 @@ var (
 
 func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 	u := sessionGetUsername(r)
-	if len(u) > 0 {
+	if len(u) > 0 && u != "Flex seal" {
 		lobbyLastRequestLock.Lock()
 		l, ok := lobbyLastRequest[u]
 		lobbyLastRequest[u] = time.Now()
@@ -242,46 +123,48 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		lobbyLastRequestLock.Unlock()
 	}
-	s, reqres := RequestHosters()
-	var rooms []interface{}
-	if s {
-		json.Unmarshal([]byte(reqres), &rooms)
-	}
-	basicLayoutLookupRespond("lobby", w, r, map[string]interface{}{"Lobby": LobbyLookup(), "Hoster": rooms})
+	// s, reqres := RequestHosters()
+	// var rooms []interface{}
+	// if s {
+	// 	json.Unmarshal([]byte(reqres), &rooms)
+	// }
+	// basicLayoutLookupRespond("lobby", w, r, map[string]interface{}{"Lobby": LobbyLookup(), "Hoster": rooms})
+	lr := lobbyLookup()
+	basicLayoutLookupRespond("lobby", w, r, map[string]interface{}{"Lobby": map[string]interface{}{
+		"Rooms": lr.prettyRooms,
+		"MOTD":  lr.MOTD,
+	}})
 }
 
-func isMatch(s string, p string) bool {
-	runeInput := []rune(s)
-	runePattern := []rune(p)
-	lenInput := len(runeInput)
-	lenPattern := len(runePattern)
-	isMatchingMatrix := make([][]bool, lenInput+1)
-	for i := range isMatchingMatrix {
-		isMatchingMatrix[i] = make([]bool, lenPattern+1)
-	}
-	isMatchingMatrix[0][0] = true
-	for i := 1; i < lenInput; i++ {
-		isMatchingMatrix[i][0] = false
-	}
-	if lenPattern > 0 {
-		if runePattern[0] == '*' {
-			isMatchingMatrix[0][1] = true
+func lobbyIgnores(ip string) bool {
+	for _, i := range lobbyIgnoreIPS {
+		if i.MatchString(ip) {
+			log.Printf("Lobby ignores %q because %q", ip, i.String())
+			return true
 		}
 	}
-	for j := 2; j <= lenPattern; j++ {
-		if runePattern[j-1] == '*' {
-			isMatchingMatrix[0][j] = isMatchingMatrix[0][j-1]
-		}
+	return false
+}
+
+var lobbyIgnoreIPS []*regexp.Regexp
+
+func loadLobbyIgnores(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
 	}
-	for i := 1; i <= lenInput; i++ {
-		for j := 1; j <= lenPattern; j++ {
-			if runePattern[j-1] == '*' {
-				isMatchingMatrix[i][j] = isMatchingMatrix[i-1][j] || isMatchingMatrix[i][j-1]
-			}
-			if runePattern[j-1] == '?' || runeInput[i-1] == runePattern[j-1] {
-				isMatchingMatrix[i][j] = isMatchingMatrix[i-1][j-1]
-			}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		fi, fn, ok := strings.Cut(scanner.Text(), " ")
+		if !ok || fi == "" {
+			continue
 		}
+		r, err := regexp.Compile(fi)
+		if err != nil {
+			log.Printf("Failed to compile regex %q (%s): %s", fi, fn, err)
+		}
+		lobbyIgnoreIPS = append(lobbyIgnoreIPS, r)
 	}
-	return isMatchingMatrix[lenInput][lenPattern]
+	return scanner.Err()
 }

@@ -10,30 +10,28 @@
 		<style>
 		.blob {
 			background: grey;
-			border-radius: 50%;
-			margin: 5px;
-			height: 15px;
-			width: 15px;
 			display: inline-block;
 			box-shadow: 0 0 0 0 rgba(255, 0, 0, 1);
 			transform: scale(1);
-			vertical-align: super;
 			cursor: pointer;
+			border-radius: 1rem;
+			padding: 0.25em 0.65em;
+			color: white;
 		}
 		.blob-animate {
 			animation: pulse 0.5s ease-in-out;
 		}
 		@keyframes pulse {
 			0% {
-				transform: scale(0.95);
+				{{/* transform: scale(0.95); */}}
 				box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
 			}
 			70% {
-				transform: scale(1);
+				{{/* transform: scale(1); */}}
 				box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
 			}
 			100% {
-				transform: scale(0.95);
+				{{/* transform: scale(0.95); */}}
 				box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
 			}
 		}
@@ -44,12 +42,10 @@
 		{{template "NavPanel" . }}
 		<div class="px-4 my-5 text-center">
 			<div class="container">
-				<h3>Warzone 2100 Lobby
-				{{if .UserAuthorized}}
-				<div class="blob" id="LiveBlob" data-bs-toggle="tooltip" data-bs-placement="right" title="Click to toggle live refresh of lobby"></div>
-				{{else}}
-				<div class="blob" id="LiveBlob" data-bs-toggle="tooltip" data-bs-placement="right" title="Log in to receive live lobby updates"></div>
-				{{end}}
+				<h3 style="display: inline">Warzone 2100 Lobby
+				<sup>
+				<div class="blob badge" id="LiveBlob" data-bs-toggle="tooltip" data-bs-placement="right" title="{{if .UserAuthorized}}Click to toggle live refresh of lobby (number shows how many people are watching){{else}}Log in to receive live lobby updates{{end}}">&nbsp</div>
+				</sup>
 				</h3>
 				<table class="table" id="LobbyTable">
 					<tr>
@@ -76,11 +72,11 @@
 				{{end}}
 				</table>
 				<pre id="LobbyMOTD">{{.Lobby.Motd}}</pre>
-				<div class="text-start" id="AutohosterRooms">
+				{{/* <div class="text-start" id="AutohosterRooms">
 				{{range $k, $el := .Hoster}}
 					{{template "roomAutohoster" $el}}
 				{{end}}
-				</div>
+				</div> */}}
 			</div>
 		</div>
 		{{if .UserAuthorized}}
@@ -124,7 +120,7 @@
 		function parsewsmessage(event) {
 			let msg = JSON.parse(event.data);
 			if(msg.type == "LobbyUpdate") {
-				lobbymotd.textContent = msg.data.Motd
+				lobbymotd.textContent = msg.data.MOTD
 				let filled = 1
 				{{/* msg.data.Rooms.sort(function(a, b) {
 					return a.GameID-b.GameID;
@@ -163,6 +159,7 @@
 				while(filled < lobbytable.children[0].childElementCount) {
 					cont[filled].parentNode.removeChild(cont[filled])
 				}
+				document.getElementById("LiveBlob").textContent = msg.data.Watching;
 				document.getElementById("LiveBlob").classList.add('blob-animate');
 				setTimeout(() => {
 					document.getElementById("LiveBlob").classList.remove('blob-animate');
