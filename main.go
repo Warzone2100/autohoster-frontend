@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"strconv"
 
 	_ "strconv"
 	"time"
@@ -450,6 +449,7 @@ func main() {
 	// handlers.CompressHandler(router1)
 	// handlers.RecoveryHandler()(router3)
 	routerMiddle := sessionManager.LoadAndSave(handlers.CustomLoggingHandler(os.Stdout, handlers.ProxyHeaders(accountMiddleware(router)), customLogger))
-	log.Println("Started!")
-	log.Panic(http.ListenAndServe(":"+strconv.Itoa(cfg.GetDSInt(3000, "httpPort")), routerMiddle))
+	listenAddr := ":" + cfg.GetDSString("3001", "httpPort")
+	log.Printf("Started web server at %s", listenAddr)
+	log.Panic(http.ListenAndServe(listenAddr, routerMiddle))
 }
