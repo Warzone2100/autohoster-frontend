@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	discord "github.com/ravener/discord-oauth2"
@@ -17,9 +16,7 @@ import (
 var DiscordRedirectUrl = "https://wz2100-autohost.net/oauth/discord"
 
 var discordOauthConfig = &oauth2.Config{
-	RedirectURL:  DiscordRedirectUrl,
-	ClientID:     os.Getenv("DISCORDCLIENTID"),
-	ClientSecret: os.Getenv("DISCORDCLIENTSECRET"),
+	RedirectURL: DiscordRedirectUrl,
 	Scopes: []string{
 		"connections", "identify", "guilds", "email"},
 	Endpoint: discord.Endpoint,
@@ -33,12 +30,13 @@ var discordOauthConfig = &oauth2.Config{
 // }
 
 func DiscordVerifyEnv() {
-	discordOauthConfig.ClientID = os.Getenv("DISCORDCLIENTID")
-	if discordOauthConfig.ClientID == "" {
+	var ok bool
+	discordOauthConfig.ClientID, ok = cfg.GetString("discord", "id")
+	if !ok {
 		log.Println("Discord client ID not set")
 	}
-	discordOauthConfig.ClientSecret = os.Getenv("DISCORDCLIENTSECRET")
-	if discordOauthConfig.ClientSecret == "" {
+	discordOauthConfig.ClientSecret, ok = cfg.GetString("discord", "secret")
+	if !ok {
 		log.Println("Discord client secret not set")
 	}
 }

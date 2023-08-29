@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -81,5 +80,5 @@ func reportHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendReportWebhook(content string) error {
-	return sendWebhook(os.Getenv("DISCORD_ADMIN_REPORTS"), content)
+	return sendWebhook(cfg.GetDSString("", "webhooks", "reports"), content)
 }

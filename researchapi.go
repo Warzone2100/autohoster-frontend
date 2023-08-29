@@ -61,7 +61,7 @@ var (
 
 func LoadClassification() (ret []map[string]string, err error) {
 	var content []byte
-	content, err = os.ReadFile(os.Getenv("CLASSIFICATIONJSON"))
+	content, err = os.ReadFile(cfg.GetDSString("classification.json", "researchClassification"))
 	if err != nil {
 		return
 	}

@@ -15,7 +15,7 @@ import (
 var replayStorageIdBase = 32
 
 func getStorageReplayDir(gid int) string {
-	ret := os.Getenv("REPLAY_STORAGE")
+	ret := cfg.GetDSString("./replayStorage/", "replayStorage")
 	if ret == "" {
 		ret = "./replayStorage/"
 	}
@@ -50,7 +50,7 @@ func getStorageReplayPath(gid int) string {
 var errReplayNotFound = errors.New("replay not found")
 
 func findReplayByConfigFolder(p string) (string, error) {
-	replaydir := path.Join(os.Getenv("MULTIHOSTER_GAMEDIRBASE"), p, "replay/multiplay/")
+	replaydir := path.Join(cfg.GetDSString("../wz-multihoster/build/", "multihoster", "gameDirs"), p, "replay/multiplay/")
 	files, err := os.ReadDir(replaydir)
 	if err != nil {
 		return "", err

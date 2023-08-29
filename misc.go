@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -203,7 +203,12 @@ func sendgridConfirmcode(email string, code string) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("SENDGRID_KEY"))
+	skey, ok := cfg.GetString("sendgridKey")
+	if !ok {
+		log.Println("Sendgrid key is not set!")
+		return errors.New("missconfigured server (let admin know)")
+	}
+	req.Header.Set("Authorization", "Bearer "+skey)
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -253,7 +258,12 @@ func sendgridRecoverRequest(email string, code string) bool {
 	]
 }`, email, code, code)
 	req, _ := http.NewRequest("POST", "https://api.sendgrid.com/v3/mail/send", bytes.NewBuffer([]byte(sendstr)))
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("SENDGRID_KEY"))
+	skey, ok := cfg.GetString("sendgridKey")
+	if !ok {
+		log.Println("Sendgrid key is not set!")
+		return false
+	}
+	req.Header.Set("Authorization", "Bearer "+skey)
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	resp, err := client.Do(req)

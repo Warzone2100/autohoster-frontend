@@ -8,9 +8,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -189,6 +189,11 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+		return
+	}
+	blockedRegions := strings.Split(cfg.GetDString("", "requireDiscordLink", "regions"), " ")
+	if stringOneOf(r.Header.Get("CF-IPCountry"), blockedRegions...) {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Please contact administrator to link your profile."})
 		return
 	}
 	var allow_profile_merge bool
@@ -557,7 +562,7 @@ func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func MultihosterRequest(url string) (bool, string) {
-	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+url, nil)
+	req, err := http.NewRequest("GET", cfg.GetDSString("http://localhost:34206/", "multihoster", "urlBase")+url, nil)
 	if err != nil {
 		log.Print(err)
 		return false, err.Error()
@@ -592,7 +597,7 @@ func RequestStatus() (bool, string) {
 }
 
 func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, mods, ver, onlyregistered string) (bool, string) {
-	req, err := http.NewRequest("GET", os.Getenv("MULTIHOSTER_URLBASE")+"request-room", nil)
+	req, err := http.NewRequest("GET", cfg.GetDSString("http://localhost:34206/", "multihoster", "urlBase")+"request-room", nil)
 	if err != nil {
 		log.Print(err)
 		return false, "Error creating request"

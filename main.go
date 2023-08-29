@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 
 	_ "strconv"
 	"time"
@@ -20,7 +21,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/joho/godotenv"
+	"github.com/maxsupermanhd/lac"
 	"github.com/natefinch/lumberjack"
 	"golang.org/x/oauth2"
 )
@@ -34,13 +35,13 @@ var (
 )
 
 var (
-	LobbyWSHub *WSHub
-	GamesWSHub *WSHub
+	LobbyWSHub     *WSHub
+	GamesWSHub     *WSHub
+	layouts        *template.Template
+	sessionManager *scs.SessionManager
+	dbpool         *pgxpool.Pool
+	cfg            *lac.Conf
 )
-
-var layouts *template.Template
-var sessionManager *scs.SessionManager
-var dbpool *pgxpool.Pool
 
 func FormatPercent(p float64) string {
 	return fmt.Sprintf("%.1f%%", p)
@@ -136,7 +137,16 @@ func sessionAppendUser(r *http.Request, a map[string]interface{}) map[string]int
 		sessdisc = DiscordGetUInfo(&token)
 		if token.AccessToken != tokenold.AccessToken || token.RefreshToken != tokenold.RefreshToken || token.Expiry != tokenold.Expiry {
 			log.Println("Discord token refreshed")
-			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
+			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessuname)
+			if derr != nil {
+				log.Println("Database call error: " + derr.Error())
+			}
+			if tag.RowsAffected() != 1 {
+				log.Println("Database update error, rows affected " + string(tag))
+			}
+		}
+		if discid, ok := sessdisc["id"].(string); ok {
+			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_user_ids = array_sort_unique($1::text || discord_user_ids) WHERE username = $2", discid, sessuname)
 			if derr != nil {
 				log.Println("Database call error: " + derr.Error())
 			}
@@ -254,22 +264,15 @@ func accountMiddleware(next http.Handler) http.Handler {
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	rand.Seed(time.Now().UTC().UnixNano())
-	err := godotenv.Load()
+	var err error
+	cfg, err = lac.FromFileJSON("config.json")
 	if err != nil {
-		log.Println("Error loading .env file")
-	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
+		log.Fatalf("Failed to load config: %s", err.Error())
 	}
 	DiscordVerifyEnv()
 
-	logsLocation := "./logs/" + BuildType + ".log"
-	if os.Getenv("TPWSLOGFILE") != "" {
-		logsLocation = os.Getenv("LOGFILE")
-	}
 	log.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
-		Filename: logsLocation,
+		Filename: cfg.GetDSString("./logs/"+BuildType+".log", "logFile"),
 		MaxSize:  10,   // megabytes
 		Compress: true, // disabled by default
 	}))
@@ -331,7 +334,7 @@ func main() {
 	}
 
 	log.Println("Connecting to database")
-	dbpool, err = pgxpool.Connect(context.Background(), os.Getenv("DB"))
+	dbpool, err = pgxpool.Connect(context.Background(), cfg.GetDString("", "databaseConnString"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -351,7 +354,7 @@ func main() {
 	go GamesWSHub.Run()
 
 	log.Println("Starting lobby poller")
-	loadLobbyIgnores(os.Getenv("LOBBYIGNORES"))
+	loadLobbyIgnores(cfg.GetDSString("./lobbyIgnores.txt", "lobbyIgnores"))
 	go lobbyPoller()
 
 	log.Println("Loading research names")
@@ -448,5 +451,5 @@ func main() {
 	// handlers.RecoveryHandler()(router3)
 	routerMiddle := sessionManager.LoadAndSave(handlers.CustomLoggingHandler(os.Stdout, handlers.ProxyHeaders(accountMiddleware(router)), customLogger))
 	log.Println("Started!")
-	log.Panic(http.ListenAndServe(":"+port, routerMiddle))
+	log.Panic(http.ListenAndServe(":"+strconv.Itoa(cfg.GetDSInt(3000, "httpPort")), routerMiddle))
 }

@@ -8,3 +8,4 @@ logs/
 *.diff
 layouts-*
 wzbanlist.txt
+config.json

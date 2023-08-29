@@ -49,6 +49,10 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 
 func ratingLookup(hash string) Ra {
 	m := Ra{true, false, [3]int{0, 0, 0}, 0, -1, "", "", "", [3]int{0x98, 0x98, 0x98}, [3]int{0xff, 0xff, 0xff}}
+	ohash, ok := cfg.GetString("ratingOverrides", hash)
+	if ok {
+		hash = ohash
+	}
 	if hash == "a0c124533ddcaf5a19cc7d593c33d750680dc428b0021672e0b86a9b0dcfd711" {
 		m.Autohoster = true
 		var c int

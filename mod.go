@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -112,7 +111,7 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func modSendWebhook(content string) error {
-	return sendWebhook(os.Getenv("DISCORD_ADMIN_ACTIONS"), content)
+	return sendWebhook(cfg.GetDSString("", "webhooks", "actions"), content)
 }
 
 func modMergeHandler(w http.ResponseWriter, r *http.Request) {

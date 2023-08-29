@@ -25,6 +25,7 @@ require (
 
 require (
 	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect
 )
 
@@ -43,6 +44,7 @@ require (
 	github.com/jackc/pgtype v1.11.0 // indirect
 	github.com/jackc/puddle v1.2.1 // indirect
 	github.com/lib/pq v1.10.6 // indirect
+	github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	golang.org/x/net v0.7.0 // indirect
