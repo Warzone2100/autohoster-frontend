@@ -104,7 +104,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		var k, c int
 		var ut string
 		_, err := dbpool.QueryFunc(r.Context(),
-			`select array_position(players, -1)-1 as pc, coalesce(usertype[array_position(players, $1)], '') as ut, count(id)*(array_position(players, -1)-1) as c
+			`select array_position(players, -1)-1 as pc, coalesce(usertype[array_position(players, $1)], '') as ut, count(id) as c
 			from games
 			where
 				$1 = any(players) and
