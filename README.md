@@ -1,8 +1,8 @@
 # Autohoster website
 
-Currently located at https://wz2100-autohost.net
+Currently located at <https://wz2100-autohost.net>
 
-### Databse schema
+## Databse schema
 
 ```SQL
 -- where games stored
