@@ -402,25 +402,22 @@ func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}
 	// 	"Name":       "name",
 	// 	"ID":         "id",
 	// })
-	rows, derr := dbpool.Query(r.Context(),
-		`SELECT players.id, name, players.hash, elo2, autoplayed, autolost, autowon, coalesce(users.id, -1) as userid, timeplayed
-FROM players
-FULL OUTER JOIN users ON players.id = users.wzprofile2
-FULL OUTER JOIN bans ON players.id = bans.playerid
-WHERE autoplayed > 0 AND users.terminated = false AND NOT COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false)
-GROUP BY players.id, users.id
-ORDER BY elo2 DESC`)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
+	rows, err := dbpool.Query(r.Context(), `SELECT id, name, hash, elo2, autoplayed, autolost, autowon, userid, timeplayed, extract(epoch from now() - lastgame)::int FROM leaderboard;`)
+	if err != nil {
+		if err == pgx.ErrNoRows {
 			return 204, nil
 		}
-		return 500, derr
+		return 500, err
 	}
 	defer rows.Close()
 	var P []PlayerLeaderboard
 	for rows.Next() {
 		var pp PlayerLeaderboard
-		rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed)
+		err = rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed, &pp.LastGame)
+		if err != nil {
+			log.Println(err)
+			return 500, err
+		}
 		P = append(P, pp)
 	}
 	return 200, P

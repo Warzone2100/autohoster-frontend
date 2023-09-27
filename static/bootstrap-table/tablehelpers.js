@@ -222,6 +222,41 @@ function timeplayedFormatter(value, row) {
 		return answer;
 	}
 }
+function lastgameFormatter(date) {
+	let seconds = Math.floor(date);
+	console.log(seconds)
+	let interval = seconds / 31536000;
+	let ret = "";
+	let retn = 0
+	if (interval > 1) {
+		ret = Math.floor(interval) + "y";
+		retn++;
+	}
+	interval = (seconds % 31536000) / 2592000;
+	if (interval > 1) {
+		ret = ret + " " + Math.floor(interval) + "m";
+		retn++;
+	}
+	interval = (seconds % 2592000) / 86400;
+	if (interval > 1 && retn <= 2) {
+		ret = ret + " " + Math.floor(interval) + "d";
+		retn++;
+	}
+	interval = (seconds % 86400) / 3600;
+	if (interval > 1  && retn <= 2) {
+		ret = ret + " " + Math.floor(interval) + "h";
+		retn++;
+	}
+	interval = (seconds % 3600) / 60;
+	if (interval > 1  && retn <= 2) {
+		ret = ret + " " + Math.floor(interval) + "m";
+		retn++;
+	}
+	if (seconds % 60 > 1 && retn <= 2) {
+		ret = ret + " " + Math.floor(seconds % 60) + "s"
+	}
+	return `<text title='${date} seconds'>${ret}</text>`;
+}
 function mapNameFormatter(value, row) {
 	if(row.Mod == 'none' || row.Mod == 'vanilla' || row.Mod == '' || row.Mod === undefined) {
 		return value;

@@ -24,6 +24,7 @@ type PlayerLeaderboard struct {
 	Timeplayed int     `json:",omitempty"`
 	Rwon       float64 `json:",omitempty"`
 	Rlost      float64 `json:",omitempty"`
+	LastGame   int     `json:",omitempty"`
 }
 
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {
