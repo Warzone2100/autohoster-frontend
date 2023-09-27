@@ -224,7 +224,6 @@ function timeplayedFormatter(value, row) {
 }
 function lastgameFormatter(date) {
 	let seconds = Math.floor(date);
-	console.log(seconds)
 	let interval = seconds / 31536000;
 	let ret = "";
 	let retn = 0
