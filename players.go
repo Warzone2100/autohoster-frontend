@@ -82,7 +82,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			cross join unnest(g.players) as up
 			join players as p on up = p.id
 			where
-				$1 = any(g.players) and
+				array[$1::int] <@ g.players and
 				calculated = true and
 				finished = true and
 				g.usertype[array_position(g.players, $1)] = 'winner' and
@@ -94,7 +94,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			cross join unnest(g.players) as up
 			join players as p on up = p.id
 			where
-				$1 = any(g.players) and
+				array[$1::int] <@ g.players and
 				calculated = true and
 				finished = true and
 				g.usertype[array_position(g.players, $1)] = 'loser' and
@@ -107,7 +107,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			`select array_position(players, -1)-1 as pc, coalesce(usertype[array_position(players, $1)], '') as ut, count(id) as c
 			from games
 			where
-				$1 = any(players) and
+				array[$1::int] <@ players and
 				calculated = true and
 				finished = true
 			group by pc, ut
@@ -130,7 +130,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			`select baselevel, usertype[array_position(players, $1)] as ut, count(id)
 			from games
 			where
-				$1 = any(players) and
+				array[$1::int] <@ players and
 				calculated = true and
 				finished = true
 			group by baselevel, ut
@@ -152,7 +152,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			`select alliancetype, count(id)
 			from games
 			where
-				$1 = any(players) and
+				array[$1::int] <@ players and
 				calculated = true and
 				finished = true and
 				array_position(players, -1)-1 > 2
@@ -172,7 +172,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 			`select scavs::int, count(id)
 			from games
 			where 
-				$1 = any(players) and
+				array[$1::int] <@ players and
 				calculated = true and
 				finished = true
 			group by scavs`,
@@ -227,7 +227,7 @@ func getRatingHistory(pid int) (map[string]eloHist, error) {
 			players
 		FROM games
 		where
-			$1 = any(players)
+			array[$1::int] <@ players
 			AND finished = true
 			AND calculated = true
 			AND hidden = false
