@@ -65,14 +65,24 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	RatingHistory := map[string]eloHist{}
 	ResearchClassificationTotal := map[string]int{}
 	ResearchClassificationRecent := map[string]int{}
-	err = RequestMultiple(func() error {
-		return dbpool.QueryRow(r.Context(), `
+	AltCount := 0
+	err = dbpool.QueryRow(r.Context(), `
 		SELECT name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1)
 		FROM players WHERE id = $1`, pid).Scan(&pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid)
-	}, func() error {
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Player not found"})
+		} else if r.Context().Err() == context.Canceled {
+			return
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + err.Error()})
+		}
+		return
+	}
+	err = RequestMultiple(func() error {
 		var o, n, t string
 		_, err := dbpool.QueryFunc(r.Context(), `select oldname, newname, "time"::text from plrenames where id = $1 order by "time" desc;`,
-			[]interface{}{pid}, []interface{}{&o, &n, &t}, func(qfr pgx.QueryFuncRow) error {
+			[]interface{}{pid}, []interface{}{&o, &n, &t}, func(_ pgx.QueryFuncRow) error {
 				renames = append(renames, renameEntry{Oldname: o, Newname: n, Time: t})
 				return nil
 			})
@@ -191,6 +201,8 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		RatingHistory, err = getRatingHistory(pid)
 		return err
+	}, func() error {
+		return dbpool.QueryRow(r.Context(), `select count(*) from players where hash = any((select distinct hash from chatlog where ip = any((select distinct ip from chatlog where hash = any((select hash from players where hash = any((select distinct hash from chatlog where ip = any((select distinct ip from chatlog where hash = $1)))) order by id desc)) order by ip desc))));`, pp.Hash).Scan(&AltCount)
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -212,6 +224,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		"RatingHistory":                RatingHistory,
 		"ResearchClassificationTotal":  ResearchClassificationTotal,
 		"ResearchClassificationRecent": ResearchClassificationRecent,
+		"AltCount":                     AltCount,
 	})
 }
 

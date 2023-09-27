@@ -152,7 +152,7 @@
 			<div class="d-flex">
 				<h3>{{template "wzprofile" .Player}}</h3>
 				<div class="px-5 d-flex flex-column flex-grow-1 text-center">
-					<code class="m-1">{{.Player.Hash}}</code>
+					<div>{{if $.IsSuperadmin}}AltCount: {{.AltCount}}{{end}} <code class="m-1">{{.Player.Hash}}</code></div>
 					<div class="d-flex flex-row justify-content-between flex-wrap">
 						<div class="m-1">Rating: {{if gt .Player.Userid 0}}{{.Player.Elo2}}{{else}}not registered{{end}}</div>
 						<div class="m-1">{{if .Player.Rwon}}Rwon: {{f64tostring .Player.Rwon}}{{end}}</div>
