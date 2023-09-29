@@ -247,7 +247,8 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		FROM players
 		LEFT OUTER JOIN bans ON players.id = bans.playerid
 		LEFT OUTER JOIN users ON players.id = users.wzprofile2
-		WHERE players.hash = $1::text OR bans.hash = $1::text`, phash).Scan(&resp)
+		WHERE players.hash = $1::text OR bans.hash = $1::text
+		ORDER BY bans.id DESC`, phash).Scan(&resp)
 	if derr != nil {
 		if errors.Is(derr, pgx.ErrNoRows) {
 			return 200, map[string]any{
