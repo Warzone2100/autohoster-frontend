@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	discord "github.com/ravener/discord-oauth2"
 	"golang.org/x/oauth2"
 )
@@ -48,7 +49,7 @@ func DiscordGetUrl(state string) string {
 func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
 	res, err := discordOauthConfig.Client(context.Background(), token).Get("https://discord.com/api/users/@me")
 	if err != nil {
-		log.Printf("Unauthorized, resetting discord (%v)", err)
+		log.Printf("Unauthorized, resetting discord (%s)", spew.Sprintln(err))
 		token.AccessToken = ""
 		token.RefreshToken = ""
 		token.Expiry = time.Now()
