@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -13,10 +14,10 @@ import (
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	type article struct {
-		Title   string    `json:"title"`
-		Content string    `json:"content"`
-		Time    time.Time `json:"posttime"`
-		Color   string    `json:"color"`
+		Title   string        `json:"title"`
+		Content template.HTML `json:"content"`
+		Time    time.Time     `json:"posttime"`
+		Color   string        `json:"color"`
 	}
 	timeInterval := "48 hours"
 	news := []article{}
