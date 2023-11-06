@@ -109,7 +109,7 @@ LIMIT 1`, hash).Scan(&dplayerid, &dname, &delo2, &dautoplayed, &dautowon, &dauto
 		return m
 	}
 
-	m.Name = dname
+	// m.Name = dname
 
 	if duuserid > 0 {
 		m.Level = 8
