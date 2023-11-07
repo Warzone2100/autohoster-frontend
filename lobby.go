@@ -14,6 +14,10 @@ import (
 	"github.com/maxsupermanhd/go-wz/lobby"
 )
 
+const (
+	lobbyHistoryMax = 50
+)
+
 type LobbyRoomPretty struct {
 	GameID         uint32
 	GameName       string
@@ -86,8 +90,8 @@ func lobbyPoller() {
 				lobbyHistory = append([]LobbyRoomPretty{vv}, lobbyHistory...)
 			}
 		}
-		if len(lobbyHistory) > 10 {
-			lobbyHistory = lobbyHistory[:10]
+		if len(lobbyHistory) > lobbyHistoryMax {
+			lobbyHistory = lobbyHistory[:lobbyHistoryMax]
 		}
 		previousLookup = lookup.prettyRooms
 		LobbyWSHub.clientsLock.Lock()
