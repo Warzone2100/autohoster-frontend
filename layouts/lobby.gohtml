@@ -68,7 +68,15 @@
 						<td>{{if $el.Pure}}Map-mod {{end}}{{if $el.Private}}Private{{end}}</td>
 					</tr>
 				{{else}}
-					<tr><td colspan="99">No rooms in lobby</td></tr>
+					<tr>
+						<td colspan="99">No rooms in lobby</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
 				{{end}}
 				</table>
 				<pre id="LobbyMOTD">{{.Lobby.MOTD}}</pre>
