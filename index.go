@@ -64,15 +64,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}, func() error {
 		return dbpool.QueryRow(r.Context(), `select count(distinct p) from games, unnest(players) as p where timestarted + $1::interval > now()`, timeInterval).Scan(&uniqPlayers)
 	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select sum(gametime) from games where timestarted + $1::interval > now()`, timeInterval).Scan(&gameTime)
+		return dbpool.QueryRow(r.Context(), `select coalesce(sum(gametime), 0) from games where timestarted + $1::interval > now()`, timeInterval).Scan(&gameTime)
 	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select sum(k) from games, unnest(unitbuilt) as k where timestarted + $1::interval > now() and k > 0`, timeInterval).Scan(&unitsProduced)
+		return dbpool.QueryRow(r.Context(), `select coalesce(sum(k), 0) from games, unnest(unitbuilt) as k where timestarted + $1::interval > now() and k > 0`, timeInterval).Scan(&unitsProduced)
 	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select sum(k) from games, unnest(structbuilt) as k where timestarted + $1::interval > now() and k > 0`, timeInterval).Scan(&structsBuilt)
+		return dbpool.QueryRow(r.Context(), `select coalesce(sum(k), 0) from games, unnest(structbuilt) as k where timestarted + $1::interval > now() and k > 0`, timeInterval).Scan(&structsBuilt)
 	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select sum(coalesce(abs(elodiff[1]), 0)) from games where timestarted + $1::interval > now();`, timeInterval).Scan(&eloTransferred)
+		return dbpool.QueryRow(r.Context(), `select coalesce(sum(coalesce(abs(elodiff[1]), 0)), 0) from games where timestarted + $1::interval > now();`, timeInterval).Scan(&eloTransferred)
 	}, func() error {
-		return dbpool.QueryRow(r.Context(), `select sum(coalesce(abs(ratingdiff[1]), 0)) from games where timestarted + $1::interval > now();`, timeInterval).Scan(&ratingTransferred)
+		return dbpool.QueryRow(r.Context(), `select coalesce(sum(coalesce(abs(ratingdiff[1]), 0)), 0) from games where timestarted + $1::interval > now();`, timeInterval).Scan(&ratingTransferred)
 	}, func() error {
 		var date string
 		var count, average int
