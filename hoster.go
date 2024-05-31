@@ -96,7 +96,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 
 		tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET last_host_request = now() WHERE username = $1", sessionManager.GetString(r.Context(), "User.Username"))
 		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + cerr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
 			return
 		}
 		if tag.RowsAffected() != 1 {
@@ -106,7 +106,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 
 		_, derr = dbpool.Exec(context.Background(), "UPDATE presets SET last_requested = now() WHERE maphash = $1", r.PostFormValue("maphash"))
 		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + cerr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
 			return
 		}
 		// if tag.RowsAffected() != 1 {
@@ -260,7 +260,6 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						if tag.RowsAffected() != 1 {
-							log.Println(derr.Error())
 							basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 							return
 						}
@@ -279,12 +278,11 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 					tag2, derr2 := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '' WHERE username = $1`,
 						sessionManager.GetString(r.Context(), "User.Username"))
 					if derr2 != nil {
-						log.Println(derr.Error())
-						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+						log.Println(derr2.Error())
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr2.Error()})
 						return
 					}
 					if tag2.RowsAffected() != 1 {
-						log.Println(derr.Error())
 						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 						return
 					}
@@ -312,7 +310,6 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if tag.RowsAffected() != 1 {
-				log.Println(derr.Error())
 				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 				return
 			}
@@ -333,7 +330,6 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				if tag.RowsAffected() != 1 {
-					log.Println(derr.Error())
 					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 					return
 				}

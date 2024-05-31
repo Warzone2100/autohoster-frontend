@@ -232,7 +232,7 @@ func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	derr = tx.Commit(context.Background())
-	if err != nil {
+	if derr != nil {
 		log.Printf("Error [%s]", derr.Error())
 		io.WriteString(w, "-1")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -331,7 +331,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $
 		return
 	}
 	if tag.RowsAffected() != 1 {
-		log.Printf("Can not upload frame [%s]", derr.Error())
+		log.Printf("Can not upload frame, sus row affected, expected 1 got %d and err is nil", tag.RowsAffected())
 		io.WriteString(w, "err")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -465,7 +465,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if tag.RowsAffected() != 1 {
-		log.Printf("Can not upload frame [%s]", derr.Error())
+		log.Printf("Can not upload frame, sus row affected, expected 1 got %d and err is nil", tag.RowsAffected())
 		io.WriteString(w, "err")
 		w.WriteHeader(http.StatusInternalServerError)
 		return

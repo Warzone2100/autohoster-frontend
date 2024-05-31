@@ -224,7 +224,7 @@ func customLogger(_ io.Writer, params handlers.LogFormatterParams) {
 
 func shouldCache(maxage int, h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Cache-Control", "public, max-age=604800")
+		w.Header().Add("Cache-Control", fmt.Sprintf("public, max-age=%d", maxage))
 		h.ServeHTTP(w, r)
 	}
 }
