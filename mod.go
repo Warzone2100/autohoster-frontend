@@ -16,7 +16,7 @@ import (
 
 func isSuperadmin(context context.Context, username string) bool {
 	ret := false
-	derr := dbpool.QueryRow(context, "SELECT superadmin FROM users WHERE username = $1", username).Scan(&ret)
+	derr := dbpool.QueryRow(context, "SELECT superadmin FROM accounts WHERE username = $1", username).Scan(&ret)
 	if derr != nil {
 		if errors.Is(derr, pgx.ErrNoRows) {
 			return false
@@ -26,10 +26,10 @@ func isSuperadmin(context context.Context, username string) bool {
 	return ret
 }
 
-func modUsersHandler(w http.ResponseWriter, r *http.Request) {
+func modAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
 		return
 	}
 	if r.Method == "POST" {
@@ -39,12 +39,12 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Failed to parse form"))
 			return
 		}
-		if !stringOneOf(r.FormValue("param"), "bypass_ispban", "allow_preset_request", "allow_host_request", "terminated", "norequest_reason") {
+		if !stringOneOf(r.FormValue("param"), "bypass_ispban", "allow_host_request", "terminated", "no_request_reason") {
 			w.WriteHeader(403)
 			w.Write([]byte("Param is bad (" + r.FormValue("param") + ")"))
 			return
 		}
-		if stringOneOf(r.FormValue("param"), "bypass_ispban", "allow_preset_request", "allow_host_request", "terminated") {
+		if stringOneOf(r.FormValue("param"), "bypass_ispban", "allow_host_request", "terminated") {
 			if !stringOneOf(r.FormValue("val"), "true", "false") {
 				w.WriteHeader(400)
 				w.Write([]byte("Val is bad"))
@@ -56,7 +56,7 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Name is missing"))
 			return
 		}
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET "+r.FormValue("param")+" = $1 WHERE username = $2", r.FormValue("val"), r.FormValue("name"))
+		tag, derr := dbpool.Exec(context.Background(), "UPDATE accounts SET "+r.FormValue("param")+" = $1 WHERE username = $2", r.FormValue("val"), r.FormValue("name"))
 		if derr != nil {
 			w.WriteHeader(500)
 			log.Println("Database query error: " + derr.Error())
@@ -75,37 +75,37 @@ func modUsersHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 		}
 		if r.FormValue("param") == "norequest_reason" {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": "Success"})
-			w.Header().Set("Refresh", "1; /moderation/users")
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msggreen": true, "msg": "Success"})
+			w.Header().Set("Refresh", "1; /moderation/accounts")
 		}
 	} else {
-		rows, derr := dbpool.Query(context.Background(), `select to_json(users) from users order by id asc;`)
+		rows, derr := dbpool.Query(context.Background(), `select to_json(accounts) from accounts order by id asc;`)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No games played"})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "No games played"})
 			} else {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
 			}
 			return
 		}
 		defer rows.Close()
-		var users []map[string]interface{}
+		var accounts []map[string]any
 		for rows.Next() {
 			var j string
 			err := rows.Scan(&j)
 			if err != nil {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database scan error: " + err.Error()})
 				return
 			}
-			m := map[string]interface{}{}
+			m := map[string]any{}
 			if err := json.Unmarshal([]byte(j), &m); err != nil {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json parse error: " + err.Error()})
 				return
 			}
-			users = append(users, m)
+			accounts = append(accounts, m)
 		}
-		basicLayoutLookupRespond("modUsers", w, r, map[string]interface{}{
-			"Users": users,
+		basicLayoutLookupRespond("modAccounts", w, r, map[string]any{
+			"accounts": accounts,
 		})
 	}
 }
@@ -117,7 +117,7 @@ func modSendWebhook(content string) error {
 func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
 		return
 	}
 	if r.Method == "POST" {
@@ -145,7 +145,7 @@ func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 		derr := dbpool.QueryRow(r.Context(), `SELECT name FROM players WHERE id = $1`, intoID).Scan(&intoName)
 		if derr != nil {
 			report += fmt.Sprintf("Error getting player %d id: %v\n", intoID, derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "msg": report})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"nocenter": true, "msg": report})
 			return
 		}
 		totalgames := 0
@@ -178,16 +178,16 @@ func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		report += fmt.Sprintf("Done! Total games affected: %d\n", totalgames)
 		modSendWebhook(fmt.Sprintf("Administrator `%s` merged `%v` into `%d`", sessionGetUsername(r), fromIDs, intoID))
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true, "msg": report})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"nocenter": true, "plaintext": true, "msg": report})
 	} else {
-		basicLayoutLookupRespond("modMerge", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("modMerge", w, r, map[string]any{})
 	}
 }
 
 func modNewsHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
 		return
 	}
 	if r.Method == "POST" {
@@ -197,7 +197,7 @@ func modNewsHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Failed to parse form: " + err.Error()))
 			return
 		}
-		tag, err := dbpool.Exec(r.Context(), `insert into news (title, content, color, posttime) values ($1, $2, $3, $4)`, r.FormValue("title"), r.FormValue("content"), r.FormValue("color"), r.FormValue("date"))
+		tag, err := dbpool.Exec(r.Context(), `insert into news (title, content, color, when_posted) values ($1, $2, $3, $4)`, r.FormValue("title"), r.FormValue("content"), r.FormValue("color"), r.FormValue("date"))
 		result := ""
 		if err != nil {
 			result = err.Error()
@@ -205,17 +205,17 @@ func modNewsHandler(w http.ResponseWriter, r *http.Request) {
 			result = tag.String()
 		}
 		msg := template.HTML(result + `<br><a href="/moderation/news">back</a>`)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true,
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"nocenter": true, "plaintext": true,
 			"msg": msg})
 	} else {
-		basicLayoutLookupRespond("modNews", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("modNews", w, r, map[string]any{})
 	}
 }
 
 func modBansHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Forbiden"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
 		return
 	}
 	if r.Method == "POST" {
@@ -240,13 +240,13 @@ func modBansHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		msg := template.HTML(result + `<br><a href="/moderation/bans">back</a>`)
 		modSendWebhook(fmt.Sprintf("Administrator `%s` banned `%v` for `%v` duration `%v`", sessionGetUsername(r), r.FormValue("hash"), r.FormValue("reason"), (time.Duration(dur) * time.Second).String()))
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"nocenter": true, "plaintext": true, "msg": msg})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"nocenter": true, "plaintext": true, "msg": msg})
 	} else {
-		basicLayoutLookupRespond("modBans", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("modBans", w, r, map[string]any{})
 	}
 }
 
-func APIgetBans(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetBans(_ http.ResponseWriter, r *http.Request) (int, any) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		return 403, nil
 	}
@@ -258,7 +258,7 @@ func APIgetBans(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	return 200, ret
 }
 
-func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, any) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		return 403, nil
 	}
@@ -277,7 +277,7 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	reqSortField := parseQueryStringFiltered(r, "sort", "id", "whensent")
 
 	wherecase := ""
-	whereargs := []interface{}{}
+	whereargs := []any{}
 
 	reqFilterJ := parseQueryString(r, "filter", "")
 	reqFilterFields := map[string]string{}
@@ -404,7 +404,7 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			totalsNoFilterpresent = true
 		}
 	}
-	return 200, map[string]interface{}{
+	return 200, map[string]any{
 		"total":            totals,
 		"totalNotFiltered": totalsNoFilter,
 		"rows":             ls,
@@ -413,7 +413,7 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 
 func modResendEmailConfirm(accountID int) error {
 	var email, emailcode string
-	err := dbpool.QueryRow(context.Background(), `SELECT email, emailconfirmcode FROM users WHERE id = $1`, accountID).Scan(&email, &emailcode)
+	err := dbpool.QueryRow(context.Background(), `SELECT email, email_confirm_code FROM accounts WHERE id = $1`, accountID).Scan(&email, &emailcode)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return errors.New("no account")

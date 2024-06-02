@@ -11,17 +11,16 @@ function nameFormatter(value, row) {
 		Name = Name.slice(0, 20) + '...';
 	}
 	Elo = row.Elo !== undefined ? row.Elo : row.elo
-	Elo2 = row.Elo2 !== undefined ? row.Elo2 : row.elo2
 	Userid = row.Userid !== undefined ? row.Userid : row.userid
 	ID = row.ID !== undefined ? row.ID : row.id
 	EloDiff = row.EloDiff !== undefined ? row.EloDiff : row.elodiff
 	RatingDiff = row.RatingDiff !== undefined ? row.RatingDiff : row.ratingdiff
 	if(Autoplayed > 4) {
-		if(Elo2 > 1800) {
+		if(Elo > 1800) {
 			ret += `<object class="rank rank-starGold"></object>`;
-		} else if(Elo2 > 1550) {
+		} else if(Elo > 1550) {
 			ret += `<object class="rank rank-starSilver"></object>`;
-		} else if(Elo2 > 1400) {
+		} else if(Elo > 1400) {
 			ret += `<object class="rank rank-starBronze"></object>`;
 		}
 	}
@@ -43,7 +42,7 @@ function nameFormatter(value, row) {
 	if(Userid <= 0) {
 		ret += '<br><small class="text-muted class="text-nowrap"">not registered</small>';
 	} else {
-		ret += `<br>${Elo2}`;
+		ret += `<br>${Elo}`;
 	}
 	// if(EloDiff != undefined && EloDiff != 0) {
 	// 	ret += "&nbsp;";
@@ -90,16 +89,16 @@ function AlliancesSettingsFilters(value) {
 	return ["1", "2", "3"];
 }
 function BaseLevelSettingsFormatter(value, row) {
-	return `<img class="icons icons-base${row.BaseLevel}">`
+	return `<img class="icons icons-base${value}">`
 }
 function ScavengersSettingsFormatter(value, row) {
-	return `<img class="icons icons-scav${row.Scavengers?"1":"0"}">`
+	return `<img class="icons icons-scav${value?"1":"0"}">`
 }
 function AlliancesSettingsFormatter(value, row) {
-	return `<img class="icons icons-alliance${row.Alliances == 3?"1":row.Alliances}">`
+	return `<img class="icons icons-alliance${value == 3?"1":value}">`
 }
 function IDFormatter(value, row) {
-	return `${row.ID} ${row.Calculated?"":"<text style=\"color:red;\">C</text>"} ${row.DebugTriggered?"<text class=\"rainbow\">D</text>":""}<br>${row.GameVersion}`;
+	return `${row.ID} ${row.Calculated?"":"<text style=\"color:red;\">C</text>"} ${row.DebugTriggered?"<text class=\"rainbow\">D</text>":""}<br>${row.Version}`;
 }
 function TimeFormatter(value, row) {
 	let igt = "in-game";
@@ -139,9 +138,9 @@ function produceSides(row) {
 			// s2.push(`<div class="row"><div class="col-sm games-loser-name">${nameFormatter(undefined, p)}</div></div>`);
 		} else {
 			if(switched) {
-				s1.push(`<div class="row"><div class="col-sm">${nameFormatter(undefined, row.Players[i])}</div></div>`);
+				s1.push(`<div class="row"><div class="col-sm">${nameFormatter(undefined, p)}</div></div>`);
 			} else {
-				s2.push(`<div class="row"><div class="col-sm">${nameFormatter(undefined, row.Players[i])}</div></div>`);
+				s2.push(`<div class="row"><div class="col-sm">${nameFormatter(undefined, p)}</div></div>`);
 			}
 		}
 	}
@@ -172,6 +171,12 @@ function playersFormatterB(value, row) {
 	return ret;
 }
 function hashFormatter(value, row) {
+	if(value === undefined) {
+		return "Undefined!"
+	}
+	if(value === null) {
+		return "NULL!"
+	}
 	return value.slice(0, 15) + '...'
 }
 function winrateFormatter(value, row) {

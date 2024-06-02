@@ -80,23 +80,23 @@ func stringOneOf(a string, b ...string) bool {
 
 func respondWithUnauthorized(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusUnauthorized)
-	basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]interface{}{})
+	basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]any{})
 }
 
 func respondWithForbidden(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusForbidden)
-	basicLayoutLookupRespond(templateErrorForbidden, w, r, map[string]interface{}{})
+	basicLayoutLookupRespond(templateErrorForbidden, w, r, map[string]any{})
 }
 
 func respondWithNotImplemented(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
-	basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msg": "Not implemented"})
+	basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]any{"msg": "Not implemented"})
 }
 
 func checkFormParse(w http.ResponseWriter, r *http.Request) bool {
 	err := r.ParseForm()
 	if err != nil {
-		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msgred": true, "msg": "Form parse error: " + err.Error()})
+		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]any{"msgred": true, "msg": "Form parse error: " + err.Error()})
 	}
 	return err == nil
 }
@@ -104,14 +104,14 @@ func checkFormParse(w http.ResponseWriter, r *http.Request) bool {
 //lint:ignore U1000 for future
 func checkRespondDatabaseErrorAny(w http.ResponseWriter, r *http.Request, derr error) bool {
 	if derr != nil {
-		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
 	}
 	return derr == nil
 }
 
 func checkRespondGenericErrorAny(w http.ResponseWriter, r *http.Request, derr error) bool {
 	if derr != nil {
-		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]interface{}{"msgred": true, "msg": "Error: " + derr.Error()})
+		basicLayoutLookupRespond(templatePlainMessage, w, r, map[string]any{"msgred": true, "msg": "Error: " + derr.Error()})
 	}
 	return derr == nil
 }
@@ -120,7 +120,7 @@ func myNotFoundHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		if !strings.HasPrefix(r.URL.Path, "/api/") {
-			basicLayoutLookupRespond("error404", w, r, map[string]interface{}{})
+			basicLayoutLookupRespond("error404", w, r, map[string]any{})
 		}
 	})
 }
@@ -289,7 +289,7 @@ func escapeBacktick(s string) string {
 }
 
 func sendWebhook(url, content string) error {
-	b, err := json.Marshal(map[string]interface{}{
+	b, err := json.Marshal(map[string]any{
 		"username": "Frontend",
 		"content":  content,
 	})

@@ -1,4 +1,4 @@
-module github.com/warzone2100/wz2100-autohost.net
+module github.com/warzone2100/autohoster-frontend
 
 go 1.18
 
@@ -24,6 +24,7 @@ require (
 )
 
 require (
+	github.com/georgysavva/scany v1.2.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect

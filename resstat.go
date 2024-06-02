@@ -21,13 +21,13 @@ func prepareStatNames() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var r map[string]interface{}
+	var r map[string]any
 	err = json.Unmarshal(b, &r)
 	if err != nil {
 		log.Fatal(err)
 	}
 	for k, v := range r {
-		v1, ok := v.(map[string]interface{})
+		v1, ok := v.(map[string]any)
 		if !ok {
 			log.Printf("Research [%s] object is not a msi", k)
 			continue
@@ -56,7 +56,7 @@ func getResearchName(n string) string {
 
 func resstatHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkUserAuthorized(r) {
-		basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]interface{}{})
+		basicLayoutLookupRespond(templateNotAuthorized, w, r, map[string]any{})
 		return
 	}
 	var versions []string
@@ -70,7 +70,7 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 	if ok && (reqbase[0] == "0" || reqbase[0] == "1" || reqbase[0] == "2") {
 		areqbase, err := strconv.Atoi(reqbase[0])
 		if err != nil {
-			basicLayoutLookupRespond("error403", w, r, map[string]interface{}{})
+			basicLayoutLookupRespond("error403", w, r, map[string]any{})
 			return
 		}
 		sqbase = areqbase
@@ -111,7 +111,7 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND alliancetype = 3 AND version = $2 AND id > $3`, sqbase, sqver, ming)
 	}
 	if derr != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
 		return
 	}
 	defer rows.Close()
@@ -144,12 +144,12 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 		var reslogj string
 		err := rows.Scan(&gid, &players, &reslogj)
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
 		}
 		var reslog []research
 		if err := json.Unmarshal([]byte(reslogj), &reslog); err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json parse error: " + err.Error()})
 			return
 		}
 		for _, e := range reslog {
@@ -205,7 +205,7 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 		var pl GamePlayer
 		derr := dbpool.QueryRow(context.Background(), `
 					SELECT
-						to_json(players)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE players.id = users.wzprofile2), -1))::jsonb
+						to_json(players)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM accounts WHERE players.id = accounts.wzprofile2), -1))::jsonb
 					FROM players
 					WHERE players.id = $1`, i).Scan(&pl)
 		if derr != nil {
@@ -213,7 +213,7 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 				log.Print("Player ", i, " not found")
 				continue
 			}
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + derr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database scan error: " + derr.Error()})
 			log.Print(derr.Error())
 			return
 		}
@@ -230,5 +230,5 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	basicLayoutLookupRespond("resstat", w, r, map[string]interface{}{"Versions": versions, "Best": best, "Selver": sqver, "Selbase": sqbase})
+	basicLayoutLookupRespond("resstat", w, r, map[string]any{"Versions": versions, "Best": best, "Selver": sqver, "Selbase": sqbase})
 }

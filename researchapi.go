@@ -21,7 +21,7 @@ func APIgetResearchlogData(w http.ResponseWriter, r *http.Request) {
 	}
 	params := mux.Vars(r)
 	gid := params["gid"]
-	var j []map[string]interface{}
+	var j []map[string]any
 	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(researchlog, '[]')::jsonb FROM games WHERE id = $1`, gid).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
@@ -164,7 +164,7 @@ func getPlayerClassifications(pid int) (total, recent map[string]int, err error)
 	return
 }
 
-func APIresearchClassification(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIresearchClassification(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	pids := params["pid"]
 	pid, err := strconv.Atoi(pids)

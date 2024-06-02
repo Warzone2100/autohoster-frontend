@@ -71,9 +71,9 @@
 						<th data-rowspan="2" data-halign="center" data-formatter="detailsBtn"></th>
 					</tr>
 					<tr>
-						<th data-class="hiddenrow" data-field="BaseLevel" data-formatter="BaseLevelSettingsFormatter"></th>
-						<th data-class="hiddenrow" data-field="Scavengers" data-formatter="ScavengersSettingsFormatter"></th>
-						<th data-class="hiddenrow" data-field="Alliances" data-formatter="AlliancesSettingsFormatter"></th>
+						<th data-class="hiddenrow" data-field="SettingBase" data-formatter="BaseLevelSettingsFormatter"></th>
+						<th data-class="hiddenrow" data-field="SettingScavs" data-formatter="ScavengersSettingsFormatter"></th>
+						<th data-class="hiddenrow" data-field="SettingAlliance" data-formatter="AlliancesSettingsFormatter"></th>
 						<th data-class="hiddenrow" data-formatter="playersFormatterA"></th>
 						<th data-class="hiddenrow" data-formatter="playersFormatterB"></th>
 					</tr>
@@ -123,13 +123,13 @@
 				<div class="col-sm">
 					<h3>Game {{.ID}}</h4>
 					<p>Map: {{.MapName}} ({{.MapHash}})</p>
-					<p>When: {{.TimeStarted}} <=> {{.TimeEnded}} GMT</p>
-					<p>Game time: {{GameTimeToStringI .GameTime}}</p>
+					<p>When: {{datefmt .TimeStarted}} <=> {{if .TimeEnded}}{{datefmt .TimeEnded}}{{else}}in-game{{end}} GMT</p>
+					<p>Game time: {{if .GameTime}}{{GameTimeToStringI .GameTime}}{{else}}in-game{{end}}</p>
 					<p>Settings:
-						<img class="icons icons-base{{.BaseLevel}}">
-						<img class="icons icons-alliance{{allianceToClassI .Alliances}}">
-						<img class="icons icons-scav{{boolto10 .Scavengers}}">
-						Game version: {{.GameVersion}}
+						<img class="icons icons-base{{.SettingBase}}">
+						<img class="icons icons-alliance{{allianceToClassI .SettingAlliance}}">
+						<img class="icons icons-scav{{.SettingScavs}}">
+						Game version: {{.Version}}
 					</p>
 					{{if .DebugTriggered}}
 					<p>
@@ -160,8 +160,8 @@
 			</div>
 			{{if $.IsSuperadmin}}
 			<p style="border-left: 3px solid red;padding-left: 1rem;">
-				Game directory: <code>{{.Gamedir}}</code><br>
-				Archive: <code>{{GameDirToWeek .Gamedir}}</code>
+				Instance ID: <code>{{.Instance}}</code><br>
+				Archive: <code>{{InstanceIDToWeek .Instance}}</code>
 			</p>
 			{{end}}
 			<div class="container"><p>
@@ -206,63 +206,56 @@
 					<tbody>
 						<tr><td>Winners</td></tr>
 						{{range $k, $player := .Players}}
-						{{if eq $player.Hash ""}}{{else}}
 						{{if eq $player.Usertype "winner"}}
-						<tr class="wz-color-background-{{$player.Colour}}">
-							<td title="Hash: {{$player.Hash}}">
+						<tr class="wz-color-background-{{$player.Color}}">
+							<td>
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
-							<td>{{$player.RatingDiff}}</td>
-							<td>{{$player.Kills}}</td>
-							<td>{{$player.DroidLost}}</td>
-							<td>{{$player.DroidBuilt}}</td>
-							<td>{{$player.StructLost}}</td>
-							<td>{{$player.StructBuilt}}</td>
-							<td>{{$player.Power}}</td>
-							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}</td>
+							<td>{{if $player.RatingDiff}}{{$player.RatingDiff}}{{end}}</td>
+							<td>{{if $player.Kills}}{{$player.Kills}}{{end}}</td>
+							<td>{{if $player.DroidLost}}{{$player.DroidLost}}{{end}}</td>
+							<td>{{if $player.DroidBuilt}}{{$player.DroidBuilt}}{{end}}</td>
+							<td>{{if $player.StructLost}}{{$player.StructLost}}{{end}}</td>
+							<td>{{if $player.StructBuilt}}{{$player.StructBuilt}}{{end}}</td>
+							<td>{{if $player.Power}}{{$player.Power}}{{end}}</td>
+							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{if and $player.PowerWon $player.PowerLost}}{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}{{end}}</td>
 							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}</td>
 						</tr>
-						{{end}}
 						{{end}}
 						{{end}}
 
 						<tr><td>Losers</td></tr>
 						{{range $k, $player := .Players}}
-						{{if eq $player.Hash ""}}{{else}}
 						{{if eq $player.Usertype "loser"}}
-						<tr class="wz-color-background-{{$player.Colour}}">
-							<td title="Hash: {{$player.Hash}}">
+						<tr class="wz-color-background-{{$player.Color}}">
+							<td>
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
-							<td>{{$player.RatingDiff}}</td>
-							<td>{{$player.Kills}}</td>
-							<td>{{$player.DroidLost}}</td>
-							<td>{{$player.DroidBuilt}}</td>
-							<td>{{$player.StructLost}}</td>
-							<td>{{$player.StructBuilt}}</td>
-							<td>{{$player.Power}}</td>
-							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}</td>
-							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}</td>
+							<td>{{if $player.RatingDiff}}{{$player.RatingDiff}}{{end}}</td>
+							<td>{{if $player.Kills}}{{$player.Kills}}{{end}}</td>
+							<td>{{if $player.DroidLost}}{{$player.DroidLost}}{{end}}</td>
+							<td>{{if $player.DroidBuilt}}{{$player.DroidBuilt}}{{end}}</td>
+							<td>{{if $player.StructLost}}{{$player.StructLost}}{{end}}</td>
+							<td>{{if $player.StructBuilt}}{{$player.StructBuilt}}{{end}}</td>
+							<td>{{if $player.Power}}{{$player.Power}}{{end}}</td>
+							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{if and $player.PowerWon $player.PowerLost}}{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}{{end}}</td>
+							<td>{{if $player.LabPerformance $player.LabPotential}}{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}{{end}}</td>
 						</tr>
-						{{end}}
 						{{end}}
 						{{end}}
 						
 						{{$fighterLabelRowPrinted := false}}
 						{{range $k, $player := .Players}}
-						{{if eq $player.Hash ""}}{{else}}
 						{{if eq $player.Usertype "fighter"}}
 						{{if $fighterLabelRowPrinted}}{{else}}<tr><td>Fighters</td></tr>{{$fighterLabelRowPrinted = true}}{{end}}
 						{{end}}
 						{{end}}
-						{{end}}
 						{{range $k, $player := .Players}}
-						{{if eq $player.Hash ""}}{{else}}
 						{{if eq $player.Usertype "fighter"}}
-						<tr class="wz-color-background-{{$player.Colour}}">
-							<td title="Hash: {{$player.Hash}}">
+						<tr class="wz-color-background-{{$player.Color}}">
+							<td>
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}} - {{$player.Team}}</td>
@@ -276,7 +269,6 @@
 							<td>---</td>
 							<td>---</td>
 						</tr>
-						{{end}}
 						{{end}}
 						{{end}}
 					</tbody>
@@ -307,8 +299,8 @@
 				</div>
 			</div>
 			<script>
-			var colours = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(32, 32, 32)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
-			var borderColours = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(80, 80, 80)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
+			var colors = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(32, 32, 32)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
+			var borderColors = ['rgb(16, 112, 16)','rgb(255, 176, 53)','rgb(144, 144, 144)','rgb(80, 80, 80)','rgb(155, 15, 15)','rgb(39, 49, 185)','rgb(208, 16, 176)','rgb(32, 208, 208)','rgb(240, 232, 16)','rgb(112, 0, 116)','rgb(224, 224, 224)','rgb(32, 32, 255)','rgb(0, 160, 0)','rgb(64, 0, 0)','rgb(16, 0, 64)','rgb(64, 96, 0)'];
 			var chart;
 			var darkColorFont = "#eee";
 			var darkColorGridX = "#333";
@@ -317,9 +309,9 @@
 			var dfields =  ['kills', 'power', 'score', 'droid', 'droidlost', 'droidbuilt', 'droidhp', 'struct', 'structbuilt', 'structlost', 'structkilled', 'summexp', 'oilrigs', 'rescount', 'kd', 'powerlost', 'powerwon', 'pwl', 'labActivity'];
 			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Units hp', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio', 'Power lost', 'Power won', 'Power won/lost' , 'Lab activity'];
 			var chartDatasetName = dfields[0];
-			var dtempl = [{{range $k, $player := .Players}}{{if eq $player.Hash ""}}{{else}}{{if ne $player.Usertype "spectator"}}
-				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: borderColours[{{$player.Colour}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colours[{{$player.Colour}}]},
-{{end}}{{end}}{{end}}			];
+			var dtempl = [{{range $k, $player := .Players}}{{if ne $player.Usertype "spectator"}}
+				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: borderColors[{{$player.Color}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colors[{{$player.Color}}]},
+{{end}}{{end}}			];
 			function PlotClassData(JsonData) {
 				const resp = JSON.parse(JsonData);
 				let ctx = document.getElementById('ClassificationGraphCanvas').getContext('2d');

@@ -34,8 +34,9 @@
 				<li class="nav-item dropdown">
 					<a class="nav-link dropdown-toggle" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
 					<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="adminDropdown">
+						<li><a class="dropdown-item {{ if eq .NavWhere "modIdentities" }} active {{ end }}" href="/moderation/identities">Identities</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "modLogs" }} active {{ end }}" href="/moderation/logs">Logs</a></li>
-						<li><a class="dropdown-item {{ if eq .NavWhere "modUsers" }} active {{ end }}" href="/moderation/users">Users</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "modAccounts" }} active {{ end }}" href="/moderation/accounts">Accounts</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "modBans" }} active {{ end }}" href="/moderation/bans">Bans</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "modMerge" }} active {{ end }}" href="/moderation/merge">Merge</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "modNews" }} active {{ end }}" href="/moderation/news">News</a></li>
@@ -67,7 +68,7 @@
 							<span class="visually-hidden">No linked profile</span>
 						</span>
 						{{end}}
-						WZ Profiles</a></li>
+						Identities</a></li>
 						<div class="dropdown-divider"></div>
 						<li><a class="dropdown-item {{ if eq .NavWhere "report" }} active {{ end }}" href="/report">Report player</a></li>
 						<div class="dropdown-divider"></div>
@@ -101,11 +102,11 @@
 		<div class="nav-link" title="Rating might be offset or incorrect until calibration is finished" style="color: white;">Rating calibration in progress</div>
 	</li>
 	{{end}}
-	{{if (and .UserAuthorized (not .User.WzProfile2))}}
-	<li class="nav-item">
+	{{/* {{if (and .UserAuthorized (not .User.WzProfile2))}}
+	<li class="nav-item"> // TODO: migrate this somehow
 		<div class="nav-link" style="color: white;">No in-game profile linked: <a href="/wzlinkcheck">Link</a></div>
 	</li>
-	{{end}}
+	{{end}} */}}
 </ul>
 {{end}}
 {{end}}

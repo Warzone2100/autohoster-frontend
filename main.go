@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -18,11 +19,9 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/maxsupermanhd/lac"
 	"github.com/natefinch/lumberjack"
-	"golang.org/x/oauth2"
 )
 
 var (
@@ -59,34 +58,7 @@ func ByteCountIEC(b uint64) string {
 	return fmt.Sprintf("%.1f%ciB", float64(b)/float64(div), "KMGTPE"[exp])
 }
 
-func getWzProfile(context context.Context, id int, table string) map[string]interface{} {
-	var name, hash string
-	var played, wins, losses, elo, elo2 int
-	var pl map[string]interface{}
-	var derr error
-	req := "SELECT name, hash, autoplayed, autowon, autolost, elo, coalesce(elo2, 1400) FROM " + table + " WHERE id = $1"
-	derr = dbpool.QueryRow(context, req, id).
-		Scan(&name, &hash, &played, &wins, &losses, &elo, &elo2)
-	if derr != nil {
-		if derr != pgx.ErrNoRows {
-			log.Println("getWzProfile: " + derr.Error())
-		}
-		return pl
-	}
-	pl = map[string]interface{}{
-		"ID":         id,
-		"Name":       name,
-		"Hash":       hash,
-		"Autoplayed": played,
-		"Autowon":    wins,
-		"Autolost":   losses,
-		"Elo":        elo,
-		"Elo2":       elo2,
-	}
-	return pl
-}
-
-func sessionAppendUser(r *http.Request, a map[string]interface{}) map[string]interface{} {
+func sessionAppendUser(r *http.Request, a map[string]any) map[string]any {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 		return nil
 	}
@@ -94,97 +66,88 @@ func sessionAppendUser(r *http.Request, a map[string]interface{}) map[string]int
 	var sessuname string
 	var sessemail string
 	var sesseconf string
-	var sessdisctoken string
-	var sessdiscrefreshtoken string
-	var sessdiscrefreshwhenepoch int
-	var sessdiscstate string
-	var sessdiscurl string
-	var sesswzprofile int
-	var sesswzprofile2 int
-	var sessdisc map[string]interface{}
-	var sessvktoken string
-	var sessvkurl string
-	var sessvkuid int
-	var sessvk map[string]interface{}
+	// var sessdisctoken string
+	// var sessdiscrefreshtoken string
+	// var sessdiscrefreshwhenepoch int
+	// var sessdiscstate string
+	// var sessdiscurl string
+	// var sesswzprofile int
+	// var sesswzprofile2 int
+	// var sessdisc map[string]any
+	// var sessvktoken string
+	// var sessvkurl string
+	// var sessvkuid int
+	// var sessvk map[string]any
 
 	sessuname = sessionManager.GetString(r.Context(), "User.Username")
-	log.Printf("User: [%s]", sessuname)
 	derr := dbpool.QueryRow(context.Background(), `
 		SELECT id, email,
-		coalesce(extract(epoch from email_confirmed), 0)::text,
-		coalesce(discord_token, ''),
-		coalesce(discord_refresh, ''),
-		coalesce(extract(epoch from discord_refresh_date), 0)::int,
-		coalesce(wzprofile, -1), coalesce(wzprofile2, -1),
-		coalesce(vk_token, ''), coalesce(vk_uid, -1)
-		FROM users WHERE username = $1`, sessuname).
-		Scan(&sessid, &sessemail, &sesseconf,
-			&sessdisctoken, &sessdiscrefreshtoken, &sessdiscrefreshwhenepoch,
-			&sesswzprofile, &sesswzprofile2,
-			&sessvktoken, &sessvkuid)
+		coalesce(extract(epoch from email_confirmed), 0)::text
+		FROM accounts WHERE username = $1`, sessuname).
+		Scan(&sessid, &sessemail, &sesseconf)
 	if derr != nil {
 		log.Println("sessionAppendUser: " + derr.Error())
 	}
-	sessdiscrefreshwhen := time.Unix(int64(sessdiscrefreshwhenepoch), 0)
-	if sessdisctoken == "" || sessdiscrefreshtoken == "" {
-		sessdiscstate = generateRandomString(32)
-		sessdiscurl = DiscordGetUrl(sessdiscstate)
-		sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
-	} else {
-		token := oauth2.Token{AccessToken: sessdisctoken, RefreshToken: sessdiscrefreshtoken, Expiry: sessdiscrefreshwhen}
-		tokenold := token
-		sessdisc = DiscordGetUInfo(&token)
-		if token.AccessToken != tokenold.AccessToken || token.RefreshToken != tokenold.RefreshToken || token.Expiry != tokenold.Expiry {
-			log.Println("Discord token refreshed")
-			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessuname)
-			if derr != nil {
-				log.Println("Database call error: " + derr.Error())
-			}
-			if tag.RowsAffected() != 1 {
-				log.Println("Database update error, rows affected " + string(tag))
-			}
-		}
-		if discid, ok := sessdisc["id"].(string); ok {
-			tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET discord_user_ids = array_sort_unique($1::text || discord_user_ids) WHERE username = $2", discid, sessuname)
-			if derr != nil {
-				log.Println("Database call error: " + derr.Error())
-			}
-			if tag.RowsAffected() != 1 {
-				log.Println("Database update error, rows affected " + string(tag))
-			}
-		}
-		if token.AccessToken == "" {
-			sessdiscstate = generateRandomString(32)
-			sessdiscurl = DiscordGetUrl(sessdiscstate)
-			sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
-		}
-		sessdisctoken = token.AccessToken
-	}
-	wzprofile := getWzProfile(r.Context(), sesswzprofile, "old_players3")
-	if wzprofile != nil {
-		wzprofile["Userid"] = sessid
-	}
-	wzprofile2 := getWzProfile(r.Context(), sesswzprofile2, "players")
-	if wzprofile2 != nil {
-		wzprofile2["Userid"] = sessid
-	}
-	a["User"] = map[string]interface{}{
-		"Username":   sessuname,
-		"Id":         sessid,
-		"Email":      sessemail,
-		"Econf":      sesseconf,
-		"WzProfile":  wzprofile,
-		"WzProfile2": wzprofile2,
-		"Discord": map[string]interface{}{
-			"Token":   sessdisctoken,
-			"AuthUrl": sessdiscurl,
-			"Data":    sessdisc,
-		},
-		"VK": map[string]interface{}{
-			"Token":   sessvktoken,
-			"AuthUrl": sessvkurl,
-			"Data":    sessvk,
-		},
+	// sessdiscrefreshwhen := time.Unix(int64(sessdiscrefreshwhenepoch), 0)
+	// if sessdisctoken == "" || sessdiscrefreshtoken == "" {
+	// 	sessdiscstate = generateRandomString(32)
+	// 	sessdiscurl = DiscordGetUrl(sessdiscstate)
+	// 	sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
+	// } else {
+	// 	token := oauth2.Token{AccessToken: sessdisctoken, RefreshToken: sessdiscrefreshtoken, Expiry: sessdiscrefreshwhen}
+	// 	tokenold := token
+	// 	sessdisc = DiscordGetUInfo(&token)
+	// 	if token.AccessToken != tokenold.AccessToken || token.RefreshToken != tokenold.RefreshToken || token.Expiry != tokenold.Expiry {
+	// 		log.Println("Discord token refreshed")
+	// 		tag, derr := dbpool.Exec(context.Background(), "UPDATE accounts SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessuname)
+	// 		if derr != nil {
+	// 			log.Println("Database call error: " + derr.Error())
+	// 		}
+	// 		if tag.RowsAffected() != 1 {
+	// 			log.Println("Database update error, rows affected " + string(tag))
+	// 		}
+	// 	}
+	// 	if discid, ok := sessdisc["id"].(string); ok {
+	// 		tag, derr := dbpool.Exec(context.Background(), "UPDATE accounts SET discord_user_ids = array_sort_unique($1::text || discord_user_ids) WHERE username = $2", discid, sessuname)
+	// 		if derr != nil {
+	// 			log.Println("Database call error: " + derr.Error())
+	// 		}
+	// 		if tag.RowsAffected() != 1 {
+	// 			log.Println("Database update error, rows affected " + string(tag))
+	// 		}
+	// 	}
+	// 	if token.AccessToken == "" {
+	// 		sessdiscstate = generateRandomString(32)
+	// 		sessdiscurl = DiscordGetUrl(sessdiscstate)
+	// 		sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
+	// 	}
+	// 	sessdisctoken = token.AccessToken
+	// }
+	// wzprofile := getWzProfile(r.Context(), sesswzprofile, "old_players3")
+	// if wzprofile != nil {
+	// 	wzprofile["Userid"] = sessid
+	// }
+	// wzprofile2 := getWzProfile(r.Context(), sesswzprofile2, "players")
+	// if wzprofile2 != nil {
+	// 	wzprofile2["Userid"] = sessid
+	// }
+	a["User"] = map[string]any{
+		"Username": sessuname,
+		"Id":       sessid,
+		"Email":    sessemail,
+		"Econf":    sesseconf,
+		// "WzProfile":  wzprofile,
+		// "WzProfile2": wzprofile2,
+		// "Discord": map[string]any{
+		// 	"Token":   sessdisctoken,
+		// 	"AuthUrl": sessdiscurl,
+		// 	"Data":    sessdisc,
+		// },
+		// "VK": map[string]any{
+		// 	"Token":   sessvktoken,
+		// 	"AuthUrl": sessvkurl,
+		// 	"Data":    sessvk,
+		// },
 	}
 	a["UserAuthorized"] = "True"
 	a["IsSuperadmin"] = isSuperadmin(r.Context(), sessionGetUsername(r))
@@ -212,14 +175,17 @@ func (w *statusRespWr) writeHeader(status int) {
 func customLogger(_ io.Writer, params handlers.LogFormatterParams) {
 	r := params.Request
 	ip := r.Header.Get("CF-Connecting-IP")
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
 	geo := r.Header.Get("CF-IPCountry")
+	if geo == "" {
+		geo = "??"
+	}
 	ua := r.Header.Get("user-agent")
 	hash := r.Header.Get("WZ-Player-Hash")
-	if hash != "" {
-		log.Println("["+geo+" "+ip+"]", r.Method, params.StatusCode, r.RequestURI, "["+ua+"]", hash)
-	} else {
-		log.Println("["+geo+" "+ip+"]", r.Method, params.StatusCode, r.RequestURI, "["+ua+"]")
-	}
+	username := sessionGetUsername(r)
+	log.Println("["+geo+" "+ip+"]", username, r.Method, params.StatusCode, r.RequestURI, "["+ua+"]", hash)
 }
 
 func shouldCache(maxage int, h http.Handler) http.HandlerFunc {
@@ -234,24 +200,26 @@ func accountMiddleware(next http.Handler) http.Handler {
 		if checkUserAuthorized(r) {
 			u := sessionGetUsername(r)
 			go func() {
-				tag, err := dbpool.Exec(context.Background(), "UPDATE users SET last_seen = now() WHERE username = $1", u)
+				tag, err := dbpool.Exec(context.Background(), "UPDATE accounts SET last_seen = now() WHERE username = $1", u)
 				if err != nil {
-					log.Println("Failed to set last seen on user [", u, "]")
+					log.Printf("Failed to set last seen on user [%q]", u)
 					return
 				}
 				if !tag.Update() || tag.RowsAffected() != 1 {
-					log.Println("Last seen update for [", u, "] is sus (", tag.String(), ")")
+					log.Printf("Last seen update for [%q] is sus (%s)", u, tag.String())
 				}
 			}()
 			var t bool
-			err := dbpool.QueryRow(r.Context(), "SELECT terminated FROM users WHERE username = $1", u).Scan(&t)
+			err := dbpool.QueryRow(r.Context(), "SELECT terminated FROM accounts WHERE username = $1", u).Scan(&t)
 			if err != nil {
-				log.Println("Error checking account terminated username [", u, "]:", err)
-				terminatedHandler(w, r)
-				return
+				if !errors.Is(err, context.Canceled) {
+					log.Printf("Error checking account terminated username [%q]: %s", u, err.Error())
+					terminatedHandler(w, r)
+					return
+				}
 			}
 			if t {
-				log.Println("Terminated user performed request, username [", u, "]")
+				log.Printf("Terminated user performed request, username [%q]", u)
 				terminatedHandler(w, r)
 				return
 			}
@@ -387,14 +355,14 @@ func main() {
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
 	router.HandleFunc("/wzrecover", wzProfileRecoveryHandlerGET)
 	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
-	router.HandleFunc("/preset-edit", presetEditorHandler)
 
-	router.HandleFunc("/moderation/users", modUsersHandler)
-	router.HandleFunc("/moderation/users/resendEmail/{id:[0-9]+}", APIcall(APIresendEmailConfirm))
+	router.HandleFunc("/moderation/accounts", modAccountsHandler)
+	router.HandleFunc("/moderation/accounts/resendEmail/{id:[0-9]+}", APIcall(APIresendEmailConfirm))
 	router.HandleFunc("/moderation/merge", modMergeHandler)
 	router.HandleFunc("/moderation/news", modNewsHandler)
 	router.HandleFunc("/moderation/logs", basicLayoutHandler("modLogs"))
 	router.HandleFunc("/moderation/bans", modBansHandler)
+	router.HandleFunc("/moderation/identities", basicLayoutHandler("modIdentities"))
 
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating/", ratingHandler)
@@ -440,9 +408,10 @@ func main() {
 	router.HandleFunc("/api/elohistory/{pid:[0-9]+}", APIcall(APIgetElodiffChartPlayer)).Methods("GET")
 	router.HandleFunc("/api/players", APIcall(APIgetLeaderboard)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/users", APIcall(APIgetUsers)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/accounts", APIcall(APIgetaccounts)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/logs", APIcall(APIgetLogs)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/bans", APIcall(APIgetBans)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/identities", APIcall(APIgetIdentities)).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/elo/calc", EloRecalcHandler)
 

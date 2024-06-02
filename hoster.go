@@ -15,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/pgxpool"
+	"github.com/warzone2100/autohoster-frontend/db"
 )
 
 var regexMaphash = regexp.MustCompile(`^[a-zA-Z0-9-]*$`)
@@ -24,29 +25,29 @@ var regexScav = regexp.MustCompile(`^[0-1]$`)
 
 func hosterHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 		return
 	}
 	if r.Method == "POST" {
 		err := r.ParseForm()
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Form parse error: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Form parse error: " + err.Error()})
 			return
 		}
 		if !regexMaphash.MatchString(r.PostFormValue("maphash")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "maphash must match `^[a-zA-Z0-9-]*$`"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "maphash must match `^[a-zA-Z0-9-]*$`"})
 			return
 		}
 		if !regexAlliances.MatchString(r.PostFormValue("alliances")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "alliances must match `^[0-2]$`"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "alliances must match `^[0-2]$`"})
 			return
 		}
 		if !regexLevelbase.MatchString(r.PostFormValue("base")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "base must match `^[0-2]$`"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "base must match `^[0-2]$`"})
 			return
 		}
 		if !regexScav.MatchString(r.PostFormValue("scav")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "scav must match `^[0-1]$`, got [" + r.PostFormValue("scav") + "]"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "scav must match `^[0-1]$`, got [" + r.PostFormValue("scav") + "]"})
 			return
 		}
 		var mapname string
@@ -60,72 +61,72 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 
 		derr := dbpool.QueryRow(context.Background(), `
 		SELECT mapname, alliances, levelbase, scav, players, 
-			(SELECT coalesce(extract(epoch from last_host_request), 0) FROM users WHERE username = $2)::text as last_host_request,
-			(SELECT allow_preset_request FROM users WHERE username = $2) as allow_preset_request,
-			coalesce((SELECT hash FROM players WHERE id = (SELECT coalesce(wzprofile2, 0) FROM users WHERE username = $2)), '') as adminhash
+			(SELECT coalesce(extract(epoch from last_host_request), 0) FROM accounts WHERE username = $2)::text as last_host_request,
+			(SELECT allow_preset_request FROM accounts WHERE username = $2) as allow_preset_request,
+			coalesce((SELECT hash FROM players WHERE id = (SELECT coalesce(wzprofile2, 0) FROM accounts WHERE username = $2)), '') as adminhash
 		FROM presets
-		WHERE maphash = $1 AND NOT ((SELECT id FROM users WHERE username = $2) = ANY(coalesce(disallowed_users, array[]::int[])))
+		WHERE maphash = $1 AND NOT ((SELECT id FROM accounts WHERE username = $2) = ANY(coalesce(disallowed_accounts, array[]::int[])))
 		LIMIT 1`, r.PostFormValue("maphash"), sessionManager.GetString(r.Context(), "User.Username")).Scan(
 			&mapname, &allowedalliances, &allowedbase, &allowedscav, &numplayers, &laststr, &allow_preset_request, &adminhash)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Selected map is not allowed."})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Selected map is not allowed."})
 				w.Header().Set("Refresh", "3; /request")
 				return
 			}
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 			return
 		}
 		if !allow_preset_request {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Sorry, you are not allowed to request games."})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Sorry, you are not allowed to request games."})
 			return
 		}
 
 		lastfloat, cerr := strconv.ParseFloat(laststr, 64)
 		if cerr != nil {
 			log.Println(cerr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database timestamp error: " + cerr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database timestamp error: " + cerr.Error()})
 			return
 		}
 		lastint := int64(lastfloat)
 		if lastint-10800+300 > time.Now().Unix() && sessionManager.GetString(r.Context(), "User.Username") != "Flex seal" {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true,
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true,
 				"msg": "Please wait before requesting another room. " + strconv.FormatInt(300-(time.Now().Unix()-(lastint-10800)), 10) + " seconds left."})
 			return
 		}
 
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE users SET last_host_request = now() WHERE username = $1", sessionManager.GetString(r.Context(), "User.Username"))
+		tag, derr := dbpool.Exec(context.Background(), "UPDATE accounts SET last_host_request = now() WHERE username = $1", sessionManager.GetString(r.Context(), "User.Username"))
 		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 			return
 		}
 		if tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 			return
 		}
 
 		_, derr = dbpool.Exec(context.Background(), "UPDATE presets SET last_requested = now() WHERE maphash = $1", r.PostFormValue("maphash"))
 		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 			return
 		}
 		// if tag.RowsAffected() != 1 {
-		// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+		// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 		// 	return
 		// }
 		gamever := r.PostFormValue("gamever")
 		k, versraw := RequestVersions()
-		vers := map[string]interface{}{}
+		vers := map[string]any{}
 		if k {
 			if err := json.Unmarshal([]byte(versraw), &vers); err != nil {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json parse error: " + err.Error()})
 				return
 			}
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": versraw})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": versraw})
 		}
 		vershave := false
-		for _, nextver := range vers["versions"].([]interface{}) {
+		for _, nextver := range vers["versions"].([]any) {
 			nextvers := nextver.(string)
 			if nextvers == gamever {
 				vershave = true
@@ -133,7 +134,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !vershave {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Game version is not present"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Game version is not present"})
 			return
 		}
 		roomname := r.PostFormValue("roomname")
@@ -153,7 +154,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		alliancen, err := strconv.Atoi(r.PostFormValue("alliances"))
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Malformed alliances field: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Malformed alliances field: " + err.Error()})
 			return
 		}
 		if alliancen > 0 {
@@ -161,7 +162,7 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		basen, err := strconv.Atoi(r.PostFormValue("base"))
 		if err != nil {
-			basicLayoutLookupRespond("error400", w, r, map[string]interface{}{})
+			basicLayoutLookupRespond("error400", w, r, map[string]any{})
 			return
 		}
 		s, reqres := RequestHost(r.PostFormValue("maphash"),
@@ -169,45 +170,45 @@ func hosterHandler(w http.ResponseWriter, r *http.Request) {
 			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever, onlyregistered)
 		log.Printf("Host request: [%s] [%s]", sessionManager.Get(r.Context(), "User.Username"), mapname)
 		if s {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": true, "msg": reqres})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msggreen": true, "msg": reqres})
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Request error: " + reqres})
 		}
 		w.Header().Set("Refresh", "10; /lobby")
 	} else {
 		s, reqres := RequestStatus()
 		if s {
-			basicLayoutLookupRespond("multihoster", w, r, map[string]interface{}{
+			basicLayoutLookupRespond("multihoster", w, r, map[string]any{
 				"MultihosterStatus": template.HTML(reqres),
 			})
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Request error: " + reqres})
 		}
 	}
 }
 
 func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 		return
 	}
 	blockedRegions := strings.Split(cfg.GetDString("", "requireDiscordLink", "regions"), " ")
 	if stringOneOf(r.Header.Get("CF-IPCountry"), blockedRegions...) {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Please contact administrator to link your profile."})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Please contact administrator to link your profile."})
 		return
 	}
 	var allow_profile_merge bool
 	var profilenum int
 	var confirmcode string
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce(wzconfirmcode, ''), allow_profile_merge FROM users WHERE username = $1`,
+	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce(wzconfirmcode, ''), allow_profile_merge FROM accounts WHERE username = $1`,
 		sessionManager.GetString(r.Context(), "User.Username")).Scan(&profilenum, &confirmcode, &allow_profile_merge)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Heeee?"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Heeee?"})
 			w.Header().Set("Refresh", "1; /logout")
 			return
 		}
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 		return
 	}
 	if confirmcode != "" && (allow_profile_merge || profilenum == -1) {
@@ -216,7 +217,7 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 			"/hostmsg "+confirmcode).Scan(&loghash, &logip, &logname)
 		if derr != nil && derr != pgx.ErrNoRows {
 			log.Println(derr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 			return
 		}
 		if derr != pgx.ErrNoRows {
@@ -231,39 +232,39 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 				logname, loghash, logip).Scan(&newwzid)
 			if derr != nil {
 				log.Println(derr.Error())
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 				return
 			}
 			if profilenum == -1 {
-				tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
+				tag, derr := dbpool.Exec(context.Background(), `UPDATE accounts SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
 					newwzid, sessionManager.GetString(r.Context(), "User.Username"))
 				if derr != nil {
 					log.Println(derr.Error())
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 				}
 				if tag.RowsAffected() != 1 {
 					log.Println(derr.Error())
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 					return
 				}
-				basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]interface{}{"LinkStatus": "done", "PlayerID": newwzid, "PlayerHash": loghash, "PlayerName": logname})
+				basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]any{"LinkStatus": "done", "PlayerID": newwzid, "PlayerHash": loghash, "PlayerName": logname})
 				return
 			} else {
 				if allow_profile_merge {
 					if newwzid == profilenum {
 						newmsg := "confirm-" + generateRandomString(18)
-						tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+						tag, derr := dbpool.Exec(context.Background(), `UPDATE accounts SET wzconfirmcode = $1 WHERE username = $2`,
 							newmsg, sessionManager.GetString(r.Context(), "User.Username"))
 						if derr != nil {
 							log.Println(derr.Error())
-							basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+							basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 							return
 						}
 						if tag.RowsAffected() != 1 {
-							basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+							basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 							return
 						}
-						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 							"msg": template.HTML("You tried to merge same profile into existing one. That does nothing. New code: <code>/hostmsg " + newmsg + "</code>"),
 						})
 						return
@@ -272,26 +273,26 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 						newwzid, profilenum)
 					if derr != nil {
 						log.Println(derr.Error())
-						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 						return
 					}
-					tag2, derr2 := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '' WHERE username = $1`,
+					tag2, derr2 := dbpool.Exec(context.Background(), `UPDATE accounts SET wzconfirmcode = '' WHERE username = $1`,
 						sessionManager.GetString(r.Context(), "User.Username"))
 					if derr2 != nil {
 						log.Println(derr2.Error())
-						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr2.Error()})
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr2.Error()})
 						return
 					}
 					if tag2.RowsAffected() != 1 {
-						basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+						basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 						return
 					}
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 						"msg": template.HTML("We successfully merged new profile " + strconv.Itoa(newwzid) + " (" + logname + ") into " + strconv.Itoa(profilenum) + "<br>Games affected: " + strconv.Itoa(int(tag.RowsAffected()))),
 					})
 					return
 				} else {
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 						"msg": "You tried to merge new profile into existing one but it is not allowed.",
 					})
 					return
@@ -302,43 +303,43 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if profilenum == -1 {
 		if confirmcode == "" {
 			newmsg := "confirm-" + generateRandomString(18)
-			tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+			tag, derr := dbpool.Exec(context.Background(), `UPDATE accounts SET wzconfirmcode = $1 WHERE username = $2`,
 				newmsg, sessionManager.GetString(r.Context(), "User.Username"))
 			if derr != nil {
 				log.Println(derr.Error())
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 				return
 			}
 			if tag.RowsAffected() != 1 {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 				return
 			}
-			basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]interface{}{"LinkStatus": "code", "WzConfirmCode": "/hostmsg " + newmsg})
+			basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]any{"LinkStatus": "code", "WzConfirmCode": "/hostmsg " + newmsg})
 		} else {
-			basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]interface{}{"LinkStatus": "code", "WzConfirmCode": "/hostmsg " + confirmcode})
+			basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]any{"LinkStatus": "code", "WzConfirmCode": "/hostmsg " + confirmcode})
 		}
 	} else {
 		if allow_profile_merge {
 			if confirmcode == "" {
 				newmsg := "confirm-" + generateRandomString(18)
 				confirmcode = newmsg
-				tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+				tag, derr := dbpool.Exec(context.Background(), `UPDATE accounts SET wzconfirmcode = $1 WHERE username = $2`,
 					newmsg, sessionManager.GetString(r.Context(), "User.Username"))
 				if derr != nil {
 					log.Println(derr.Error())
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 					return
 				}
 				if tag.RowsAffected() != 1 {
-					basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 					return
 				}
 			}
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 				"msg": template.HTML("You are linked to profile " + strconv.Itoa(profilenum) + "<br>If you want to merge profiles into existing one your link code is: <code>/hostmsg " + confirmcode + "</code><br>Send it to any Autohoster room with profile you want to link selected.<br>Refresh this page after you sent the message."),
 			})
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 				"msg": template.HTML("You are already linked to an in-game profile, if you lost it please use recovery procedure."),
 			})
 		}
@@ -346,44 +347,38 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
-	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
-		return
+	if !checkUserAuthorized(r) {
+		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 	}
-	var allow_profile_merge bool
-	var profilenum int
-	var confirmcode string
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce(wzconfirmcode, ''), allow_profile_merge FROM users WHERE username = $1`,
-		sessionManager.GetString(r.Context(), "User.Username")).Scan(&profilenum, &confirmcode, &allow_profile_merge)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Heeee?"})
-			w.Header().Set("Refresh", "1; /logout")
+	i, err := db.GetUserIdentities(r.Context(), dbpool, sessionGetUserID(r))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Heeee?"})
 			return
 		}
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + err.Error()})
 		return
 	}
-	basicLayoutLookupRespond("wzlink", w, r, map[string]interface{}{
-		"AllowProfileMerge": allow_profile_merge,
+	basicLayoutLookupRespond("wzlink", w, r, map[string]any{
+		"Identities": i,
 	})
 
 	// if confirmcode == "" && profilenum != -1 {
 	// } else if confirmcode == "" && profilenum == -1 {
 	// 	newmsg := "confirm-" + generateRandomString(18)
-	// 	tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = $1 WHERE username = $2`,
+	// 	tag, derr := dbpool.Exec(context.Background(), `UPDATE accounts SET wzconfirmcode = $1 WHERE username = $2`,
 	// 		newmsg, sessionManager.GetString(r.Context(), "User.Username"))
 	// 	if derr != nil {
 	// 		log.Println(derr.Error())
-	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 	// 		return
 	// 	}
 	// 	if tag.RowsAffected() != 1 {
 	// 		log.Println(derr.Error())
-	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 	// 		return
 	// 	}
-	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 	// 		"msg": "You are not linked to any profile. We generated a link key for you. Send \"" + newmsg + "\" to any autohoster room to link selected profile.",
 	// 	})
 	// } else if confirmcode != "" && profilenum == -1 {
@@ -394,11 +389,11 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 	// 		confirmcode).Scan(&loghash, &logip, &logname)
 	// 	if derr != nil && derr != pgx.ErrNoRows {
 	// 		log.Println(derr.Error())
-	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 	// 		return
 	// 	}
 	// 	if derr == pgx.ErrNoRows {
-	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 	// 			"msg": "You are not linked to any profile. Send \"" + confirmcode + "\" to any autohoster room to link selected profile.",
 	// 		})
 	// 		return
@@ -414,27 +409,27 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 	// 		logname, loghash, logip).Scan(&newwzid)
 	// 	if derr != nil {
 	// 		log.Println(derr.Error())
-	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 	// 		return
 	// 	}
-	// 	tag, derr := dbpool.Exec(context.Background(), `UPDATE users SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
+	// 	tag, derr := dbpool.Exec(context.Background(), `UPDATE accounts SET wzconfirmcode = '', wzprofile2 = $1 WHERE username = $2`,
 	// 		newwzid, sessionManager.GetString(r.Context(), "User.Username"))
 	// 	if derr != nil {
 	// 		log.Println(derr.Error())
-	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database error: " + derr.Error()})
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
 	// 		return
 	// 	}
 	// 	if tag.RowsAffected() != 1 {
 	// 		log.Println(derr.Error())
-	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
+	// 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
 	// 		return
 	// 	}
-	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 	// 		"msg": "We successfully linked your account to warzone profile (" + strconv.Itoa(newwzid) + ") " + logname + " [" + loghash + "]",
 	// 	})
 	// 	return
 	// } else {
-	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{
+	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{
 	// 		"msg": "id " + strconv.Itoa(profilenum) + " code [" + confirmcode + "]",
 	// 	})
 	// 	return
@@ -443,31 +438,31 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 
 func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 		return
 	}
 	s, mhstatus := RequestStatus()
 	if !s {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Multihoster unavaliable"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Multihoster unavaliable"})
 		return
 	}
 	var allow_any bool
 	var allow_presets bool
 	var norequest_reason string
 	derr := dbpool.QueryRow(context.Background(),
-		`SELECT allow_host_request, allow_preset_request, norequest_reason FROM users WHERE username = $1`,
+		`SELECT allow_host_request, allow_preset_request, norequest_reason FROM accounts WHERE username = $1`,
 		sessionManager.GetString(r.Context(), "User.Username")).Scan(&allow_any, &allow_presets, &norequest_reason)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Unauthorized?!"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Unauthorized?!"})
 			sessionManager.Destroy(r.Context())
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
 		}
 		return
 	}
 	if !(allow_any || allow_presets) {
-		basicLayoutLookupRespond("errornorequest", w, r, map[string]interface{}{"ForbiddenReason": norequest_reason})
+		basicLayoutLookupRespond("errornorequest", w, r, map[string]any{"ForbiddenReason": norequest_reason})
 		return
 	}
 	rows, derr := dbpool.Query(context.Background(), `
@@ -480,39 +475,39 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 		alliances,
 		scav,
 		last_requested,
-		disallowed_users
+		disallowed_accounts
 	FROM presets
-	WHERE NOT ((SELECT id FROM users WHERE username = $1) = ANY(coalesce(disallowed_users, array[]::int[])))
+	WHERE NOT ((SELECT id FROM accounts WHERE username = $1) = ANY(coalesce(disallowed_accounts, array[]::int[])))
 	ORDER BY last_requested DESC
 	`, sessionManager.GetString(r.Context(), "User.Username"))
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "No maps avaliable"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "No maps avaliable"})
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + derr.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
 		}
 		return
 	}
 	defer rows.Close()
 	type RequestPrototype struct {
-		NumID          int
-		ID             int
-		MapHash        string
-		MapName        string
-		Playercount    int
-		LevelBase      int
-		LevelAlliances int
-		LevelScav      int
-		LastRequested  time.Time
-		ForbiddenUsers []int
+		NumID             int
+		ID                int
+		MapHash           string
+		MapName           string
+		Playercount       int
+		LevelBase         int
+		LevelAlliances    int
+		LevelScav         int
+		LastRequested     time.Time
+		Forbiddenaccounts []int
 	}
 	var pres []RequestPrototype
 	IID := 0
 	for rows.Next() {
 		var n RequestPrototype
-		err := rows.Scan(&n.ID, &n.MapHash, &n.MapName, &n.Playercount, &n.LevelBase, &n.LevelAlliances, &n.LevelScav, &n.LastRequested, &n.ForbiddenUsers)
+		err := rows.Scan(&n.ID, &n.MapHash, &n.MapName, &n.Playercount, &n.LevelBase, &n.LevelAlliances, &n.LevelScav, &n.LastRequested, &n.Forbiddenaccounts)
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database scan error: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database scan error: " + err.Error()})
 			return
 		}
 		n.NumID = IID
@@ -520,16 +515,16 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 		IID++
 	}
 	k, versraw := RequestVersions()
-	vers := map[string]interface{}{}
+	vers := map[string]any{}
 	if k {
 		if err := json.Unmarshal([]byte(versraw), &vers); err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Json parse error: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json parse error: " + err.Error()})
 			return
 		}
 	} else {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": versraw})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": versraw})
 	}
-	basicLayoutLookupRespond("multihoster-templates", w, r, map[string]interface{}{
+	basicLayoutLookupRespond("multihoster-templates", w, r, map[string]any{
 		"MultihosterStatus": template.HTML(mhstatus),
 		"Presets":           pres,
 		"Versions":          vers,
@@ -540,20 +535,20 @@ func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
 //lint:ignore U1000 for dedicated rooms page
 func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 		return
 	}
 	s, reqres := RequestHosters()
-	var rooms []interface{}
+	var rooms []any
 	err := json.Unmarshal([]byte(reqres), &rooms)
 	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "JSON error: " + err.Error()})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "JSON error: " + err.Error()})
 		return
 	}
 	if s {
-		basicLayoutLookupRespond("rooms", w, r, map[string]interface{}{"Rooms": rooms})
+		basicLayoutLookupRespond("rooms", w, r, map[string]any{"Rooms": rooms})
 	} else {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Request error: " + reqres})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Request error: " + reqres})
 	}
 }
 
@@ -630,7 +625,7 @@ func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, 
 
 func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 	if !checkUserAuthorized(r) {
-		basicLayoutLookupRespond("noauth", w, r, map[string]interface{}{})
+		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 		return
 	}
 	var profileID int
@@ -640,10 +635,10 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 	username := sessionGetUsername(r)
 	log.Println("Recovery")
 	log.Println("Username ", username)
-	err := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce((SELECT players.hash FROM players WHERE players.id = wzprofile2), ''), coalesce(profilerecoverycode, ''), lastprofilerecovery FROM users WHERE username = $1`,
+	err := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce((SELECT players.hash FROM players WHERE players.id = wzprofile2), ''), coalesce(profilerecoverycode, ''), lastprofilerecovery FROM accounts WHERE username = $1`,
 		username).Scan(&profileID, &oldHash, &recoveryCode, &lastRecovery)
 	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Initial ", err)
 		return
 	}
@@ -658,18 +653,18 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 	if recoveryCode == "" {
 		recoveryCode = "recover-" + generateRandomString(20)
 		log.Println("New code ", recoveryCode)
-		tag, err := dbpool.Exec(context.Background(), `UPDATE users SET profilerecoverycode = $1 WHERE username = $2`, recoveryCode, username)
+		tag, err := dbpool.Exec(context.Background(), `UPDATE accounts SET profilerecoverycode = $1 WHERE username = $2`, recoveryCode, username)
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 			log.Println("Update recovery code ", err)
 			return
 		}
 		if !tag.Update() || tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 			log.Println("Update recovery code ", tag)
 			return
 		}
-		basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
+		basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
 		return
 	}
 	var newHash string
@@ -677,10 +672,10 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			log.Println("Hash not found")
-			basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
+			basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
 			return
 		}
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Hash find ", err)
 		return
 	}
@@ -688,7 +683,7 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 	var collisionCheck int
 	err = dbpool.QueryRow(context.Background(), `SELECT COUNT(*) FROM players WHERE hash = $1`, newHash).Scan(&collisionCheck)
 	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Collision check ", err)
 		return
 	}
@@ -696,29 +691,29 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 	if collisionCheck != 0 {
 		recoveryCode = "recover-" + generateRandomString(20)
 		log.Println("New code ", recoveryCode)
-		tag, err := dbpool.Exec(context.Background(), `UPDATE users SET profilerecoverycode = $1 WHERE username = $2`, recoveryCode, username)
+		tag, err := dbpool.Exec(context.Background(), `UPDATE accounts SET profilerecoverycode = $1 WHERE username = $2`, recoveryCode, username)
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 			log.Println("Update recovery code ", err)
 			return
 		}
 		if !tag.Update() || tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 			log.Println("Update recovery code ", tag)
 			return
 		}
-		basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "collision", "WzConfirmCode": "/hostmsg " + recoveryCode})
+		basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "collision", "WzConfirmCode": "/hostmsg " + recoveryCode})
 		return
 	}
 	tx, err := dbpool.Begin(context.Background())
 	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Begin ", err)
 		return
 	}
 	tag, err := tx.Exec(context.Background(), `UPDATE players SET hash = $1 WHERE hash = $2;`, newHash, oldHash)
 	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Update last recovery date", err)
 		err = tx.Rollback(context.Background())
 		if err != nil {
@@ -727,7 +722,7 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !tag.Update() || tag.RowsAffected() != 1 {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Update last recovery date", err)
 		err = tx.Rollback(context.Background())
 		if err != nil {
@@ -735,9 +730,9 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	tag, err = tx.Exec(context.Background(), `UPDATE users SET lastprofilerecovery = now(), profilerecoverycode = '' WHERE username = $1;`, username)
+	tag, err = tx.Exec(context.Background(), `UPDATE accounts SET lastprofilerecovery = now(), profilerecoverycode = '' WHERE username = $1;`, username)
 	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Update last recovery date", err)
 		err = tx.Rollback(context.Background())
 		if err != nil {
@@ -746,7 +741,7 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !tag.Update() || tag.RowsAffected() != 1 {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Update last recovery date", err)
 		err = tx.Rollback(context.Background())
 		if err != nil {
@@ -756,9 +751,9 @@ func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Error occured, please contact administratiors"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
 		log.Println("Commit ", err)
 		return
 	}
-	basicLayoutLookupRespond("wzrecovery", w, r, map[string]interface{}{"RecoveryStatus": "done", "OldHash": oldHash, "NewHash": newHash})
+	basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "done", "OldHash": oldHash, "NewHash": newHash})
 }

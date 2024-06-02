@@ -36,9 +36,9 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		err = dbpool.QueryRow(context.Background(), `SELECT id FROM players WHERE hash = $1`, pids).Scan(&pid)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Player not found"})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Player not found"})
 			} else {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Error occured"})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Error occured"})
 			}
 			return
 		}
@@ -46,7 +46,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		pid, err = strconv.Atoi(pids)
 		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Badly formatted player id"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Badly formatted player id"})
 			return
 		}
 	}
@@ -67,22 +67,22 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	ResearchClassificationRecent := map[string]int{}
 	AltCount := 0
 	err = dbpool.QueryRow(r.Context(), `
-		SELECT name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1)
+		SELECT name, hash, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM accounts WHERE players.id = accounts.wzprofile2), -1)
 		FROM players WHERE id = $1`, pid).Scan(&pp.Name, &pp.Hash, &pp.Elo, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Player not found"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Player not found"})
 		} else if r.Context().Err() == context.Canceled {
 			return
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + err.Error()})
 		}
 		return
 	}
 	err = RequestMultiple(func() error {
 		var o, n, t string
 		_, err := dbpool.QueryFunc(r.Context(), `select oldname, newname, "time"::text from plrenames where id = $1 order by "time" desc;`,
-			[]interface{}{pid}, []interface{}{&o, &n, &t}, func(_ pgx.QueryFuncRow) error {
+			[]any{pid}, []any{&o, &n, &t}, func(_ pgx.QueryFuncRow) error {
 				renames = append(renames, renameEntry{Oldname: o, Newname: n, Time: t})
 				return nil
 			})
@@ -123,7 +123,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 				finished = true
 			group by pc, ut
 			order by pc, ut`,
-			[]interface{}{pid}, []interface{}{&k, &ut, &c},
+			[]any{pid}, []any{&k, &ut, &c},
 			func(_ pgx.QueryFuncRow) error {
 				switch ut {
 				case "loser":
@@ -146,7 +146,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 				finished = true
 			group by baselevel, ut
 			order by baselevel, ut`,
-			[]interface{}{pid}, []interface{}{&k, &ut, &c},
+			[]any{pid}, []any{&k, &ut, &c},
 			func(_ pgx.QueryFuncRow) error {
 				switch ut {
 				case "loser":
@@ -168,7 +168,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 				finished = true and
 				array_position(players, -1)-1 > 2
 			group by alliancetype`,
-			[]interface{}{pid}, []interface{}{&k, &c},
+			[]any{pid}, []any{&k, &c},
 			func(_ pgx.QueryFuncRow) error {
 				if k == 1 {
 					return nil
@@ -187,7 +187,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 				calculated = true and
 				finished = true
 			group by scavs`,
-			[]interface{}{pid}, []interface{}{&k, &c},
+			[]any{pid}, []any{&k, &c},
 			func(_ pgx.QueryFuncRow) error {
 				ChartGamesByScav.appendToColumn(fmt.Sprintf(`<img class="icons icons-scav%d">`, k), "", chartSCcolorNeutral, c)
 				return nil
@@ -206,15 +206,15 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Player not found"})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Player not found"})
 		} else if r.Context().Err() == context.Canceled {
 			return
 		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": true, "msg": "Database query error: " + err.Error()})
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + err.Error()})
 		}
 		return
 	}
-	basicLayoutLookupRespond("player", w, r, map[string]interface{}{
+	basicLayoutLookupRespond("player", w, r, map[string]any{
 		"Player":                       pp,
 		"Renames":                      renames,
 		"ChartGamesByPlayercount":      ChartGamesByPlayercount.calcTotals(),
@@ -292,7 +292,7 @@ func getRatingHistory(pid int) (map[string]eloHist, error) {
 	return h, nil
 }
 
-func APIgetElodiffChartPlayer(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetElodiffChartPlayer(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	pid, err := strconv.Atoi(params["pid"])
 	if err != nil {

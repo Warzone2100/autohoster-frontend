@@ -226,7 +226,7 @@ func main() {
 // 	if err != nil {
 // 		log.Fatal(err)
 // 	}
-// 	j, err := json.Marshal(map[string]interface{}{
+// 	j, err := json.Marshal(map[string]any{
 // 		"content": "Logs of running cleanup at " + time.Now().String(),
 // 	})
 // 	if err != nil {

@@ -301,7 +301,7 @@ var presets = [
 		<tbody>
 			<tr>
 				<td class="rank-star">
-					{{if gt .Autoplayed 4}}
+					{{if gt .Played 4}}
 						{{if gt .Elo2 1800}}
 						<object class="rank rank-starGold"></object>
 						{{else if gt .Elo2 1550}}
@@ -313,52 +313,48 @@ var presets = [
 				</td>
 				<!-- medal -->
 				<td rowspan="3" class="rank-medal">
-					{{if le .Autoplayed 4}}
+					{{if le .Played 4}}
 					<object class="rank rank-pacifier"></object>
-					{{else if eq .Autolost 0}}
-					{{else if and (ge .Autowon 24) (gt (divtf64 .Autowon .Autolost) 6.0)}}
+					{{else if eq .Lost 0}}
+					{{else if and (ge .Won 24) (gt (divtf64 .Won .Lost) 6.0)}}
 					<object class="rank rank-medalGold"></object>
-					{{else if and (ge .Autowon 12) (gt (divtf64 .Autowon .Autolost) 4.0)}}
+					{{else if and (ge .Won 12) (gt (divtf64 .Won .Lost) 4.0)}}
 					<object class="rank rank-medalDouble"></object>
-					{{else if and (ge .Autowon 6) (gt (divtf64 .Autowon .Autolost) 3.0)}}
+					{{else if and (ge .Won 6) (gt (divtf64 .Won .Lost) 3.0)}}
 					<object class="rank rank-medalSilver"></object>
 					{{end}}
 				</td>
 				<!-- name -->
 				<td rowspan="3" class="rank-link">
-					{{if avail "Userid" .}}
-					{{if gt .Userid 0}}
-					<a class="text-nowrap rank-name-checkmark" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
+					{{if gt .Account 0}}
+					<a class="text-nowrap rank-name-checkmark" href="/players/{{.Account}}">{{.Name}}</a><br>
 					{{else}}
-					<a class="text-nowrap" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
+					<a class="text-nowrap" href="/identity/{{.Identity}}">{{.Name}}</a><br>
 					{{end}}
-					{{else}}
-					<a class="text-nowrap" href="/players/{{.ID}}" title="Hash: {{.Hash}}">{{.Name}}</a><br>
-					{{end}}
-					{{if gt .Userid 0}}{{.Elo2}}{{else}}<small class="text-muted text-nowrap">not registered</small>{{end}}
+					{{if gt .Account 0}}{{.Elo}}{{else}}<small class="text-muted text-nowrap">not registered</small>{{end}}
 					{{/* {{if avail "EloDiff" .}}{{if not (eq .EloDiff 0)}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}{{end}} */}}
 					{{if avail "RatingDiff" .}}{{if not (eq .RatingDiff 0)}}({{if ge .RatingDiff 1}}+{{end}}{{.RatingDiff}}){{end}}{{end}}
 				</td>
 			</tr><tr>
 				<!-- middle star -->
 				<td class="rank-star">
-					{{if gt .Autoplayed 60}}
+					{{if gt .Played 60}}
 					<object class="rank rank-starGold"></object>
-					{{else if gt .Autoplayed 30}}
+					{{else if gt .Played 30}}
 					<object class="rank rank-starSilver"></object>
-					{{else if gt .Autoplayed 10}}
+					{{else if gt .Played 10}}
 					<object class="rank rank-starBronze"></object>
 					{{end}}
 				</td>
 			</tr><tr>
 				<!-- bottom star -->
 				<td class="rank-star">
-					{{if gt .Autoplayed 4}}
-						{{if gt .Autowon 60}}
+					{{if gt .Played 4}}
+						{{if gt .Won 60}}
 						<object class="rank rank-starGold"></object>
-						{{else if gt .Autowon 30}}
+						{{else if gt .Won 30}}
 						<object class="rank rank-starSilver"></object>
-						{{else if gt .Autowon 10}}
+						{{else if gt .Won 10}}
 						<object class="rank rank-starBronze"></object>
 						{{end}}
 					{{end}}

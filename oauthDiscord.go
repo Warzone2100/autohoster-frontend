@@ -46,21 +46,21 @@ func DiscordGetUrl(state string) string {
 	return discordOauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
 }
 
-func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
-	res, err := discordOauthConfig.Client(context.Background(), token).Get("https://discord.com/api/users/@me")
+func DiscordGetUInfo(token *oauth2.Token) map[string]any {
+	res, err := discordOauthConfig.Client(context.Background(), token).Get("https://discord.com/api/accounts/@me")
 	if err != nil {
 		log.Printf("Unauthorized, resetting discord (%s)", spew.Sprintln(err))
 		token.AccessToken = ""
 		token.RefreshToken = ""
 		token.Expiry = time.Now()
-		return map[string]interface{}{"DiscordError": "Error"}
+		return map[string]any{"DiscordError": "Error"}
 	}
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return map[string]interface{}{"DiscordError": err.Error()}
+		return map[string]any{"DiscordError": err.Error()}
 	}
-	jsonMap := make(map[string]interface{})
+	jsonMap := make(map[string]any)
 	err = json.Unmarshal([]byte(body), &jsonMap)
 	if err != nil {
 		log.Println(err.Error())
@@ -71,41 +71,41 @@ func DiscordGetUInfo(token *oauth2.Token) map[string]interface{} {
 func DiscordCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "UserAuthorized") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
 		log.Println("Not authorized")
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Not authorized"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": 1, "msg": "Not authorized"})
 		return
 	}
 	if !sessionManager.Exists(r.Context(), "User.Username") {
 		log.Println("Not authorized (no username)")
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Not authorized (no username)"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": 1, "msg": "Not authorized (no username)"})
 		return
 	}
 	code := r.FormValue("code")
 	if sessionManager.Get(r.Context(), "User.Discord.State") != r.FormValue("state") {
 		log.Println("Code missmatch")
 		st := sessionManager.GetString(r.Context(), "User.Discord.State")
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "State missmatch " + st})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": 1, "msg": "State missmatch " + st})
 		return
 	}
 	token, err := discordOauthConfig.Exchange(r.Context(), code)
 	if err != nil {
 		log.Printf("Code exchange failed with error %s\n", err.Error())
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Code exchange failed with error: " + err.Error()})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": 1, "msg": "Code exchange failed with error: " + err.Error()})
 		return
 	}
 	if !token.Valid() {
 		log.Println("Retreived invalid token")
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Retreived invalid token"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": 1, "msg": "Retreived invalid token"})
 		return
 	}
-	tag, derr := dbpool.Exec(r.Context(), "UPDATE users SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
+	tag, derr := dbpool.Exec(r.Context(), "UPDATE accounts SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessionManager.Get(r.Context(), "User.Username"))
 	if derr != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database call error: " + derr.Error()})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": 1, "msg": "Database call error: " + derr.Error()})
 		return
 	}
 	if tag.RowsAffected() != 1 {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msgred": 1, "msg": "Database insert error, rows affected " + string(tag)})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": 1, "msg": "Database insert error, rows affected " + string(tag)})
 		return
 	}
 	log.Println("Got token")
-	basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msggreen": 1, "msg": "Discord linked."})
+	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msggreen": 1, "msg": "Discord linked."})
 }

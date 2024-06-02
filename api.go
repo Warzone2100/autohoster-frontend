@@ -8,13 +8,16 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"slices"
 	"strconv"
 
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
+	"github.com/warzone2100/autohoster-frontend/db"
 )
 
-func APIcall(c func(http.ResponseWriter, *http.Request) (int, interface{})) func(http.ResponseWriter, *http.Request) {
+func APIcall(c func(http.ResponseWriter, *http.Request) (int, any)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code, content := c(w, r)
 		if code <= 0 {
@@ -29,7 +32,7 @@ func APIcall(c func(http.ResponseWriter, *http.Request) (int, interface{})) func
 				}
 			} else if econtent, ok := content.(error); ok {
 				log.Printf("Error inside handler [%v]: %v", r.URL.Path, econtent.Error())
-				response, err = json.Marshal(map[string]interface{}{"error": econtent.Error()})
+				response, err = json.Marshal(map[string]any{"error": econtent.Error()})
 				if err != nil {
 					code = 500
 					response = []byte(`{"error": "Failed to marshal json response"}`)
@@ -67,11 +70,11 @@ func APItryReachMultihoster(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j string
-	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(json_agg(frames)::text, 'null') FROM frames WHERE game = $1;`, gid).Scan(&j)
+	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(graphs, 'null') FROM games WHERE id = $1;`, gid).Scan(&j)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
@@ -85,11 +88,11 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, interface{}) 
 }
 
 func getDatesGraphData(ctx context.Context, interval string) ([]map[string]int, error) {
-	rows, derr := dbpool.Query(ctx, `SELECT date_trunc($1, g.timestarted)::text || '+00', count(g.timestarted)
+	rows, derr := dbpool.Query(ctx, `SELECT date_trunc($1, g.time_started)::text || '+00', count(g.time_started)
 	FROM games as g
-	WHERE g.timestarted > now() - '1 year 7 days'::interval
-	GROUP BY date_trunc($1, g.timestarted)
-	ORDER BY date_trunc($1, g.timestarted)`, interval)
+	WHERE g.time_started > now() - '1 year 7 days'::interval
+	GROUP BY date_trunc($1, g.time_started)
+	ORDER BY date_trunc($1, g.time_started)`, interval)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return []map[string]int{}, nil
@@ -110,7 +113,7 @@ func getDatesGraphData(ctx context.Context, interval string) ([]map[string]int, 
 	return ret, nil
 }
 
-func APIgetDatesGraphData(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetDatesGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	ret, err := getDatesGraphData(r.Context(), mux.Vars(r)["interval"])
 	if err != nil {
 		return 500, err
@@ -118,7 +121,7 @@ func APIgetDatesGraphData(_ http.ResponseWriter, r *http.Request) (int, interfac
 	return 200, ret
 }
 
-func APIgetDayAverageByHour(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetDayAverageByHour(_ http.ResponseWriter, r *http.Request) (int, any) {
 	rows, derr := dbpool.Query(r.Context(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
 	if derr != nil {
 		return 500, derr
@@ -136,7 +139,7 @@ func APIgetDayAverageByHour(_ http.ResponseWriter, r *http.Request) (int, interf
 	return 200, re
 }
 
-func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, any) {
 	rows, derr := dbpool.Query(r.Context(),
 		`SELECT d::text, count(r.p)
 		FROM (SELECT distinct unnest(gg.players) as p, date_trunc('day', gg.timestarted) AS d FROM games AS gg) as r
@@ -163,7 +166,7 @@ func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, int
 	return 200, re
 }
 
-func APIgetMapNameCount(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetMapNameCount(_ http.ResponseWriter, r *http.Request) (int, any) {
 	rows, derr := dbpool.Query(r.Context(), `select mapname, count(*) as c from games group by mapname order by c desc limit 30`)
 	if derr != nil {
 		return 500, derr
@@ -182,7 +185,7 @@ func APIgetMapNameCount(_ http.ResponseWriter, r *http.Request) (int, interface{
 	return 200, re
 }
 
-func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	gids := params["gid"]
 	gid, err := strconv.Atoi(gids)
@@ -203,7 +206,7 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, interface{})
 	return 204, nil
 }
 
-func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	reslog := "0"
@@ -225,7 +228,7 @@ func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, interfac
 	return 200, CountClassification(resl)
 }
 
-func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	phash := params["hash"]
 	var resp []byte
@@ -235,8 +238,8 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			'id', players.id,
 			'name', players.name,
 			'spam', COALESCE((SELECT COUNT(*) FROM games WHERE players.id = ANY(games.players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true), 0),
-			'ispbypass', COALESCE(users.bypass_ispban, false),
-			'userid', COALESCE(users.id, -1),
+			'ispbypass', COALESCE(accounts.bypass_ispban, false),
+			'userid', COALESCE(accounts.id, -1),
 			'banned', COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false),
 			'banreason', bans.reason,
 			'bandate', to_char(whenbanned, 'DD Mon YYYY HH12:MI:SS'),
@@ -246,7 +249,7 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		)
 		FROM players
 		LEFT OUTER JOIN bans ON players.id = bans.playerid
-		LEFT OUTER JOIN users ON players.id = users.wzprofile2
+		LEFT OUTER JOIN accounts ON players.id = accounts.wzprofile2
 		WHERE players.hash = $1::text OR bans.hash = $1::text
 		ORDER BY bans.id DESC`, phash).Scan(&resp)
 	if derr != nil {
@@ -267,7 +270,7 @@ func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	return 200, resp
 }
 
-func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	phash := params["hash"]
 	badplayed := 0
@@ -280,11 +283,11 @@ func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, in
 	return -1, nil
 }
 
-func APIgetPlayerLinked(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetPlayerLinked(w http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	phash := params["hash"]
 	linked := 0
-	derr := dbpool.QueryRow(r.Context(), `select count(*) from users where wzprofile2 = (select id from players where hash = $1);`, phash).Scan(&linked)
+	derr := dbpool.QueryRow(r.Context(), `select count(*) from accounts where wzprofile2 = (select id from players where hash = $1);`, phash).Scan(&linked)
 	if derr != nil {
 		return 500, derr
 	}
@@ -293,9 +296,9 @@ func APIgetPlayerLinked(w http.ResponseWriter, r *http.Request) (int, interface{
 	return -1, nil
 }
 
-func APIgetLinkedPlayers(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetLinkedPlayers(_ http.ResponseWriter, r *http.Request) (int, any) {
 	hashes := []string{}
-	rows, err := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2;`)
+	rows, err := dbpool.Query(r.Context(), `select hash from players join accounts on players.id = accounts.wzprofile2;`)
 	if err != nil {
 		return 500, err
 	}
@@ -311,9 +314,9 @@ func APIgetLinkedPlayers(_ http.ResponseWriter, r *http.Request) (int, interface
 	return 200, hashes
 }
 
-func APIgetISPbypassHashes(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetISPbypassHashes(_ http.ResponseWriter, r *http.Request) (int, any) {
 	hashes := []string{}
-	rows, err := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2 where users.bypass_ispban = true;`)
+	rows, err := dbpool.Query(r.Context(), `select hash from players join accounts on players.id = accounts.wzprofile2 where accounts.bypass_ispban = true;`)
 	if err != nil {
 		return 500, err
 	}
@@ -329,11 +332,11 @@ func APIgetISPbypassHashes(_ http.ResponseWriter, r *http.Request) (int, interfa
 	return 200, hashes
 }
 
-func APIgetISPbypassHash(w http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetISPbypassHash(w http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	phash := params["hash"]
 	linked := 0
-	derr := dbpool.QueryRow(r.Context(), `select count(*) from users where wzprofile2 = (select id from players where hash = $1) and bypass_ispban = true;`, phash).Scan(&linked)
+	derr := dbpool.QueryRow(r.Context(), `select count(*) from accounts where wzprofile2 = (select id from players where hash = $1) and bypass_ispban = true;`, phash).Scan(&linked)
 	if derr != nil {
 		return 500, derr
 	}
@@ -342,8 +345,8 @@ func APIgetISPbypassHash(w http.ResponseWriter, r *http.Request) (int, interface
 	return -1, nil
 }
 
-func APIgetAllowedModerators(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
-	rows, derr := dbpool.Query(r.Context(), `select hash from players join users on players.id = users.wzprofile2 where users.allow_preset_request = true;`)
+func APIgetAllowedModerators(_ http.ResponseWriter, r *http.Request) (int, any) {
+	rows, derr := dbpool.Query(r.Context(), `select hash from players join accounts on players.id = accounts.wzprofile2 where accounts.allow_preset_request = true;`)
 	if derr != nil {
 		return 500, derr
 	}
@@ -360,25 +363,29 @@ func APIgetAllowedModerators(_ http.ResponseWriter, r *http.Request) (int, inter
 	return 200, re
 }
 
-func APIgetUsers(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		return 403, nil
 	}
-	var ret []byte
-	derr := dbpool.QueryRow(r.Context(), `
-		SELECT array_to_json(array_agg(row_to_json(t)))
-		FROM (
-			SELECT id, username, email, last_seen, email_confirmed, wzprofile2, account_created,
-				allow_host_request, allow_preset_request, last_host_request, norequest_reason,
-				allow_profile_merge, terminated, bypass_ispban FROM users
-		) as t`).Scan(&ret)
-	if derr != nil {
-		return 500, derr
+	ret, err := db.GetIdentities(r.Context(), dbpool)
+	if err != nil {
+		return 500, err
 	}
 	return 200, ret
 }
 
-func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetaccounts(_ http.ResponseWriter, r *http.Request) (int, any) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		return 403, nil
+	}
+	ret, err := db.GetAccounts(r.Context(), dbpool)
+	if err != nil {
+		return 500, err
+	}
+	return 200, ret
+}
+
+func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, any) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		return 403, nil
 	}
@@ -391,7 +398,7 @@ func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, interfa
 	return 200, modResendEmailConfirm(id)
 }
 
-func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, any) {
 	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
 	// dbLimit := parseQueryInt(r, "limit", 5)
 	// dbOffset := parseQueryInt(r, "offset", 0)
@@ -424,7 +431,7 @@ func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, interface{}
 	return 200, P
 }
 
-func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
+func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	reqLimit := parseQueryInt(r, "limit", 50)
 	if reqLimit > 200 {
 		reqLimit = 200
@@ -436,15 +443,15 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	if reqOffset < 0 {
 		reqOffset = 0
 	}
-	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
-	fieldmappings := map[string]string{
-		"TimeStarted": "timestarted",
-		"TimeEnded":   "timeended",
-		"ID":          "id",
-		"MapName":     "mapname",
-		"GameTime":    "gametime",
-	}
-	reqSortField := parseQueryStringMapped(r, "sort", "timestarted", fieldmappings)
+	// reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	// fieldmappings := map[string]string{
+	// 	"TimeStarted": "time_started",
+	// 	"TimeEnded":   "time_ended",
+	// 	"ID":          "id",
+	// 	"MapName":     "map_name",
+	// 	"GameTime":    "game_time",
+	// }
+	// reqSortField := parseQueryStringMapped(r, "sort", "time_started", fieldmappings)
 
 	reqFilterJ := parseQueryString(r, "filter", "")
 	reqFilterFields := map[string]string{}
@@ -468,7 +475,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			wherecase += fmt.Sprintf(" AND %d = p.id", pid)
 		}
 	}
-	whereargs := []interface{}{}
+	whereargs := []any{}
 	if reqDoFilters {
 		val, ok := reqFilterFields["MapName"]
 		if ok {
@@ -494,10 +501,11 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		}
 	}
 
-	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
-	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
-	offset := fmt.Sprintf("OFFSET %d", reqOffset)
-	joincase := "JOIN players AS p ON p.id = any(g.players)"
+	// ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	// limiter := fmt.Sprintf("LIMIT %d", reqLimit)
+	// offset := fmt.Sprintf("OFFSET %d", reqOffset)
+	// joincase := "JOIN players AS p ON p.id = any(g.players)"
+	joincase := ""
 
 	totalsc := make(chan int)
 	var totals int
@@ -507,13 +515,9 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 	var totalsNoFilter int
 	totalsNoFilterpresent := false
 
-	growsc := make(chan []DbGamePreview)
-	var gms []DbGamePreview
+	growsc := make(chan []*Game)
+	var gms []*Game
 	gpresent := false
-
-	pmapc := make(chan map[int]DbGamePlayerPreview)
-	var pmap map[int]DbGamePlayerPreview
-	ppresent := false
 
 	echan := make(chan error)
 	go func() {
@@ -536,90 +540,50 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 		}
 		totalsc <- c
 	}()
+
 	go func() {
-		req := `SELECT
-			g.id, g.finished, to_char(g.timestarted, 'YYYY-MM-DD HH24:MI'), coalesce(to_char(g.timeended, 'YYYY-MM-DD HH24:MI'), '==='), g.gametime,
-			g.players, g.teams, g.colour, g.usertype,
-			g.mapname, g.maphash,
-			g.baselevel, g.powerlevel, g.scavs, g.alliancetype,
-			coalesce(g.elodiff, '{0,0,0,0,0,0,0,0,0,0,0}'), coalesce(g.ratingdiff, '{0,0,0,0,0,0,0,0,0,0,0}'),
-			g.hidden, g.calculated, g.debugtriggered, coalesce(g.version, '???'), g.mod
-		FROM games as g ` + joincase + ` ` + wherecase + ` GROUP BY g.id ` + ordercase + ` ` + offset + ` ` + limiter + ` ;`
-		// log.Println(req)
-		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
-		if derr != nil {
-			echan <- derr
+		req := `select
+	g.id, g.version, g.time_started, g.time_ended, g.game_time,
+	g.setting_scavs, g.setting_alliance, g.setting_power, g.setting_base,
+	map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
+	json_agg(json_build_object(
+		'Position', players.position,
+		'Name', identities.name,
+		'Team', players.team,
+		'Usertype', players.usertype,
+		'Color', players.color,
+		'Account', coalesce(accounts.id, 0),
+		'Elo', coalesce(rating.elo, 0),
+		'Played', coalesce(rating.played, 0),
+		'Won', coalesce(rating.won, 0),
+		'Lost', coalesce(rating.lost, 0)
+	)) as players
+from games as g
+join players on game = g.id
+join identities on identity = identities.id
+left join accounts on identities.account = accounts.id
+full outer join rating on identities.account = rating.account
+where rating.category = $1
+group by g.id
+order by time_started desc`
+		var gmsStage []*Game
+		ratingCategory := 2
+		err := pgxscan.Select(r.Context(), dbpool, &gmsStage, req, ratingCategory)
+		if err != nil {
+			echan <- err
 			return
 		}
-		defer rows.Close()
-		gmsStage := []DbGamePreview{}
-		for rows.Next() {
-			g := DbGamePreview{}
-			var splayers []int
-			var steams []int
-			var scolour []int
-			var susertype []string
-			var selodiff []int
-			var sratingdiff []int
-			err := rows.Scan(&g.ID, &g.Finished, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
-				&splayers, &steams, &scolour, &susertype,
-				&g.MapName, &g.MapHash,
-				&g.BaseLevel, &g.PowerLevel, &g.Scavengers, &g.Alliances,
-				&selodiff, &sratingdiff, &g.Hidden, &g.Calculated, &g.DebugTriggered, &g.GameVersion, &g.Mod)
-			if err != nil {
-				echan <- err
-				return
+		for _, v := range gmsStage {
+			if v == nil {
+				continue
 			}
-			for i, p := range splayers {
-				if p == -1 {
-					continue
-				}
-				// log.Printf("Filling player %v", i)
-				g.Players[i].Position = i
-				g.Players[i].ID = p
-				g.Players[i].Team = steams[i]
-				g.Players[i].Colour = scolour[i]
-				if len(susertype) > i {
-					g.Players[i].Usertype = susertype[i]
-				}
-				if len(selodiff) > i {
-					g.Players[i].EloDiff = selodiff[i]
-				}
-				if len(sratingdiff) > i {
-					g.Players[i].RatingDiff = sratingdiff[i]
-				}
-			}
-			gmsStage = append(gmsStage, g)
+			slices.SortFunc(v.Players, func(a Player, b Player) int {
+				return a.Position - b.Position
+			})
 		}
 		growsc <- gmsStage
 	}()
-	go func() {
-		req := `SELECT
-			p.id, p.name, p.hash, p.elo, p.elo2, p.autoplayed, p.autowon, p.autolost, coalesce(u.id, -1)
-		FROM players as p
-		LEFT JOIN users as u ON u.wzprofile2 = p.id
-		WHERE p.id = any((select distinct unnest(a.players)
-				FROM (SELECT players FROM games as g ` + joincase + ` ` + wherecase + `  GROUP BY g.id ` + ordercase + ` ` + offset + ` ` + limiter + `) as a));`
-		// log.Println(req)
-		rows, derr := dbpool.Query(r.Context(), req, whereargs...)
-		if derr != nil {
-			echan <- derr
-			return
-		}
-		defer rows.Close()
-		pmapStage := map[int]DbGamePlayerPreview{}
-		for rows.Next() {
-			p := DbGamePlayerPreview{}
-			err := rows.Scan(&p.ID, &p.Name, &p.Hash, &p.Elo, &p.Elo2, &p.Autoplayed, &p.Autowon, &p.Autolost, &p.Userid)
-			if err != nil {
-				echan <- err
-				return
-			}
-			pmapStage[p.ID] = p
-		}
-		pmapc <- pmapStage
-	}()
-	for !(gpresent && ppresent && totalspresent && totalsNoFilterpresent) {
+	for !(gpresent && totalspresent && totalsNoFilterpresent) {
 		select {
 		case derr := <-echan:
 			if derr == pgx.ErrNoRows {
@@ -628,35 +592,13 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, interface{}) {
 			return 500, derr
 		case gms = <-growsc:
 			gpresent = true
-		case pmap = <-pmapc:
-			ppresent = true
 		case totals = <-totalsc:
 			totalspresent = true
 		case totalsNoFilter = <-totalsNoFilterc:
 			totalsNoFilterpresent = true
 		}
 	}
-	for i := range gms {
-		for j := range gms[i].Players {
-			if gms[i].Players[j].ID <= 0 {
-				continue
-			}
-			p, ok := pmap[gms[i].Players[j].ID]
-			if !ok {
-				log.Printf("Game %v has unknown player %v (%v)", gms[i].ID, gms[i].Players[j].ID, gms[i].Players)
-				continue
-			}
-			gms[i].Players[j].Name = p.Name
-			gms[i].Players[j].Hash = p.Hash
-			gms[i].Players[j].Elo = p.Elo
-			gms[i].Players[j].Elo2 = p.Elo2
-			gms[i].Players[j].Autoplayed = p.Autoplayed
-			gms[i].Players[j].Autolost = p.Autolost
-			gms[i].Players[j].Autowon = p.Autowon
-			gms[i].Players[j].Userid = p.Userid
-		}
-	}
-	return 200, map[string]interface{}{
+	return 200, map[string]any{
 		"total":            totals,
 		"totalNotFiltered": totalsNoFilter,
 		"rows":             gms,

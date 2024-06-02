@@ -79,7 +79,7 @@ func ratingLookup(hash string) Ra {
 	var drenames []string
 	derr := dbpool.QueryRow(context.Background(), `SELECT
 	players.id AS pid, name, elo2, autoplayed, autowon, autolost,
-	COALESCE(users.id, -1) AS uid, COALESCE(users.allow_preset_request OR users.allow_host_request, false) AS appr,
+	COALESCE(accounts.id, -1) AS uid, COALESCE(accounts.allow_preset_request OR accounts.allow_host_request, false) AS appr,
 	COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false) as banned,
  	COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval + '1 month' > now() END, false) AS rbanned,
 	ARRAY(
@@ -90,7 +90,7 @@ func ratingLookup(hash string) Ra {
 		 ORDER BY time DESC
 		 LIMIT 5))
 FROM players
-LEFT JOIN users ON players.id = users.wzprofile2
+LEFT JOIN accounts ON players.id = accounts.wzprofile2
 LEFT JOIN bans ON players.id = bans.playerid
 WHERE players.hash = $1
 ORDER BY banned DESC, rbanned DESC
@@ -132,7 +132,7 @@ LIMIT 1`, hash).Scan(&dplayerid, &dname, &delo2, &dautoplayed, &dautowon, &dauto
 	// m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
 
 	if isAprilFools() {
-		dbpool.QueryRow(context.Background(), `select elo2, autoplayed, autolost, autowon from players join users on users.wzprofile2 = players.id where autoplayed > 5 and users.id != 0 order by random() limit 1;`).Scan(&delo2, &dautoplayed, &dautolost, &dautowon)
+		dbpool.QueryRow(context.Background(), `select elo2, autoplayed, autolost, autowon from players join accounts on accounts.wzprofile2 = players.id where autoplayed > 5 and accounts.id != 0 order by random() limit 1;`).Scan(&delo2, &dautoplayed, &dautolost, &dautowon)
 		m.Level = rand.Intn(8)
 		if duuserid == 14 || duuserid == 17 {
 			m.Level = 8

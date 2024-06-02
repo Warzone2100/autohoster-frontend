@@ -272,7 +272,7 @@ func EloRecalcHandler(w http.ResponseWriter, _ *http.Request) {
 				SELECT
 					games.id as gid, gametime, alliancetype,
 					players, teams, usertype,
-					array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM users WHERE p.id = users.wzprofile2), -1))::jsonb)::text[] as pnames,
+					array_agg(to_json(p)::jsonb || json_build_object('userid', coalesce((SELECT id AS userid FROM accounts WHERE p.id = accounts.wzprofile2), -1))::jsonb)::text[] as pnames,
 					EXTRACT(EPOCH FROM timestarted)::int, mod
 				FROM games
 				JOIN players as p ON p.id = any(games.players)

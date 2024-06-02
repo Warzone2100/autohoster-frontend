@@ -634,6 +634,15 @@
   color: #ddd;
 }
 
+[data-theme=dark] .toast {
+  --bs-toast-bg: #222 !important;
+}
+
+[data-theme=dark] .toast-header {
+  --bs-toast-header-bg: #222 !important;
+  --bs-toast-header-color: #ddd !important;
+}
+
 .search-input {
   padding: 2px;
 }

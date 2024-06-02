@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -25,14 +26,10 @@ func bansHandler(w http.ResponseWriter, r *http.Request) {
 	var pid, pelo2, pautoplayed, pautolost, pautowon, puid int
 	var pname, phash string
 	_, err := dbpool.QueryFunc(r.Context(),
-		`select bans.id, whenbanned, duration, reason,
-		players.id, name, players.hash, elo2, autoplayed, autolost, autowon, coalesce(users.id, -1) as userid
+		`select bans.id, time_issued, time_expires, reason
 		from bans
-		join players on playerid = players.id
-		full outer join users on playerid = users.wzprofile2
-		where playerid is not null
-		order by bans.id desc;`, []interface{}{},
-		[]interface{}{&banid, &whenbanned, &duration, &reason, &pid, &pname, &phash, &pelo2, &pautoplayed, &pautolost, &pautowon, &puid},
+		order by bans.id desc;`, []any{},
+		[]any{&banid, &whenbanned, &duration, &reason},
 		func(_ pgx.QueryFuncRow) error {
 			v := viewBan{
 				ID: banid,
@@ -60,6 +57,7 @@ func bansHandler(w http.ResponseWriter, r *http.Request) {
 			return nil
 		})
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	basicLayoutLookupRespond("bans", w, r, map[string]any{

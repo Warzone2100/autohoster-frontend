@@ -21,7 +21,7 @@ const (
 type WSHub struct {
 	clients     map[*WSHubClient]bool
 	clientsLock sync.RWMutex
-	bcast       chan interface{}
+	bcast       chan any
 	connect     chan *WSHubClient
 	disconnect  chan *WSHubClient
 }
@@ -29,14 +29,14 @@ type WSHub struct {
 type WSHubClient struct {
 	hub      *WSHub
 	conn     *websocket.Conn
-	send     chan interface{}
+	send     chan any
 	username string
 }
 
 func NewWSHub() *WSHub {
 	return &WSHub{
 		clients:    make(map[*WSHubClient]bool),
-		bcast:      make(chan interface{}),
+		bcast:      make(chan any),
 		connect:    make(chan *WSHubClient),
 		disconnect: make(chan *WSHubClient),
 	}

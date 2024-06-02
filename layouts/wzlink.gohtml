@@ -5,50 +5,31 @@
 		{{template "head"}}
 		<meta content="Profile link page" property="og:title">
 		<meta content="Link your in-game profile with account" property="og:description">
-		<title>Autohoster profiles</title>
+		<title>Autohoster identities</title>
 	</head>
 	<body>
 		{{template "NavPanel" . }}
 		<div class="container" style="max-width: 940px;">
 			<table class="table">
 				<thead>
-					<td colspan="3" class="text-center">
-						Warzone profiles link
+					<td colspan="4" class="text-center">
+						Your linked identities
 					</td>
 				</thead>
+				<thead>
+					<td>ID</td>
+					<td>Name</td>
+					<td>Hash</td>
+					<td>Public key</td>
+				</thead>
+				{{range $k, $v := .Identities}}
 				<tr>
-					<td>Warzone profile<br><small>(WZ 3.X.X)</small></td>
-					<td>
-						{{with .User.WzProfile}}
-							{{template "wzprofile" .}}
-						{{end}}
-					</td>
-					<td>
-						This profile is archived and can not be changed.
-					</td>
+					<td>{{$v.ID}}</td>
+					<td>{{$v.Name}}</td>
+					<td>{{$v.Hash}}</td>
+					<td>{{if $v.Pkey}}{{base64encode $v.Pkey}}{{else}}<div class="text-danger">Not known!</div>{{end}}</td>
 				</tr>
-				<tr><hr></tr>
-				<tr>
-					<td>Warzone profile<br><small>(WZ 4.X.X+)</small></td>
-					{{with .User.WzProfile2}}
-						<td>
-							{{template "wzprofile" .}}
-						</td>
-						<td>
-							{{if $.AllowProfileMerge}}
-							<p>You can merge other profiles into main one here: <a href="/wzlinkcheck">Link</a></p>
-							{{end}}
-							<p>If you lost your private key you can replace it with brand new one here: <a href="/wzrecover">Recover</a></p>
-						</td>
-					{{else}}
-						<td>
-							<a href="/wzlinkcheck">Link</a>
-						</td>
-						<td>
-							You don't have any profile linked.
-						</td>
-					{{end}}
-				</tr>
+				{{end}}
 			</table>
 		</div>
 	</body>

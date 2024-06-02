@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"log"
@@ -23,14 +24,14 @@ func basicLayoutHandler(page string) func(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Request, p interface{}) {
+func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Request, p any) {
 	in := layouts.Lookup(page)
 	if in != nil {
-		var params map[string]interface{}
+		var params map[string]any
 		if p == nil {
-			params = map[string]interface{}{}
+			params = map[string]any{}
 		} else {
-			m, mk := p.(map[string]interface{})
+			m, mk := p.(map[string]any)
 			if !mk {
 				log.Println("Basic respond got parameters interface of wrong type")
 			} else {
@@ -55,8 +56,8 @@ func basicLayoutLookupRespond(page string, w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func basicLayoutLookupExecuteAnonymus(in *template.Template, p interface{}) string {
-	m, mk := p.(map[string]interface{})
+func basicLayoutLookupExecuteAnonymus(in *template.Template, p any) string {
+	m, mk := p.(map[string]any)
 	if !mk {
 		log.Println("Basic respond got parameters interface of wrong type")
 	}
@@ -152,12 +153,12 @@ var layoutFuncs = template.FuncMap{
 	"f64tostring": func(a float64) string {
 		return fmt.Sprintf("%.2f", a)
 	},
-	"avail": func(name string, data interface{}) bool {
+	"avail": func(name string, data any) bool {
 		v := reflect.ValueOf(data)
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
-		m, ok := data.(map[string]interface{})
+		m, ok := data.(map[string]any)
 		if ok {
 			_, ok := m[name]
 			return ok
@@ -170,6 +171,7 @@ var layoutFuncs = template.FuncMap{
 	"GameTimeToString":  GameTimeToString,
 	"GameTimeToStringI": GameTimeToStringI,
 	"GameDirToWeek":     GameDirToWeek,
+	"InstanceIDToWeek":  InstanceIDToWeek,
 	"strcut": func(str string, num int) string { // https://play.golang.org/p/EzvhWMljku
 		bnoden := str
 		if len(str) > num {
@@ -182,7 +184,7 @@ var layoutFuncs = template.FuncMap{
 	},
 	"FormatBytes":   ByteCountIEC,
 	"FormatPercent": FormatPercent,
-	"tostr": func(val interface{}) string {
+	"tostr": func(val any) string {
 		if d, ok := val.(uint32); ok {
 			return fmt.Sprint(d)
 		}
@@ -191,8 +193,21 @@ var layoutFuncs = template.FuncMap{
 		}
 		return "snan"
 	},
-	"datefmt": func(val time.Time) string {
-		return val.Format("15:04 02 Jan 2006")
+	"datefmt": func(val any) string {
+		switch v := val.(type) {
+		case time.Time:
+			return v.Format("15:04 02 Jan 2006")
+		case *time.Time:
+			if v == nil {
+				return "??:??"
+			}
+			return v.Format("15:04 02 Jan 2006")
+		default:
+			return "not a timestamp"
+		}
+	},
+	"base64encode": func(val []uint8) string {
+		return base64.StdEncoding.EncodeToString(val)
 	},
 }
 

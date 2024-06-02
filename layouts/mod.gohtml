@@ -1,9 +1,9 @@
-{{define "modUsers"}}
+{{define "modAccounts"}}
 <!doctype html>
 <html translate="no">
 	<head>
 		{{template "head"}}
-		<title>Mod users</title>
+		<title>Mod accounts</title>
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" integrity="sha512-ZnR2wlLbSbr8/c9AgLg3jQPAattCUImNsae6NHYnS9KrIwRdcY9DxFotXhNAKIKbAXlRnujIqUWoXXwqyFOeIQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 		<link href="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
@@ -82,7 +82,7 @@
 			};
 
 			XHR.responseType = 'text';
-			XHR.open('POST', '/moderation/users');
+			XHR.open('POST', '/moderation/accounts');
 			XHR.send(FD);
 		}
 		function ResendActivationEmail(id) {
@@ -119,13 +119,13 @@
 			};
 
 			XHR.responseType = 'text';
-			XHR.open('GET', `/moderation/users/resendEmail/${id}`);
+			XHR.open('GET', `/moderation/accounts/resendEmail/${id}`);
 			XHR.send();
 		}
 		</script>
 		<div class="px-4 py container">
 			<div id="table-toolbar">
-				<h4>Users</h4>
+				<h4>Accounts</h4>
 			</div>
 			<noscript>
 				Enable javascript to view table contents
@@ -133,7 +133,7 @@
 			</noscript>
 			<yes-script>
 			<table id="table" class="smart-table"
-			data-url="/api/users"
+			data-url="/api/accounts"
 			data-filter-control="true"
 			data-sort-name="id"
 			data-sort-order="desc"
@@ -167,13 +167,13 @@
 			data-sticky-header="true">
 				<thead>
 					<tr>
-						<th data-field="id" data-sortable="true" data-filter-control="input" data-formatter="idFormatter">id</th>
-						<th data-field="username" data-sortable="true" data-filter-control="input" data-formatter="usernameFormatter">username</th>
-						<th data-field="email" data-sortable="true" data-filter-control="input" data-formatter="emailFormatter">email</th>
+						<th data-field="ID" data-sortable="true" data-filter-control="input" data-formatter="idFormatter">id</th>
+						<th data-field="Username" data-sortable="true" data-filter-control="input" data-formatter="usernameFormatter">username</th>
+						<th data-field="Email" data-sortable="true" data-filter-control="input" data-formatter="emailFormatter">email</th>
 						{{/* <th data-field="email_confirmed" data-sortable="true" data-filter-control="input">email confirmed</th> */}}
-						<th data-field="wzprofile2" data-sortable="true" data-filter-control="input" data-formatter="profileFormatter">profile</th>
-						<th data-field="allow_preset_request" data-sortable="true" data-filter-control="input" data-formatter="ispAllowPresetFormatter">pres</th>
-						<th data-field="bypass_ispban" data-sortable="true" data-filter-control="input" data-formatter="ispBypassFormatter">isp</th>
+						{{/* <th data-field="wzprofile2" data-sortable="true" data-filter-control="input" data-formatter="profileFormatter">profile</th> */}}
+						<th data-field="AllowHostRequest" data-sortable="true" data-filter-control="input" data-formatter="ispAllowPresetFormatter">pres</th>
+						<th data-field="BypassISPBan" data-sortable="true" data-filter-control="input" data-formatter="ispBypassFormatter">isp</th>
 					</tr>
 				</thead>
 			</table>
@@ -189,15 +189,15 @@
 			for(const key in row) {
 				ret += '<tr><td><b>' + key + ': </b></td><td><code>' + row[key] + '</code></td></tr>';
 			}
-			ret += `<tr><td><b>Resend activation email</b></td><td><a class="btn btn-primary btn-sm" onclick="ResendActivationEmail(${row.id})">Resend</button></td></tr>`;
+			ret += `<tr><td><b>Resend activation email</b></td><td><a class="btn btn-primary btn-sm" onclick="ResendActivationEmail(${row.ID})">Resend</button></td></tr>`;
 			ret += "</table>";
 			return ret;
 		}
 		function usernameFormatter(value, row) {
-			return `<b>${value}</b><br>${row.last_seen}`;
+			return `<b>${value}</b><br>${row.LastSeen}`;
 		}
 		function emailFormatter(value, row) {
-			return value + `<br>${row.email_confirmed?row.email_confirmed:"not confirmed"}`;
+			return value + `<br>${row.EmailConfirmed?row.EmailConfirmed:"not confirmed"}`;
 		}
 		function profileFormatter(value, row) {
 			if(value == null) {
@@ -206,16 +206,16 @@
 			return `<a href="/players/${value}">${value}</a>`;
 		}
 		function idFormatter(value, row) {
-			return `${value}  <button class="btn btn-outline-${row.terminated ? "danger" : "success"} btn-sm" data-value="${row.terminated}" onclick="SendToggleRequest(this, 'terminated', '${row.username}');">` +
+			return `${value}  <button class="btn btn-outline-${row.Terminated ? "danger" : "success"} btn-sm" data-value="${row.Terminated}" onclick="SendToggleRequest(this, 'terminated', '${row.Username}');">` +
 			`${row.terminated ? "Yes" : "No"}</button>`;
 		}
 		function ispBypassFormatter(value, row) {
-			return `<button class="btn btn-outline-${row.bypass_ispban ? "success" : "danger"} btn-sm" data-value="${row.bypass_ispban}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.username}');">` +
+			return `<button class="btn btn-outline-${row.BypassISPBan ? "success" : "danger"} btn-sm" data-value="${row.BypassISPBan}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.username}');">` +
 			`${row.bypass_ispban ? "Yes" : "No"}</button>`;
 		}
 		function ispAllowPresetFormatter(value, row) {
-			return `<button class="btn btn-outline-${row.allow_preset_request ? "success" : "danger"} btn-sm" data-value="${row.allow_preset_request}" onclick="SendToggleRequest(this, 'allow_preset_request', '${row.username}');">` +
-			`${row.allow_preset_request ? "Yes" : "No"}</button>`;
+			return `<button class="btn btn-outline-${row.AllowHostRequest ? "success" : "danger"} btn-sm" data-value="${row.AllowHostRequest}" onclick="SendToggleRequest(this, 'allow_host_request', '${row.username}');">` +
+			`${row.AllowHostRequest ? "Yes" : "No"}</button>`;
 		}
 		</script>
 		</div>
@@ -410,7 +410,6 @@
 		<link href="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
 		<link href="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.css" rel="stylesheet">
 		<link href="/static/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
-
 		<style>
 		table.table-fit {
 			width: auto;
@@ -509,6 +508,113 @@
 			$table.bootstrapTable();
 		})
 		function hashFormatter(value, row) {
+			return `<a href="/api/hashinfo/${value}" title="${value}"><code>${value.slice(0, 10)}</code></a>`;
+		}
+		function playeridFormatter(value, row) {
+			return `<a href="/players/${value}">${value}</a>`;
+		}
+		</script>
+		</div>
+	</body>
+</html>
+{{end}}
+{{define "modIdentities"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<title>Mod identities</title>
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" integrity="sha512-ZnR2wlLbSbr8/c9AgLg3jQPAattCUImNsae6NHYnS9KrIwRdcY9DxFotXhNAKIKbAXlRnujIqUWoXXwqyFOeIQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+		<link href="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
+		<link href="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.css" rel="stylesheet">
+		<link href="/static/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+		<style>
+		table.table-fit {
+			width: auto;
+			table-layout: auto;
+		}
+		table.table-fit thead th, table.table-fit tfoot th {
+			width: auto;
+		}
+		table.table-fit tbody td, table.table-fit tfoot td {
+			width: auto;
+		}
+		</style>
+	</head>
+	<body>
+		{{template "NavPanel" . }}
+		<script src="/static/bootstrap-table/bootstrap-table.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js"></script>
+		<div class="px-4 py container">
+			<div id="table-toolbar">
+				<h4>Identities</h4>
+			</div>
+			<noscript>
+				Enable javascript to view table contents
+				<style> yes-script { display:none; } </style>
+			</noscript>
+			<yes-script>
+			<table id="table" class="smart-table table-fit"
+			data-url="/api/identities"
+			data-filter-control="true"
+			data-sort-name="whenbanned"
+			data-sort-order="desc"
+			data-show-refresh="true"
+			data-toolbar="#table-toolbar"
+			data-cache="false"
+			data-toggle="table"
+			data-id-field="ID"
+			data-pagination="true"
+			data-page-size="50"
+			data-page-number="1"
+			data-pagination-loop="false"
+			data-show-extended-pagination="true"
+			data-page-list="[10, 15, 25, 35, 50, 100, 500]"
+			data-buttons-prefix="btn btn-sm btn-primary"
+			data-buttons="buttons"
+			data-classes="table table-striped table-sm"
+			data-search="true"
+			data-show-search-button="true"
+			data-search-on-enter-key="true"
+			{{/* data-side-pagination="server" */}}
+			{{/* data-search-highlight="true" */}}
+			data-show-search-clear-button="true"
+			data-escape="true"
+			{{/* data-detail-view="true" */}}
+			{{/* data-detail-view-icon="true" */}}
+			{{/* data-detail-formatter="detailFormatter" */}}
+			{{/* data-card-view="true" */}}
+			data-show-filter-control-switch="true"
+			data-filter-control-visible="false"
+			data-sticky-header="true">
+				<thead>
+					<tr>
+						<th data-field="ID" data-sortable="true" data-filter-control="input">id</th>
+						<th data-field="Name" data-filter-control="input">name</th>
+						<th data-field="Hash" data-formatter="hashinfoFormatter" data-filter-control="input">hash</th>
+						<th data-field="Pkey" data-formatter="hashFormatter" data-filter-control="input">pkey</th>
+						<th data-field="Account" data-formatter="playeridFormatter" data-filter-control="input">account</th>
+					</tr>
+				</thead>
+			</table>
+			<yes-script>
+		</div>
+		<script>
+		var $table = $('#table')
+		$(function() {
+			$table.bootstrapTable();
+		})
+		function hashinfoFormatter(value, row) {
+			if(value === undefined) {
+				return "Undefined!"
+			}
+			if(value === null) {
+				return "NULL!"
+			}
 			return `<a href="/api/hashinfo/${value}" title="${value}"><code>${value.slice(0, 10)}</code></a>`;
 		}
 		function playeridFormatter(value, row) {

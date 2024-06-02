@@ -97,7 +97,7 @@ func lobbyPoller() {
 		LobbyWSHub.clientsLock.Lock()
 		watchers := len(LobbyWSHub.clients)
 		LobbyWSHub.clientsLock.Unlock()
-		WSLobbyUpdateLobby(map[string]interface{}{
+		WSLobbyUpdateLobby(map[string]any{
 			"Rooms":    append(lookup.prettyRooms, lobbyHistory...),
 			"MOTD":     lookup.MOTD,
 			"Watching": watchers,
@@ -120,7 +120,7 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 		lobbyLastRequest[u] = time.Now()
 		if ok {
 			if l.Unix()+lobbyTooManyRequestsTime > time.Now().Unix() {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]interface{}{"msg": "Too many requests. Please do not spam page refresh. Authorized users have automatic lobby refresh every second.", "msgred": true})
+				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Too many requests. Please do not spam page refresh. Authorized accounts have automatic lobby refresh every second.", "msgred": true})
 				lobbyLastRequestLock.Unlock()
 				return
 			}
@@ -128,13 +128,13 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 		lobbyLastRequestLock.Unlock()
 	}
 	// s, reqres := RequestHosters()
-	// var rooms []interface{}
+	// var rooms []any
 	// if s {
 	// 	json.Unmarshal([]byte(reqres), &rooms)
 	// }
-	// basicLayoutLookupRespond("lobby", w, r, map[string]interface{}{"Lobby": LobbyLookup(), "Hoster": rooms})
+	// basicLayoutLookupRespond("lobby", w, r, map[string]any{"Lobby": LobbyLookup(), "Hoster": rooms})
 	lr := lobbyLookup()
-	basicLayoutLookupRespond("lobby", w, r, map[string]interface{}{"Lobby": map[string]interface{}{
+	basicLayoutLookupRespond("lobby", w, r, map[string]any{"Lobby": map[string]any{
 		"Rooms": lr.prettyRooms,
 		"MOTD":  lr.MOTD,
 	}})

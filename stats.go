@@ -31,7 +31,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	err := RequestMultiple(func() error {
 		var d, c int
 		_, err := dbpool.QueryFunc(ctx, `SELECT COUNT(gg) AS c, EXTRACT('hour' FROM timestarted) AS d FROM games AS gg GROUP BY d ORDER BY d`,
-			[]interface{}{}, []interface{}{&c, &d},
+			[]any{}, []any{&c, &d},
 			func(_ pgx.QueryFuncRow) error {
 				GamesByHour[d] = c
 				return nil
@@ -40,7 +40,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	}, func() error {
 		var d, c int
 		_, err := dbpool.QueryFunc(ctx, `SELECT COUNT(gg) AS c, EXTRACT('hour' FROM timestarted) AS d FROM games AS gg WHERE not gg.ratingdiff @> ARRAY[0] GROUP BY d ORDER BY d`,
-			[]interface{}{}, []interface{}{&c, &d},
+			[]any{}, []any{&c, &d},
 			func(_ pgx.QueryFuncRow) error {
 				RatingGamesByHour[d] = c
 				return nil
@@ -49,7 +49,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	}, func() error {
 		var d, c int
 		_, err := dbpool.QueryFunc(ctx, `SELECT COUNT(gg) AS c, EXTRACT('isodow' FROM timestarted) AS d FROM games AS gg GROUP BY d ORDER BY d`,
-			[]interface{}{}, []interface{}{&c, &d},
+			[]any{}, []any{&c, &d},
 			func(_ pgx.QueryFuncRow) error {
 				GamesByWeekday[d] = c
 				return nil
@@ -58,7 +58,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	}, func() error {
 		var d, c int
 		_, err := dbpool.QueryFunc(ctx, `SELECT COUNT(gg) AS c, EXTRACT('isodow' FROM timestarted) AS d FROM games AS gg WHERE timestarted + '2 weeks'::interval > now() GROUP BY d ORDER BY d`,
-			[]interface{}{}, []interface{}{&c, &d},
+			[]any{}, []any{&c, &d},
 			func(_ pgx.QueryFuncRow) error {
 				GamesByWeekdayLast[d] = c
 				return nil
@@ -68,7 +68,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		var mapname string
 		var count int
 		_, err := dbpool.QueryFunc(ctx, `SELECT mapname, COUNT(*) AS c FROM games WHERE timestarted + '2 weeks'::interval > now() GROUP BY mapname ORDER BY c DESC LIMIT 30`,
-			[]interface{}{}, []interface{}{&mapname, &count},
+			[]any{}, []any{&mapname, &count},
 			func(_ pgx.QueryFuncRow) error {
 				MapCounts[mapname] = count
 				return nil
@@ -88,7 +88,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		FROM games AS gg) as r
 	GROUP BY d
 	ORDER BY d DESC`,
-			[]interface{}{}, []interface{}{&date, &count, &avg},
+			[]any{}, []any{&date, &count, &avg},
 			func(_ pgx.QueryFuncRow) error {
 				PlayerCount[date] = count
 				PlayerCountAvg[date] = avg
@@ -107,10 +107,10 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		DISTINCT unnest(gg.players) AS p,
 		date_trunc('day', gg.timestarted) AS d
 		FROM games AS gg) AS gg
-	JOIN users AS u ON gg.p = u.wzprofile2
+	JOIN accounts AS u ON gg.p = u.wzprofile2
 	GROUP BY gg.d
 	ORDER BY gg.d DESC`,
-			[]interface{}{}, []interface{}{&date, &count, &avg},
+			[]any{}, []any{&date, &count, &avg},
 			func(_ pgx.QueryFuncRow) error {
 				RatingPlayerCount[date] = count
 				RatingPlayerCountAvg[date] = avg
@@ -123,12 +123,12 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		_, err := dbpool.QueryFunc(ctx, `SELECT
 		p.id, p.name, count(g) AS c, sum(g.ratingdiff[array_position(g.players, p.id)])
 	FROM players AS p
-	JOIN users AS u ON u.wzprofile2 = p.id
+	JOIN accounts AS u ON u.wzprofile2 = p.id
 	JOIN (SELECT players, ratingdiff FROM games WHERE timestarted + '7 days' > now()) AS g ON p.id = any(g.players)
 	WHERE p.autoplayed > 10
 	GROUP BY p.id
 	ORDER BY c DESC, p.autoplayed DESC`,
-			[]interface{}{}, []interface{}{&id, &name, &count, &diff},
+			[]any{}, []any{&id, &name, &count, &diff},
 			func(_ pgx.QueryFuncRow) error {
 				LastPlayers = append(LastPlayers, struct {
 					ID    int
@@ -151,7 +151,7 @@ from games
 where calculated = true
 group by playercount
 order by playercount`,
-			[]interface{}{}, []interface{}{&pc, &c},
+			[]any{}, []any{&pc, &c},
 			func(_ pgx.QueryFuncRow) error {
 				GamesByPlayercount[pc] = c
 				return nil
@@ -164,7 +164,7 @@ from games
 where calculated = true and timestarted + '2 months' > now()
 group by playercount
 order by playercount`,
-			[]interface{}{}, []interface{}{&pc, &c},
+			[]any{}, []any{&pc, &c},
 			func(_ pgx.QueryFuncRow) error {
 				GamesByPlayercountLast[pc] = c
 				return nil
@@ -177,7 +177,7 @@ from games
 where calculated = true and ratingdiff[1] != 0
 group by playercount
 order by playercount`,
-			[]interface{}{}, []interface{}{&pc, &c},
+			[]any{}, []any{&pc, &c},
 			func(_ pgx.QueryFuncRow) error {
 				RatingGamesByPlayercount[pc] = c
 				return nil
@@ -190,7 +190,7 @@ from games
 where calculated = true and ratingdiff[1] != 0 and timestarted + '2 months' > now()
 group by playercount
 order by playercount`,
-			[]interface{}{}, []interface{}{&pc, &c},
+			[]any{}, []any{&pc, &c},
 			func(_ pgx.QueryFuncRow) error {
 				RatingGamesByPlayercountLast[pc] = c
 				return nil
@@ -201,7 +201,7 @@ order by playercount`,
 	if err != nil {
 		log.Println(err)
 	}
-	basicLayoutLookupRespond("stats", w, r, map[string]interface{}{
+	basicLayoutLookupRespond("stats", w, r, map[string]any{
 		"GamesByHour":                  GamesByHour,
 		"RatingGamesByHour":            RatingGamesByHour,
 		"GamesByWeekday":               GamesByWeekday,

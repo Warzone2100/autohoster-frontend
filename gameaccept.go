@@ -26,7 +26,7 @@ func (mr *malformedRequest) Error() string {
 	return mr.msg
 }
 
-func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) error {
+func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst any) error {
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
@@ -148,7 +148,7 @@ type JSONgameWithRes struct {
 	GameTime         float64          `json:"gameTime"`
 	PlayerData       []JSONgamePlayer `json:"playerData"`
 	Game             JSONgameCore     `json:"game"`
-	ResearchComplete []interface{}    `json:"researchComplete"`
+	ResearchComplete []any            `json:"researchComplete"`
 }
 
 func GameAcceptCreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -429,7 +429,7 @@ func GameAcceptEndHandler(w http.ResponseWriter, r *http.Request) {
 		tbdlabperf[int(p.Position)] = int(p.LabPerformance)
 		var playerID, elo, elo2, eap, eal, eaw, euid, etimeplayed int
 		perr := dbpool.QueryRow(context.Background(), `
-			SELECT id, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM users WHERE players.id = users.wzprofile2), -1), timeplayed FROM players WHERE hash = $1;`, p.Hash).Scan(&playerID, &elo, &elo2, &eap, &eal, &eaw, &euid, &etimeplayed)
+			SELECT id, elo, elo2, autoplayed, autolost, autowon, coalesce((SELECT id FROM accounts WHERE players.id = accounts.wzprofile2), -1), timeplayed FROM players WHERE hash = $1;`, p.Hash).Scan(&playerID, &elo, &elo2, &eap, &eal, &eaw, &euid, &etimeplayed)
 		if perr != nil {
 			log.Printf("Error [%s]", perr.Error())
 			io.WriteString(w, "err")
