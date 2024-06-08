@@ -15,7 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/pgxpool"
-	"github.com/warzone2100/autohoster-frontend/db"
+	db "github.com/warzone2100/autohoster-db"
 )
 
 var regexMaphash = regexp.MustCompile(`^[a-zA-Z0-9-]*$`)
@@ -24,7 +24,7 @@ var regexLevelbase = regexp.MustCompile(`^[1-3]$`)
 var regexScav = regexp.MustCompile(`^[0-1]$`)
 
 func hosterHandler(w http.ResponseWriter, r *http.Request) {
-	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
+	if checkUserAuthorized(r) {
 		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 		return
 	}

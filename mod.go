@@ -28,8 +28,7 @@ func isSuperadmin(context context.Context, username string) bool {
 
 func modAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
+		respondWithForbidden(w, r)
 		return
 	}
 	if r.Method == "POST" {
@@ -116,8 +115,7 @@ func modSendWebhook(content string) error {
 
 func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
+		respondWithForbidden(w, r)
 		return
 	}
 	if r.Method == "POST" {
@@ -186,8 +184,7 @@ func modMergeHandler(w http.ResponseWriter, r *http.Request) {
 
 func modNewsHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
+		respondWithForbidden(w, r)
 		return
 	}
 	if r.Method == "POST" {
@@ -214,8 +211,7 @@ func modNewsHandler(w http.ResponseWriter, r *http.Request) {
 
 func modBansHandler(w http.ResponseWriter, r *http.Request) {
 	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		w.WriteHeader(http.StatusForbidden)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Forbiden"})
+		respondWithForbidden(w, r)
 		return
 	}
 	if r.Method == "POST" {

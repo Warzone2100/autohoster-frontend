@@ -7,14 +7,13 @@ function nameFormatter(value, row) {
 	Autolost = row.Autolost !== undefined ? row.Autolost : row.autolost
 	Hash = row.Hash !== undefined ? row.Hash : row.hash
 	Name = row.Name !== undefined ? row.Name : row.name
+	Elo = row.Elo !== undefined ? row.Elo : row.Elo
+	Account = row.Account !== undefined ? row.Account : row.Account
+	EloDiff = row.EloDiff !== undefined ? row.EloDiff : row.EloDiff
+	Identity = row.Identity !== undefined ? row.Identity : row.Identity
 	if(Name.length > 23) {
 		Name = Name.slice(0, 20) + '...';
 	}
-	Elo = row.Elo !== undefined ? row.Elo : row.elo
-	Userid = row.Userid !== undefined ? row.Userid : row.userid
-	ID = row.ID !== undefined ? row.ID : row.id
-	EloDiff = row.EloDiff !== undefined ? row.EloDiff : row.elodiff
-	RatingDiff = row.RatingDiff !== undefined ? row.RatingDiff : row.ratingdiff
 	if(Autoplayed > 4) {
 		if(Elo > 1800) {
 			ret += `<object class="rank rank-starGold"></object>`;
@@ -38,25 +37,20 @@ function nameFormatter(value, row) {
 		ret += `<object class="rank rank-pacifier"></object>`;
 	}
 	ret += `</td><td rowspan="3" class="rank-link">`;
-	ret += `<a href="/players/${ID}" class="text-nowrap${Userid>0?' rank-name-checkmark':""}" title="Hash: ${Hash}">${Name}</a>`;
-	if(Userid <= 0) {
+	// ret += `<a href="/players/${ID}" class="text-nowrap${Userid>0?' rank-name-checkmark':""}" title="Hash: ${Hash}">${Name}</a>`;
+	if(Account <= 0) {
+		ret += `<a href="/identities/${Identity}" class="text-nowrap">${Name}</a>`;
 		ret += '<br><small class="text-muted class="text-nowrap"">not registered</small>';
 	} else {
+		ret += `<a href="/players/${Account}" class="text-nowrap">${Name}</a>`;
 		ret += `<br>${Elo}`;
 	}
-	// if(EloDiff != undefined && EloDiff != 0) {
-	// 	ret += "&nbsp;";
-	// 	if(EloDiff >= 1) {
-	// 		ret += "+";
-	// 	}
-	// 	ret += EloDiff;
-	// }
-	if(RatingDiff != undefined && RatingDiff != 0) {
+	if(EloDiff != undefined && EloDiff != 0) {
 		ret += "&nbsp;";
-		if(RatingDiff >= 1) {
+		if(EloDiff >= 1) {
 			ret += "+";
 		}
-		ret += RatingDiff;
+		ret += EloDiff;
 	}
 	ret += `</td></tr><tr><td class="rank-star">`;
 	if(Autoplayed > 60) {

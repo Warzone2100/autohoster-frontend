@@ -14,7 +14,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
-	"github.com/warzone2100/autohoster-frontend/db"
+	db "github.com/warzone2100/autohoster-db"
 )
 
 func APIcall(c func(http.ResponseWriter, *http.Request) (int, any)) func(http.ResponseWriter, *http.Request) {
@@ -443,15 +443,15 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	if reqOffset < 0 {
 		reqOffset = 0
 	}
-	// reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
-	// fieldmappings := map[string]string{
-	// 	"TimeStarted": "time_started",
-	// 	"TimeEnded":   "time_ended",
-	// 	"ID":          "id",
-	// 	"MapName":     "map_name",
-	// 	"GameTime":    "game_time",
-	// }
-	// reqSortField := parseQueryStringMapped(r, "sort", "time_started", fieldmappings)
+	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	fieldmappings := map[string]string{
+		"TimeStarted": "time_started",
+		"TimeEnded":   "time_ended",
+		"ID":          "id",
+		"MapName":     "map_name",
+		"GameTime":    "game_time",
+	}
+	reqSortField := parseQueryStringMapped(r, "sort", "time_started", fieldmappings)
 
 	reqFilterJ := parseQueryString(r, "filter", "")
 	reqFilterFields := map[string]string{}
@@ -481,9 +481,9 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 		if ok {
 			whereargs = append(whereargs, val)
 			if wherecase == "" {
-				wherecase = "WHERE g.mapname = $1"
+				wherecase = "WHERE g.map_name = $1"
 			} else {
-				wherecase += " AND g.mapname = $1"
+				wherecase += " AND g.map_name = $1"
 			}
 		}
 	}
@@ -501,10 +501,9 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 		}
 	}
 
-	// ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
-	// limiter := fmt.Sprintf("LIMIT %d", reqLimit)
-	// offset := fmt.Sprintf("OFFSET %d", reqOffset)
-	// joincase := "JOIN players AS p ON p.id = any(g.players)"
+	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
+	offset := fmt.Sprintf("OFFSET %d", reqOffset)
 	joincase := ""
 
 	totalsc := make(chan int)
@@ -543,32 +542,33 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 
 	go func() {
 		req := `select
-	g.id, g.version, g.time_started, g.time_ended, g.game_time,
-	g.setting_scavs, g.setting_alliance, g.setting_power, g.setting_base,
-	map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
-	json_agg(json_build_object(
-		'Position', players.position,
-		'Name', identities.name,
-		'Team', players.team,
-		'Usertype', players.usertype,
-		'Color', players.color,
-		'Account', coalesce(accounts.id, 0),
-		'Elo', coalesce(rating.elo, 0),
-		'Played', coalesce(rating.played, 0),
-		'Won', coalesce(rating.won, 0),
-		'Lost', coalesce(rating.lost, 0)
-	)) as players
-from games as g
-join players on game = g.id
-join identities on identity = identities.id
-left join accounts on identities.account = accounts.id
-full outer join rating on identities.account = rating.account
-where rating.category = $1
-group by g.id
-order by time_started desc`
+		g.id, g.version, g.time_started, g.time_ended, g.game_time,
+		g.setting_scavs, g.setting_alliance, g.setting_power, g.setting_base,
+		map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
+		json_agg(json_build_object(
+			'Position', players.position,
+			'Name', identities.name,
+			'Team', players.team,
+			'Usertype', players.usertype,
+			'Color', players.color,
+			'Account', coalesce(accounts.id, 0),
+			'Elo', coalesce(rating.elo, 0),
+			'Played', coalesce(rating.played, 0),
+			'Won', coalesce(rating.won, 0),
+			'Lost', coalesce(rating.lost, 0)
+		)) as players
+	from games as g
+	join players on game = g.id
+	join identities on identity = identities.id
+	left join accounts on identities.account = accounts.id
+	full outer join rating on identities.account = rating.account
+	where rating.category = g.display_category
+	group by g.id
+	` + ordercase + `
+	` + limiter + `
+	` + offset
 		var gmsStage []*Game
-		ratingCategory := 2
-		err := pgxscan.Select(r.Context(), dbpool, &gmsStage, req, ratingCategory)
+		err := pgxscan.Select(r.Context(), dbpool, &gmsStage, req)
 		if err != nil {
 			echan <- err
 			return

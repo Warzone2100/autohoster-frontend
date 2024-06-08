@@ -12,14 +12,14 @@ import (
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	type article struct {
+	type announcement struct {
 		Title   string        `json:"title"`
 		Content template.HTML `json:"content"`
 		Time    time.Time     `json:"when_posted"`
 		Color   string        `json:"color"`
 	}
 	timeInterval := "48 hours"
-	news := []article{}
+	announcements := []announcement{}
 	gamesPlayed := 0
 	gamesPlayedTiny := 0
 	// uniqPlayers := 0
@@ -33,11 +33,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	ratingGamesGraph := map[string]int{}
 	ratingGamesGraphAvg := map[string]int{}
 	err := RequestMultiple(func() error {
-		rows, err := dbpool.Query(r.Context(), `select title, content, when_posted, color from news order by when_posted desc limit 25;`)
+		rows, err := dbpool.Query(r.Context(), `select title, content, when_posted, color from announcements order by when_posted desc limit 25;`)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				news = []article{{
-					Title:   "No news yet",
+				announcements = []announcement{{
+					Title:   "No announcements yet",
 					Content: "I am lazy",
 					Time:    time.Now(),
 					Color:   "success",
@@ -47,12 +47,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			for rows.Next() {
-				var a article
+				var a announcement
 				err = rows.Scan(&a.Title, &a.Content, &a.Time, &a.Color)
 				if err != nil {
 					return err
 				}
-				news = append(news, a)
+				announcements = append(announcements, a)
 			}
 		}
 		return nil
@@ -112,7 +112,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	basicLayoutLookupRespond("index", w, r, map[string]any{
-		"News":             news,
+		"News":             announcements,
 		"LastGames":        gamesPlayed,
 		"LastGamesTiny":    gamesPlayedTiny,
 		"LastGamesTinyPrc": fmt.Sprintf("(%.1f%%)", float64(gamesPlayedTiny)/float64(gamesPlayed)*float64(100)),
