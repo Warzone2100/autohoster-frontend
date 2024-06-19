@@ -391,9 +391,6 @@
 		$(function() {
 			$table.bootstrapTable();
 		})
-		function hashFormatter(value, row) {
-			return `<code title="${value}" class="hashshort">${value}</code>`;
-		}
 		</script>
 		</div>
 	</body>
@@ -431,23 +428,39 @@
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
 		<script src="/static/bootstrap-table/tablehelpers.js"></script>
 		<div class="px-4 py container">
-			<form method="POST" action="/moderation/bans" target="_self">
-			<div class="row g-3 m-3">
-				<div class="col-sm">
-					<input type="text" class="form-control" placeholder="hash" name="hash">
-				</div>
-				<div class="col-sm">
-					<input type="number" class="form-control" placeholder="duration" name="duration">
-				</div>
-				<div class="col-sm-7">
-					<input type="text" class="form-control" placeholder="reason" name="reason">
-				</div>
-				<div class="col-sm">
-					<input type="submit" class="form-control">
-				</div>
-			</div>
-			</form>
-			<p>duration in seconds: 3600 - 1h, 43200 - 12h, 86400 - 1d, 259200 - 3d, 604800 - 7d, 1209600 - 14d, 2592000 - 30d</p>
+			<details class="mt-2">
+				<summary>Bonk somebody</summary>
+				<form method="POST" action="/moderation/bans" target="_self">
+					<div class="mt-3 mb-3">
+						<input type="number" class="form-control" placeholder="account" name="account">
+					</div>
+					<div class="mb-3">
+						<input type="number" class="form-control" placeholder="identity" name="identity">
+					</div>
+					<div class="mb-3">
+						<input type="number" class="form-control" placeholder="duration" name="duration">
+					</div>
+					<div class="mb-3">
+						<input type="text" class="form-control" placeholder="reason" name="reason">
+					</div>
+					<div class="mb-3">
+						<input type="checkbox" class="form-check-input" id="cbJoining" placeholder="forbids-joining" name="forbids-joining">
+						<label class="form-check-label" for="cbJoining">Forbids joining</label>
+					</div>
+					<div class="mb-3">
+						<input type="checkbox" class="form-check-input" id="cbChatting" placeholder="forbids-chatting" name="forbids-chatting">
+						<label class="form-check-label" for="cbChatting">Forbids chatting</label>
+					</div>
+					<div class="mb-3">
+						<input type="checkbox" class="form-check-input" id="cbPlaying" placeholder="forbids-playing" name="forbids-playing">
+						<label class="form-check-label" for="cbPlaying">Forbids playing</label>
+					</div>
+					<div class="mb-3">
+						<input type="submit" class="form-control">
+					</div>
+				</form>
+				<p>duration in seconds: 3600 - 1h, 43200 - 12h, 86400 - 1d, 259200 - 3d, 604800 - 7d, 1209600 - 14d, 2592000 - 30d</p>
+			</details>
 			<div id="table-toolbar">
 				<h4>Bans</h4>
 			</div>
@@ -492,10 +505,13 @@
 				<thead>
 					<tr>
 						<th data-field="id" data-sortable="true">id</th>
-						<th data-field="whenbanned" data-filter-control="input">whenbanned</th>
-						<th data-field="hash" data-formatter="hashFormatter" data-filter-control="input">hash</th>
-						<th data-field="playerid" data-formatter="playeridFormatter" data-filter-control="input">playerid</th>
-						<th data-field="duration">duration</th>
+						<th data-field="account" data-filter-control="input">account</th>
+						<th data-field="identity" data-filter-control="input">identity</th>
+						<th data-field="time_issued" data-sortable="true">time_issued</th>
+						<th data-field="time_expires" data-sortable="true">time_expires</th>
+						<th data-field="forbids_joining">J?</th>
+						<th data-field="forbids_chatting">C?</th>
+						<th data-field="forbids_joining">P?</th>
 						<th data-field="reason" data-class="w-100">reason</th>
 					</tr>
 				</thead>
@@ -507,9 +523,6 @@
 		$(function() {
 			$table.bootstrapTable();
 		})
-		function hashFormatter(value, row) {
-			return `<a href="/api/hashinfo/${value}" title="${value}"><code>${value.slice(0, 10)}</code></a>`;
-		}
 		function playeridFormatter(value, row) {
 			return `<a href="/players/${value}">${value}</a>`;
 		}
@@ -558,39 +571,7 @@
 				<style> yes-script { display:none; } </style>
 			</noscript>
 			<yes-script>
-			<table id="table" class="smart-table table-fit"
-			data-url="/api/identities"
-			data-filter-control="true"
-			data-sort-name="whenbanned"
-			data-sort-order="desc"
-			data-show-refresh="true"
-			data-toolbar="#table-toolbar"
-			data-cache="false"
-			data-toggle="table"
-			data-id-field="ID"
-			data-pagination="true"
-			data-page-size="50"
-			data-page-number="1"
-			data-pagination-loop="false"
-			data-show-extended-pagination="true"
-			data-page-list="[10, 15, 25, 35, 50, 100, 500]"
-			data-buttons-prefix="btn btn-sm btn-primary"
-			data-buttons="buttons"
-			data-classes="table table-striped table-sm"
-			data-search="true"
-			data-show-search-button="true"
-			data-search-on-enter-key="true"
-			{{/* data-side-pagination="server" */}}
-			{{/* data-search-highlight="true" */}}
-			data-show-search-clear-button="true"
-			data-escape="true"
-			{{/* data-detail-view="true" */}}
-			{{/* data-detail-view-icon="true" */}}
-			{{/* data-detail-formatter="detailFormatter" */}}
-			{{/* data-card-view="true" */}}
-			data-show-filter-control-switch="true"
-			data-filter-control-visible="false"
-			data-sticky-header="true">
+			<table id="table" class="smart-table table-fit">
 				<thead>
 					<tr>
 						<th data-field="ID" data-sortable="true" data-filter-control="input">id</th>
@@ -606,7 +587,10 @@
 		<script>
 		var $table = $('#table')
 		$(function() {
-			$table.bootstrapTable();
+			$table.bootstrapTable(Object.assign(defaultTableOptions, {
+				sortName: "ID",
+				url: "/api/identities"
+			}));
 		})
 		function hashinfoFormatter(value, row) {
 			if(value === undefined) {

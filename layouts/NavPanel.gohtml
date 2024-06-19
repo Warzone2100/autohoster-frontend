@@ -18,10 +18,10 @@
 				<li class="nav-item dropdown">
 					<a class="nav-link dropdown-toggle" id="autoratingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Autorating</a>
 					<ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="autoratingDropdown">
-						<li><a class="dropdown-item {{ if eq .NavWhere "players" }} active {{ end }}" href="/players">Player leaderboard</a></li>
+						<li><a class="dropdown-item {{ if eq .NavWhere "leaderboards" }} active {{ end }}" href="/leaderboards">Player leaderboard</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "games2" }} active {{ end }}" href="/games">Recent games</a></li>
 						<div class="dropdown-divider"></div>
-						<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item {{ if eq .NavWhere "resstat" }} active {{ end }}" href="/resstat">Research leaderboard</a></li>
+						{{/* <li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item {{ if eq .NavWhere "resstat" }} active {{ end }}" href="/resstat">Research leaderboard</a></li> */}}
 						<li><a class="{{if not .UserAuthorized}}disabled{{end}} dropdown-item" href="/request"><div class="{{if not .UserAuthorized}}disabled{{end}} btn btn-primary {{ if eq .NavWhere "request" }} active {{ end }}">Room request</div></a></li>
 					</ul>
 				</li>
@@ -29,7 +29,7 @@
 				<a class="nav-link {{ if eq .NavWhere "rules" }} active {{ end }}" href="/rules">Rules</a>
 				<a class="nav-link {{ if eq .NavWhere "bans" }} active {{ end }}" href="/bans">Bans</a>
 				<a class="nav-link {{ if eq .NavWhere "lobby" }} active {{ end }}" href="/lobby">Lobby</a>
-				<a class="nav-link {{ if eq .NavWhere "stats" }} active {{ end }}" href="/stats">Stats</a>
+				{{/* <a class="nav-link {{ if eq .NavWhere "stats" }} active {{ end }}" href="/stats">Stats</a> */}}
 				{{if .IsSuperadmin}}
 				<li class="nav-item dropdown">
 					<a class="nav-link dropdown-toggle" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
@@ -38,7 +38,6 @@
 						<li><a class="dropdown-item {{ if eq .NavWhere "modLogs" }} active {{ end }}" href="/moderation/logs">Logs</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "modAccounts" }} active {{ end }}" href="/moderation/accounts">Accounts</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "modBans" }} active {{ end }}" href="/moderation/bans">Bans</a></li>
-						<li><a class="dropdown-item {{ if eq .NavWhere "modMerge" }} active {{ end }}" href="/moderation/merge">Merge</a></li>
 						<li><a class="dropdown-item {{ if eq .NavWhere "modNews" }} active {{ end }}" href="/moderation/news">News</a></li>
 					</ul>
 				</li>

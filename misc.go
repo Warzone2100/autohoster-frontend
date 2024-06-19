@@ -31,6 +31,23 @@ func measureHandlerTimings(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func parseFormInt(r *http.Request, field string) *int {
+	f := r.FormValue(field)
+	if f == "" {
+		return nil
+	}
+	ret, err := strconv.Atoi(f)
+	if err != nil {
+		return nil
+	}
+	return &ret
+}
+
+func parseFormBool(r *http.Request, field string) bool {
+	f := r.FormValue(field)
+	return f == "on" || f == "true" || f == "checked"
+}
+
 func parseQueryInt(r *http.Request, field string, d int) int {
 	if val, ok := r.URL.Query()[field]; ok && len(val) > 0 {
 		val2, err := strconv.Atoi(val[0])
@@ -76,6 +93,16 @@ func stringOneOf(a string, b ...string) bool {
 		}
 	}
 	return false
+}
+
+func respondWithCodeAndPlaintext(w http.ResponseWriter, code int, resp string) {
+	w.WriteHeader(code)
+	w.Write([]byte(resp))
+}
+
+func logRespondWithCodeAndPlaintext(w http.ResponseWriter, code int, resp string) {
+	log.Println(resp)
+	respondWithCodeAndPlaintext(w, code, resp)
 }
 
 func respondWithUnauthorized(w http.ResponseWriter, r *http.Request) {
@@ -191,11 +218,11 @@ func sendgridConfirmcode(email string, code string) error {
 	"content": [
 		{
 			"type": "text/plain",
-		 	"value": "Welcome to Warzone 2100 subdivision. To confirm your email address follow this link: https://wz2100-autohost.net/activate?code=%s"
+		 	"value": "Welcome to Warzone 2100 Autohoster. To confirm your email address follow this link: https://wz2100-autohost.net/activate?code=%s"
 		},
 		{
 			"type":"text/html",
-			"value":"<html><h3>Welcome to Warzone 2100 subdivision.</h3><p>To confirm your email address follow link below.</p><p><a href=\"https://wz2100-autohost.net/activate?code=%s\">Activate account</a></p></html>"
+			"value":"<html><h3>Welcome to Warzone 2100 Autohoster.</h3><p>To confirm your email address follow link below.</p><p><a href=\"https://wz2100-autohost.net/activate?code=%s\">Activate account</a></p></html>"
 		}
 	]
 }`, email, code, code)
@@ -289,6 +316,12 @@ func escapeBacktick(s string) string {
 }
 
 func sendWebhook(url, content string) error {
+	if url == "" {
+		return errors.New("url is empty")
+	}
+	if content == "" {
+		return errors.New("content is empty")
+	}
 	b, err := json.Marshal(map[string]any{
 		"username": "Frontend",
 		"content":  content,

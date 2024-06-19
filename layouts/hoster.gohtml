@@ -302,11 +302,11 @@ var presets = [
 			<tr>
 				<td class="rank-star">
 					{{if gt .Played 4}}
-						{{if gt .Elo2 1800}}
+						{{if gt .Elo 1800}}
 						<object class="rank rank-starGold"></object>
-						{{else if gt .Elo2 1550}}
+						{{else if gt .Elo 1550}}
 						<object class="rank rank-starSilver"></object>
-						{{else if gt .Elo2 1400}}
+						{{else if gt .Elo 1400}}
 						<object class="rank rank-starBronze"></object>
 						{{end}}
 					{{end}}

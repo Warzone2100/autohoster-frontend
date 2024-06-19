@@ -2,19 +2,19 @@ function nameFormatter(value, row) {
 	let ret = `<div align="left" style="height:45px;">
 <table cellspacing="0" cellpadding="0" style="margin: 0">
 <tbody><tr><td class="rank-star">`;
-	Autoplayed = row.Autoplayed !== undefined ? row.Autoplayed : row.autoplayed
-	Autowon = row.Autowon !== undefined ? row.Autowon : row.autowon
-	Autolost = row.Autolost !== undefined ? row.Autolost : row.autolost
+	Played = row.Played
+	Won = row.Won
+	Lost = row.Lost
 	Hash = row.Hash !== undefined ? row.Hash : row.hash
-	Name = row.Name !== undefined ? row.Name : row.name
-	Elo = row.Elo !== undefined ? row.Elo : row.Elo
-	Account = row.Account !== undefined ? row.Account : row.Account
-	EloDiff = row.EloDiff !== undefined ? row.EloDiff : row.EloDiff
+	Name = row.Name
+	Elo = row.Elo
+	Account = row.Account !== undefined ? row.Account : row.AccountID
+	EloDiff = row.EloDiff
 	Identity = row.Identity !== undefined ? row.Identity : row.Identity
 	if(Name.length > 23) {
 		Name = Name.slice(0, 20) + '...';
 	}
-	if(Autoplayed > 4) {
+	if(Played > 4) {
 		if(Elo > 1800) {
 			ret += `<object class="rank rank-starGold"></object>`;
 		} else if(Elo > 1550) {
@@ -24,13 +24,13 @@ function nameFormatter(value, row) {
 		}
 	}
 	ret += `</td><td rowspan="3" class="rank-medal">`;
-	if(Autoplayed > 4) {
-		if(Autolost == 0) {
-		} else if(Autowon >= 24 && Autowon/Autolost > 6) {
+	if(Played > 4) {
+		if(Lost == 0) {
+		} else if(Won >= 24 && Won/Lost > 6) {
 			ret += `<object class="rank rank-medalGold"></object>`;
-		} else if(Autowon >= 12 && Autowon/Autolost > 4) {
+		} else if(Won >= 12 && Won/Lost > 4) {
 			ret += `<object class="rank rank-medalDouble"></object>`;
-		} else if(Autowon >= 6 && Autowon/Autolost > 3) {
+		} else if(Won >= 6 && Won/Lost > 3) {
 			ret += `<object class="rank rank-medalSilver"></object>`;
 		}
 	} else {
@@ -53,25 +53,50 @@ function nameFormatter(value, row) {
 		ret += EloDiff;
 	}
 	ret += `</td></tr><tr><td class="rank-star">`;
-	if(Autoplayed > 60) {
+	if(Played > 60) {
 		ret += `<object class="rank rank-starGold"></object>`;
-	} else if(Autoplayed > 30) {
+	} else if(Played > 30) {
 		ret += `<object class="rank rank-starSilver"></object>`;
-	} else if(Autoplayed > 10) {
+	} else if(Played > 10) {
 		ret += `<object class="rank rank-starBronze"></object>`;
 	}
 	ret += `</td></tr><tr><td class="rank-star">`;
-	if(Autoplayed > 4) {
-		if(Autowon > 60) {
+	if(Played > 4) {
+		if(Won > 60) {
 			ret += `<object class="rank rank-starGold"></object>`;
-		} else if(Autowon > 30) {
+		} else if(Won > 30) {
 			ret += `<object class="rank rank-starSilver"></object>`;
-		} else if(Autowon > 10) {
+		} else if(Won > 10) {
 			ret += `<object class="rank rank-starBronze"></object>`;
 		}
 	}
 	ret += `</td></tr></tbody></table></div>`;
 	return ret;
+}
+var defaultTableOptions = {
+	cache: false,
+	idField: "ID",
+	pagination: true,
+	pageSize: 50,
+	pageNumber: 1,
+	paginationLoop: false,
+	showExtendedPagination: true,
+	pageList: [10, 15, 25, 35, 50, 100, 500],
+	buttonsPrefix: "btn btn-sm btn-primary",
+	buttons: "buttons",
+	classes: "table table-striped table-sm",
+	search: true,
+	showSearchButton: true,
+	searchOnEnterKey: true,
+	showSearchClearButton: true,
+	escape: true,
+	showFilterControlSwitch: true,
+	filterControlVisible: false,
+	stickyHeader: true,
+	filterControl: true,
+	showRefresh: true,
+	toolbar: "#table-toolbar",
+	sortOrder: "desc"
 }
 function BaseLevelSettingsFilters(value) {
 	return ["0", "1", "2"];
@@ -171,7 +196,7 @@ function hashFormatter(value, row) {
 	if(value === null) {
 		return "NULL!"
 	}
-	return value.slice(0, 15) + '...'
+	return `<code title="${value}" class="hashshort">${value}</code>`
 }
 function winrateFormatter(value, row) {
 	return (((row.Autowon+row.Autolost)==0?0:row.Autowon/(row.Autowon+row.Autolost))*100).toFixed(2) + "%"

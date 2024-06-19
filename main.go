@@ -356,23 +356,41 @@ func main() {
 	router.HandleFunc("/wzrecover", wzProfileRecoveryHandlerGET)
 	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
 
-	router.HandleFunc("/moderation/accounts", modAccountsHandler)
-	router.HandleFunc("/moderation/accounts/resendEmail/{id:[0-9]+}", APIcall(APIresendEmailConfirm))
-	router.HandleFunc("/moderation/merge", modMergeHandler)
-	router.HandleFunc("/moderation/news", modNewsHandler)
-	router.HandleFunc("/moderation/logs", basicLayoutHandler("modLogs"))
-	router.HandleFunc("/moderation/bans", modBansHandler)
-	router.HandleFunc("/moderation/identities", basicLayoutHandler("modIdentities"))
+	// moderation endpoints
+	router.HandleFunc("/moderation/accounts", basicSuperadminHandler("modAccounts")).Methods("GET")
+	router.HandleFunc("/moderation/accounts", SuperadminCheck(modAccountsPOST)).Methods("POST")
+	router.HandleFunc("/moderation/accounts/resendEmail/{id:[0-9]+}", APIcall(APISuperadminCheck(APIresendEmailConfirm)))
+	router.HandleFunc("/api/accounts", APIcall(APISuperadminCheck(APIgetAccounts))).Methods("GET", "OPTIONS")
 
+	router.HandleFunc("/moderation/news", basicSuperadminHandler("modNews")).Methods("GET")
+	router.HandleFunc("/moderation/news", SuperadminCheck(modNewsPOST)).Methods("POST")
+
+	router.HandleFunc("/moderation/logs", basicSuperadminHandler("modLogs")).Methods("GET")
+	router.HandleFunc("/api/logs", APIcall(APISuperadminCheck(APIgetLogs))).Methods("GET", "OPTIONS")
+
+	router.HandleFunc("/moderation/bans", basicSuperadminHandler("modBans")).Methods("GET")
+	router.HandleFunc("/moderation/bans", SuperadminCheck(modBansPOST))
+	router.HandleFunc("/api/bans", APIcall(APIgetBans)).Methods("GET", "OPTIONS")
+
+	router.HandleFunc("/moderation/identities", basicSuperadminHandler("modIdentities")).Methods("GET")
+	router.HandleFunc("/moderation/identities", modIdentitiesHandler).Methods("POST")
+	router.HandleFunc("/api/identities", APIcall(APIgetIdentities)).Methods("GET", "OPTIONS")
+
+	router.HandleFunc("/moderation/ratingCategories", basicSuperadminHandler("modRatingCategories")).Methods("GET")
+	router.HandleFunc("/api/ratingCategories", APIcall(APIgetRatingCategories)).Methods("GET", "OPTIONS")
+
+	// public endpoints
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating/", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
 	router.HandleFunc("/games", DbGamesHandler)
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
-	router.HandleFunc("/players", basicLayoutHandler("players"))
-	router.HandleFunc("/players/{id:[0-f]+}", PlayersHandler)
-	router.HandleFunc("/stats", statsHandler)
-	router.HandleFunc("/resstat", resstatHandler)
+	router.HandleFunc("/leaderboards", LeaderboardsHandler)
+	// router.HandleFunc("/leaderboards/{id:[0-9]+}", LeaderboardHandler)
+	// router.HandleFunc("/players", basicLayoutHandler("players"))
+	// router.HandleFunc("/players/{id:[0-f]+}", PlayersHandler)
+	// router.HandleFunc("/stats", statsHandler)
+	// router.HandleFunc("/resstat", resstatHandler)
 	router.HandleFunc("/bans", bansHandler)
 
 	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
@@ -382,22 +400,26 @@ func main() {
 	router.HandleFunc("/api/ws/lobby", func(w http.ResponseWriter, r *http.Request) {
 		APIWSHub(LobbyWSHub, w, r)
 	})
-	router.HandleFunc("/api/ws/games", func(w http.ResponseWriter, r *http.Request) {
-		APIWSHub(GamesWSHub, w, r)
-	})
+	// router.HandleFunc("/api/ws/games", func(w http.ResponseWriter, r *http.Request) {
+	// 	APIWSHub(GamesWSHub, w, r)
+	// })
+
+	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster).Methods("GET")
+
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIcall(APIgetGraphData)).Methods("GET")
 	router.HandleFunc("/api/classify/game/{gid:[0-9]+}", APIcall(APIgetClassChartGame)).Methods("GET")
 	router.HandleFunc("/api/classify/player/{pid:[0-9]+}", APIcall(APIresearchClassification)).Methods("GET")
 	router.HandleFunc("/api/reslog/{gid:[0-9]+}", APIgetResearchlogData).Methods("GET")
-	router.HandleFunc("/api/gamecount/{interval}", APIcall(APIgetDatesGraphData)).Methods("GET")
-	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster).Methods("GET")
-	router.HandleFunc("/api/dayavg", APIcall(APIgetDayAverageByHour)).Methods("GET")
-	router.HandleFunc("/api/playersavg", APIcall(APIgetUniquePlayersPerDay)).Methods("GET")
-	router.HandleFunc("/api/mapcount", APIcall(APIgetMapNameCount)).Methods("GET")
 	router.HandleFunc("/api/replay/{gid:[0-9]+}", APIcall(APIgetReplayFile)).Methods("GET")
 	router.HandleFunc("/api/heatmap/{gid:[0-9]+}", APIcall(APIgetReplayHeatmap)).Methods("GET")
 	router.HandleFunc("/api/animatedheatmap/{gid:[0-9]+}", APIcall(APIgetAnimatedReplayHeatmap)).Methods("GET")
 	router.HandleFunc("/api/animatedheatmap/{gid:[0-9]+}", APIcall(APIheadAnimatedReplayHeatmap)).Methods("HEAD")
+
+	router.HandleFunc("/api/gamecount/{interval}", APIcall(APIgetDatesGraphData)).Methods("GET")
+	router.HandleFunc("/api/dayavg", APIcall(APIgetDayAverageByHour)).Methods("GET")
+	router.HandleFunc("/api/playersavg", APIcall(APIgetUniquePlayersPerDay)).Methods("GET")
+	router.HandleFunc("/api/mapcount", APIcall(APIgetMapNameCount)).Methods("GET")
+
 	router.HandleFunc("/api/hashinfo/{hash:[0-9a-z]+}", APIcall(APIgetHashInfo)).Methods("GET")
 	router.HandleFunc("/api/allowjoining/{hash:[0-9a-z]+}", APIcall(APIgetPlayerAllowedJoining)).Methods("GET")
 	router.HandleFunc("/api/approvedhashes", APIcall(APIgetAllowedModerators)).Methods("GET")
@@ -408,12 +430,8 @@ func main() {
 	router.HandleFunc("/api/elohistory/{pid:[0-9]+}", APIcall(APIgetElodiffChartPlayer)).Methods("GET")
 	router.HandleFunc("/api/players", APIcall(APIgetLeaderboard)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/accounts", APIcall(APIgetaccounts)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/logs", APIcall(APIgetLogs)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/bans", APIcall(APIgetBans)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/identities", APIcall(APIgetIdentities)).Methods("GET", "OPTIONS")
 
-	router.HandleFunc("/elo/calc", EloRecalcHandler)
+	// router.HandleFunc("/elo/calc", EloRecalcHandler)
 
 	// handlers.CompressHandler(router1)
 	// handlers.RecoveryHandler()(router3)

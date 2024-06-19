@@ -364,9 +364,6 @@ func APIgetAllowedModerators(_ http.ResponseWriter, r *http.Request) (int, any) 
 }
 
 func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
-	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		return 403, nil
-	}
 	ret, err := db.GetIdentities(r.Context(), dbpool)
 	if err != nil {
 		return 500, err
@@ -374,10 +371,16 @@ func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return 200, ret
 }
 
-func APIgetaccounts(_ http.ResponseWriter, r *http.Request) (int, any) {
-	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		return 403, nil
+func APIgetRatingCategories(_ http.ResponseWriter, r *http.Request) (int, any) {
+	var ret []byte
+	err := dbpool.QueryRow(r.Context(), `select json_agg(rating_categories) from rating_categories`).Scan(&ret)
+	if err != nil {
+		return 500, err
 	}
+	return 200, ret
+}
+
+func APIgetAccounts(_ http.ResponseWriter, r *http.Request) (int, any) {
 	ret, err := db.GetAccounts(r.Context(), dbpool)
 	if err != nil {
 		return 500, err
@@ -386,9 +389,6 @@ func APIgetaccounts(_ http.ResponseWriter, r *http.Request) (int, any) {
 }
 
 func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, any) {
-	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
-		return 403, nil
-	}
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
