@@ -398,39 +398,6 @@ func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return 200, modResendEmailConfirm(id)
 }
 
-func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, any) {
-	// dbOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
-	// dbLimit := parseQueryInt(r, "limit", 5)
-	// dbOffset := parseQueryInt(r, "offset", 0)
-	// dbOrderBy := parseQueryStringMapped(r, "sort", "elo", map[string]string{
-	// 	"Elo2":       "elo2",
-	// 	"Autoplayed": "autoplayed",
-	// 	"Autowon":    "autowon",
-	// 	"Autolost":   "autolost",
-	// 	"Name":       "name",
-	// 	"ID":         "id",
-	// })
-	rows, err := dbpool.Query(r.Context(), `SELECT id, name, hash, elo2, autoplayed, autolost, autowon, userid, timeplayed, extract(epoch from now() - lastgame)::int FROM leaderboard;`)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return 204, nil
-		}
-		return 500, err
-	}
-	defer rows.Close()
-	var P []PlayerLeaderboard
-	for rows.Next() {
-		var pp PlayerLeaderboard
-		err = rows.Scan(&pp.ID, &pp.Name, &pp.Hash, &pp.Elo2, &pp.Autoplayed, &pp.Autolost, &pp.Autowon, &pp.Userid, &pp.Timeplayed, &pp.LastGame)
-		if err != nil {
-			log.Println(err)
-			return 500, err
-		}
-		P = append(P, pp)
-	}
-	return 200, P
-}
-
 func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	reqLimit := parseQueryInt(r, "limit", 50)
 	if reqLimit > 200 {

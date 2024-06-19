@@ -27,49 +27,19 @@
 		<script src="/static/bootstrap-table/tablehelpers.js"></script>
 		<div class="px-4 py container">
 			<div id="table-toolbar">
-				<h4>Autohoster players</h4>
+				<h4>Autohoster leaderboard</h4>
 			</div>
 			<noscript>
 				Enable javascript to view table contents
 				<style> yes-script { display:none; } </style>
 			</noscript>
 			<yes-script>
-			<table id="table" class="smart-table"
-			data-url="/api/players"
-			data-filter-control="true"
-			data-sort-name="Elo2"
-			data-sort-order="desc"
-			data-show-refresh="true"
-			data-toolbar="#table-toolbar"
-			data-cache="false"
-			data-toggle="table"
-			data-id-field="ID"
-			data-pagination="true"
-			data-page-size="50"
-			data-page-number="1"
-			data-pagination-loop="false"
-			data-show-extended-pagination="true"
-			data-page-list="[10, 15, 25, 35, 50, 100, all]"
-			data-buttons-prefix="btn btn-sm btn-primary"
-			{{/* data-buttons="buttons" */}}
-			data-query-params="queryParams"
-			data-classes="table table-striped table-sm"
-			data-search="true"
-			data-show-search-button="true"
-			data-search-on-enter-key="true"
-			{{/* data-side-pagination="server" */}}
-			{{/* data-search-highlight="true" */}}
-			data-show-search-clear-button="true"
-			data-escape="true"
-			data-show-filter-control-switch="true"
-			data-filter-control-visible="false"
-			data-sticky-header="true">
+			<table id="table" class="smart-table">
 				<thead>
 					<tr>
 						<th data-formatter="rownumberFormatter" data-cell-style="rownumberStyler" data-class="expandme2"></th>
 						<th data-field="Name" data-sortable="true" data-class="width25" data-filter-control="input" data-formatter="nameFormatter">Name</th>
 						<th data-field="Elo2" data-sortable="true" data-sorter="elo2Sorter" data-filter-control="input">Rating</th>
-						{{/* <th data-field="Elo" data-sortable="true" data-filter-control="input">Elo</th> */}}
 						<th data-field="Autoplayed" data-sortable="true" data-filter-control="input" data-filter-default=">=10">Played</th>
 						<th data-field="Autolost" data-sortable="true" data-filter-control="input">Lost</th>
 						<th data-field="Autowon" data-sortable="true" data-filter-control="input">Won</th>
@@ -84,36 +54,30 @@
 			<yes-script>
 		</div>
 		<script>
-		var showUnlinked = false;
-		var $table = $('#table')
-		function buttons() {
-			return {
-				btnFilterRegistered: {
-					text: 'Show only registered',
-					icon: 'fa-solid fa-circle-check',
-					event: function () {
-						showUnlinked = !showUnlinked;
-						$table.bootstrapTable('refresh');
-						if (showUnlinked) {
-							$("button[name='btnFilterRegistered'] > i").removeClass("fa-solid");
-							$("button[name='btnFilterRegistered'] > i").addClass("fa-regular");
-						} else {
-							$("button[name='btnFilterRegistered'] > i").removeClass("fa-regular");
-							$("button[name='btnFilterRegistered'] > i").addClass("fa-solid");
-						}
-					},
-					attributes: {
-						title: 'Shows only registered players.'
-					}
-				}
-			}
-		}
-		function queryParams(params) {
-			params.OnlyRegistered = !showUnlinked;
-			return params
-		}
 		$(function() {
-			$table.bootstrapTable();
+			$('#table').bootstrapTable(Object.assign(defaultTableOptions, {
+				sortName: "ID",
+				url: "/api/leaderboards/",
+				columns: [{
+					field: '',
+					title: ''
+				}, {
+					field: 'name',
+					title: 'Item Name'
+				}, {
+					field: 'price',
+					title: 'Item Price'
+				}]
+				onPageChange: function (number, size) {
+					window.scrollTo({
+						top: 0, left: 0,
+						behavior: 'smooth'
+					});
+				},
+				formatSearch: function () {
+					return 'Search names';
+				}
+			}));
 		})
 		</script>
 		</div>

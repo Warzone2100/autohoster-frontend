@@ -379,16 +379,18 @@ func main() {
 	router.HandleFunc("/moderation/ratingCategories", basicSuperadminHandler("modRatingCategories")).Methods("GET")
 	router.HandleFunc("/api/ratingCategories", APIcall(APIgetRatingCategories)).Methods("GET", "OPTIONS")
 
-	// public endpoints
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating/", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)
+
 	router.HandleFunc("/games", DbGamesHandler)
 	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
+	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
+
 	router.HandleFunc("/leaderboards", LeaderboardsHandler)
-	// router.HandleFunc("/leaderboards/{id:[0-9]+}", LeaderboardHandler)
-	// router.HandleFunc("/players", basicLayoutHandler("players"))
-	// router.HandleFunc("/players/{id:[0-f]+}", PlayersHandler)
+	router.HandleFunc("/leaderboards/{category:[0-9]+}", LeaderboardHandler).Methods("GET")
+	router.HandleFunc("/api/leaderboards/{category:[0-9]+}", APIcall(APIgetLeaderboard)).Methods("GET", "OPTIONS")
+	// router.HandleFunc("/account/{id:[0-9]+}", PlayerHandler)
 	// router.HandleFunc("/stats", statsHandler)
 	// router.HandleFunc("/resstat", resstatHandler)
 	router.HandleFunc("/bans", bansHandler)
@@ -428,8 +430,6 @@ func main() {
 	router.HandleFunc("/api/ispbypasshashes", APIcall(APIgetISPbypassHashes)).Methods("GET")
 	router.HandleFunc("/api/ispbypass/{hash:[0-9a-z]+}", APIcall(APIgetISPbypassHash)).Methods("GET")
 	router.HandleFunc("/api/elohistory/{pid:[0-9]+}", APIcall(APIgetElodiffChartPlayer)).Methods("GET")
-	router.HandleFunc("/api/players", APIcall(APIgetLeaderboard)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
 
 	// router.HandleFunc("/elo/calc", EloRecalcHandler)
 

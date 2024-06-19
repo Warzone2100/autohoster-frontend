@@ -6,13 +6,13 @@ function nameFormatter(value, row) {
 	Won = row.Won
 	Lost = row.Lost
 	Hash = row.Hash !== undefined ? row.Hash : row.hash
-	Name = row.Name
+	DisplayName = row.DisplayName
 	Elo = row.Elo
 	Account = row.Account !== undefined ? row.Account : row.AccountID
 	EloDiff = row.EloDiff
 	Identity = row.Identity !== undefined ? row.Identity : row.Identity
-	if(Name.length > 23) {
-		Name = Name.slice(0, 20) + '...';
+	if(DisplayName.length > 23) {
+		DisplayName = DisplayName.slice(0, 20) + '...';
 	}
 	if(Played > 4) {
 		if(Elo > 1800) {
@@ -37,12 +37,12 @@ function nameFormatter(value, row) {
 		ret += `<object class="rank rank-pacifier"></object>`;
 	}
 	ret += `</td><td rowspan="3" class="rank-link">`;
-	// ret += `<a href="/players/${ID}" class="text-nowrap${Userid>0?' rank-name-checkmark':""}" title="Hash: ${Hash}">${Name}</a>`;
+	// ret += `<a href="/players/${ID}" class="text-nowrap${Userid>0?' rank-Displayname-checkmark':""}" title="Hash: ${Hash}">${DisplayName}</a>`;
 	if(Account <= 0) {
-		ret += `<a href="/identities/${Identity}" class="text-nowrap">${Name}</a>`;
+		ret += `<a href="/identities/${Identity}" class="text-nowrap">${DisplayName}</a>`;
 		ret += '<br><small class="text-muted class="text-nowrap"">not registered</small>';
 	} else {
-		ret += `<a href="/players/${Account}" class="text-nowrap">${Name}</a>`;
+		ret += `<a href="/players/${Account}" class="text-nowrap">${DisplayName}</a>`;
 		ret += `<br>${Elo}`;
 	}
 	if(EloDiff != undefined && EloDiff != 0) {
@@ -76,12 +76,13 @@ function nameFormatter(value, row) {
 var defaultTableOptions = {
 	cache: false,
 	idField: "ID",
+	sidePagination: "server",
 	pagination: true,
+	pageList: [10, 15, 25, 35, 50, 100, 250, 500],
 	pageSize: 50,
 	pageNumber: 1,
 	paginationLoop: false,
 	showExtendedPagination: true,
-	pageList: [10, 15, 25, 35, 50, 100, 500],
 	buttonsPrefix: "btn btn-sm btn-primary",
 	buttons: "buttons",
 	classes: "table table-striped table-sm",
@@ -90,10 +91,10 @@ var defaultTableOptions = {
 	searchOnEnterKey: true,
 	showSearchClearButton: true,
 	escape: true,
-	showFilterControlSwitch: true,
-	filterControlVisible: false,
-	stickyHeader: true,
 	filterControl: true,
+	filterControlVisible: false,
+	showFilterControlSwitch: true,
+	stickyHeader: true,
 	showRefresh: true,
 	toolbar: "#table-toolbar",
 	sortOrder: "desc"
