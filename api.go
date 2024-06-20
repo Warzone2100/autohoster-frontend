@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -122,7 +121,7 @@ func APIgetDatesGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 }
 
 func APIgetDayAverageByHour(_ http.ResponseWriter, r *http.Request) (int, any) {
-	rows, derr := dbpool.Query(r.Context(), `select count(gg) as c, extract('hour' from timestarted) as d from games as gg group by d order by d`)
+	rows, derr := dbpool.Query(r.Context(), `select count(gg) as c, extract('hour' from time_started) as d from games as gg group by d order by d`)
 	if derr != nil {
 		return 500, derr
 	}
@@ -140,6 +139,7 @@ func APIgetDayAverageByHour(_ http.ResponseWriter, r *http.Request) (int, any) {
 }
 
 func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, any) {
+	return http.StatusNotImplemented, nil
 	rows, derr := dbpool.Query(r.Context(),
 		`SELECT d::text, count(r.p)
 		FROM (SELECT distinct unnest(gg.players) as p, date_trunc('day', gg.timestarted) AS d FROM games AS gg) as r
@@ -167,7 +167,7 @@ func APIgetUniquePlayersPerDay(_ http.ResponseWriter, r *http.Request) (int, any
 }
 
 func APIgetMapNameCount(_ http.ResponseWriter, r *http.Request) (int, any) {
-	rows, derr := dbpool.Query(r.Context(), `select mapname, count(*) as c from games group by mapname order by c desc limit 30`)
+	rows, derr := dbpool.Query(r.Context(), `select map_name, count(*) as c from games group by map_name order by c desc limit 30`)
 	if derr != nil {
 		return 500, derr
 	}
@@ -210,7 +210,7 @@ func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	reslog := "0"
-	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(researchlog, '{}') FROM games WHERE id = $1;`, gid).Scan(&reslog)
+	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(research_log, '{}') FROM games WHERE id = $1;`, gid).Scan(&reslog)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			return 204, nil
@@ -226,141 +226,6 @@ func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, any) {
 		return 500, err
 	}
 	return 200, CountClassification(resl)
-}
-
-func APIgetHashInfo(_ http.ResponseWriter, r *http.Request) (int, any) {
-	params := mux.Vars(r)
-	phash := params["hash"]
-	var resp []byte
-	derr := dbpool.QueryRow(r.Context(),
-		`SELECT json_build_object(
-			'hash', $1::text,
-			'id', players.id,
-			'name', players.name,
-			'spam', COALESCE((SELECT COUNT(*) FROM games WHERE players.id = ANY(games.players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true), 0),
-			'ispbypass', COALESCE(accounts.bypass_ispban, false),
-			'userid', COALESCE(accounts.id, -1),
-			'banned', COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false),
-			'banreason', bans.reason,
-			'bandate', to_char(whenbanned, 'DD Mon YYYY HH12:MI:SS'),
-			'banid', 'M-' || bans.id,
-			'banexpiery', bans.duration,
-			'banexpierystr', CASE WHEN bans.duration = 0 THEN 'never' ELSE to_char(whenbanned + (duration || ' second')::interval, 'DD Mon YYYY HH12:MI:SS') END
-		)
-		FROM players
-		LEFT OUTER JOIN bans ON players.id = bans.playerid
-		LEFT OUTER JOIN accounts ON players.id = accounts.wzprofile2
-		WHERE players.hash = $1::text OR bans.hash = $1::text
-		ORDER BY bans.id DESC`, phash).Scan(&resp)
-	if derr != nil {
-		if errors.Is(derr, pgx.ErrNoRows) {
-			return 200, map[string]any{
-				"hash":      phash,
-				"id":        0,
-				"name":      "Noname",
-				"spam":      0,
-				"ispbypass": false,
-				"userid":    -1,
-				"banned":    false,
-			}
-		} else {
-			return 500, derr
-		}
-	}
-	return 200, resp
-}
-
-func APIgetPlayerAllowedJoining(w http.ResponseWriter, r *http.Request) (int, any) {
-	params := mux.Vars(r)
-	phash := params["hash"]
-	badplayed := 0
-	derr := dbpool.QueryRow(r.Context(), `SELECT COUNT(id) FROM games WHERE (SELECT id FROM players WHERE hash = $1) = ANY(players) AND gametime < 30000 AND timestarted+'1 day' > now() AND calculated = true;`, phash).Scan(&badplayed)
-	if derr != nil {
-		return 500, derr
-	}
-	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, fmt.Sprint(badplayed))
-	return -1, nil
-}
-
-func APIgetPlayerLinked(w http.ResponseWriter, r *http.Request) (int, any) {
-	params := mux.Vars(r)
-	phash := params["hash"]
-	linked := 0
-	derr := dbpool.QueryRow(r.Context(), `select count(*) from accounts where wzprofile2 = (select id from players where hash = $1);`, phash).Scan(&linked)
-	if derr != nil {
-		return 500, derr
-	}
-	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, fmt.Sprint(linked))
-	return -1, nil
-}
-
-func APIgetLinkedPlayers(_ http.ResponseWriter, r *http.Request) (int, any) {
-	hashes := []string{}
-	rows, err := dbpool.Query(r.Context(), `select hash from players join accounts on players.id = accounts.wzprofile2;`)
-	if err != nil {
-		return 500, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		h := ""
-		err = rows.Scan(&h)
-		if err != nil {
-			return 500, err
-		}
-		hashes = append(hashes, h)
-	}
-	return 200, hashes
-}
-
-func APIgetISPbypassHashes(_ http.ResponseWriter, r *http.Request) (int, any) {
-	hashes := []string{}
-	rows, err := dbpool.Query(r.Context(), `select hash from players join accounts on players.id = accounts.wzprofile2 where accounts.bypass_ispban = true;`)
-	if err != nil {
-		return 500, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		h := ""
-		err = rows.Scan(&h)
-		if err != nil {
-			return 500, err
-		}
-		hashes = append(hashes, h)
-	}
-	return 200, hashes
-}
-
-func APIgetISPbypassHash(w http.ResponseWriter, r *http.Request) (int, any) {
-	params := mux.Vars(r)
-	phash := params["hash"]
-	linked := 0
-	derr := dbpool.QueryRow(r.Context(), `select count(*) from accounts where wzprofile2 = (select id from players where hash = $1) and bypass_ispban = true;`, phash).Scan(&linked)
-	if derr != nil {
-		return 500, derr
-	}
-	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, fmt.Sprint(linked))
-	return -1, nil
-}
-
-func APIgetAllowedModerators(_ http.ResponseWriter, r *http.Request) (int, any) {
-	rows, derr := dbpool.Query(r.Context(), `select hash from players join accounts on players.id = accounts.wzprofile2 where accounts.allow_preset_request = true;`)
-	if derr != nil {
-		return 500, derr
-	}
-	defer rows.Close()
-	re := []string{}
-	for rows.Next() {
-		var h string
-		err := rows.Scan(&h)
-		if err != nil {
-			return 500, err
-		}
-		re = append(re, h)
-	}
-	return 200, re
 }
 
 func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {

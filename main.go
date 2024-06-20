@@ -422,16 +422,7 @@ func main() {
 	router.HandleFunc("/api/playersavg", APIcall(APIgetUniquePlayersPerDay)).Methods("GET")
 	router.HandleFunc("/api/mapcount", APIcall(APIgetMapNameCount)).Methods("GET")
 
-	router.HandleFunc("/api/hashinfo/{hash:[0-9a-z]+}", APIcall(APIgetHashInfo)).Methods("GET")
-	router.HandleFunc("/api/allowjoining/{hash:[0-9a-z]+}", APIcall(APIgetPlayerAllowedJoining)).Methods("GET")
-	router.HandleFunc("/api/approvedhashes", APIcall(APIgetAllowedModerators)).Methods("GET")
-	router.HandleFunc("/api/linkedhashes", APIcall(APIgetLinkedPlayers)).Methods("GET")
-	router.HandleFunc("/api/islinked/{hash:[0-9a-z]+}", APIcall(APIgetPlayerLinked)).Methods("GET")
-	router.HandleFunc("/api/ispbypasshashes", APIcall(APIgetISPbypassHashes)).Methods("GET")
-	router.HandleFunc("/api/ispbypass/{hash:[0-9a-z]+}", APIcall(APIgetISPbypassHash)).Methods("GET")
-	router.HandleFunc("/api/elohistory/{pid:[0-9]+}", APIcall(APIgetElodiffChartPlayer)).Methods("GET")
-
-	// router.HandleFunc("/elo/calc", EloRecalcHandler)
+	router.HandleFunc("/elo/calc", EloRecalcHandler)
 
 	// handlers.CompressHandler(router1)
 	// handlers.RecoveryHandler()(router3)
