@@ -119,5 +119,11 @@ func APIgetLeaderboard(_ http.ResponseWriter, r *http.Request) (int, any) {
 		searchColumn:            "display_name",
 		searchSimilarity:        0.3,
 		addWhereCase:            fmt.Sprintf("category = %d AND played > 0", category),
+		columnMappings: map[string]string{
+			"Won":         "won",
+			"Lost":        "lost",
+			"Elo":         "elo",
+			"DisplayName": "display_name",
+		},
 	})
 }

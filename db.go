@@ -42,12 +42,20 @@ func genericViewRequest[T any](r *http.Request, params genericRequestParams) (in
 	whereargs := []any{}
 
 	reqFilterJ := parseQueryString(r, "filter", "")
-	reqFilterFields := map[string]string{}
+	reqFilterFieldsUnmapped := map[string]string{}
 	reqDoFilters := false
 	if reqFilterJ != "" {
-		err := json.Unmarshal([]byte(reqFilterJ), &reqFilterFields)
-		if err == nil && len(reqFilterFields) > 0 {
+		err := json.Unmarshal([]byte(reqFilterJ), &reqFilterFieldsUnmapped)
+		if err == nil && len(reqFilterFieldsUnmapped) > 0 {
 			reqDoFilters = true
+		}
+	}
+
+	reqFilterFields := map[string]string{}
+	for k, v := range reqFilterFieldsUnmapped {
+		m, ok := params.columnMappings[k]
+		if ok {
+			reqFilterFields[m] = v
 		}
 	}
 
