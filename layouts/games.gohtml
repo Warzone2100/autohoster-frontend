@@ -306,7 +306,7 @@
 			var darkColorGridX = "#333";
 			var darkColorGridY = "#555";
 			var dany = {};
-			var dfields =  ['kills', 'power', 'score', 'droid', 'droidlost', 'droidbuilt', 'droidhp', 'struct', 'structbuilt', 'structlost', 'structkilled', 'summexp', 'oilrigs', 'rescount', 'kd', 'powerlost', 'powerwon', 'pwl', 'labActivity'];
+			var dfields =  ['kills', 'power', 'score', 'droids', 'droidsLost', 'droidsBuilt', 'hp', 'structs', 'structuresBuilt', 'structuresLost', 'structureKills', 'summExp', 'oilRigs', 'researchComplete', 'kd', 'recentPowerLost', 'recentPowerWon', 'pwl', 'labActivity'];
 			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Units hp', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio', 'Power lost', 'Power won', 'Power won/lost' , 'Lab activity'];
 			var chartDatasetName = dfields[0];
 			var dtempl = [{{range $k, $player := .Players}}{{if ne $player.Usertype "spectator"}}
@@ -483,11 +483,11 @@
 								dany[v][pln].inverted = false;
 							}
 							if(v == 'kd') {
-								dany[v][pln].data.push(invers*(tick.kills[pln])/(tick.droidlost[pln]));
+								dany[v][pln].data.push(invers*(tick.kills[pln])/(tick.droidsLost[pln]));
 							} else if(v == 'labActivity') {
-								dany[v][pln].data.push(100*invers*((tick.labperformance[pln])/(tick.labpotential[pln])));
+								dany[v][pln].data.push(100*invers*((tick.recentResearchPerformance[pln])/(tick.recentResearchPotential[pln])));
 							} else if(v == 'pwl') {
-								dany[v][pln].data.push(invers*((tick.powerwon[pln])/(tick.powerlost[pln])));
+								dany[v][pln].data.push(invers*((tick.recentPowerWon[pln])/(tick.recentPowerLost[pln])));
 							} else {
 								dany[v][pln].data.push(invers*tick[v][pln]);
 							}
