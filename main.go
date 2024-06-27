@@ -163,6 +163,7 @@ func accountMiddleware(next http.Handler) http.Handler {
 			terminatedHandler(w, r)
 			return
 		}
+		next.ServeHTTP(w, r)
 	})
 }
 
