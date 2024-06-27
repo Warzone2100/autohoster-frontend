@@ -59,95 +59,32 @@ func ByteCountIEC(b uint64) string {
 }
 
 func sessionAppendUser(r *http.Request, a map[string]any) map[string]any {
-	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
+	if !checkUserAuthorized(r) {
 		return nil
 	}
 	var sessid int
-	var sessuname string
-	var sessemail string
-	var sesseconf string
-	// var sessdisctoken string
-	// var sessdiscrefreshtoken string
-	// var sessdiscrefreshwhenepoch int
-	// var sessdiscstate string
-	// var sessdiscurl string
-	// var sesswzprofile int
-	// var sesswzprofile2 int
-	// var sessdisc map[string]any
-	// var sessvktoken string
-	// var sessvkurl string
-	// var sessvkuid int
-	// var sessvk map[string]any
-
-	sessuname = sessionManager.GetString(r.Context(), "User.Username")
-	derr := dbpool.QueryRow(context.Background(), `
-		SELECT id, email,
-		coalesce(extract(epoch from email_confirmed), 0)::text
-		FROM accounts WHERE username = $1`, sessuname).
+	var sessuname, sessemail, sesseconf string
+	var hasIdentities bool
+	sessuname = sessionGetUsername(r)
+	err := dbpool.QueryRow(context.Background(), `SELECT id, email,
+	coalesce(extract(epoch from email_confirmed), 0)::text
+	FROM accounts WHERE username = $1`, sessuname).
 		Scan(&sessid, &sessemail, &sesseconf)
-	if derr != nil {
-		log.Println("sessionAppendUser: " + derr.Error())
+
+	if err != nil {
+		log.Println("sessionAppendUser (accounts): " + err.Error())
+	} else {
+		err = dbpool.QueryRow(context.Background(), `SELECT count(*) > 0 FROM identities WHERE account = $1`, sessid).Scan(&hasIdentities)
+		if err != nil {
+			log.Println("sessionAppendUser (identities): " + err.Error())
+		}
 	}
-	// sessdiscrefreshwhen := time.Unix(int64(sessdiscrefreshwhenepoch), 0)
-	// if sessdisctoken == "" || sessdiscrefreshtoken == "" {
-	// 	sessdiscstate = generateRandomString(32)
-	// 	sessdiscurl = DiscordGetUrl(sessdiscstate)
-	// 	sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
-	// } else {
-	// 	token := oauth2.Token{AccessToken: sessdisctoken, RefreshToken: sessdiscrefreshtoken, Expiry: sessdiscrefreshwhen}
-	// 	tokenold := token
-	// 	sessdisc = DiscordGetUInfo(&token)
-	// 	if token.AccessToken != tokenold.AccessToken || token.RefreshToken != tokenold.RefreshToken || token.Expiry != tokenold.Expiry {
-	// 		log.Println("Discord token refreshed")
-	// 		tag, derr := dbpool.Exec(context.Background(), "UPDATE accounts SET discord_token = $1, discord_refresh = $2, discord_refresh_date = $3 WHERE username = $4", token.AccessToken, token.RefreshToken, token.Expiry, sessuname)
-	// 		if derr != nil {
-	// 			log.Println("Database call error: " + derr.Error())
-	// 		}
-	// 		if tag.RowsAffected() != 1 {
-	// 			log.Println("Database update error, rows affected " + string(tag))
-	// 		}
-	// 	}
-	// 	if discid, ok := sessdisc["id"].(string); ok {
-	// 		tag, derr := dbpool.Exec(context.Background(), "UPDATE accounts SET discord_user_ids = array_sort_unique($1::text || discord_user_ids) WHERE username = $2", discid, sessuname)
-	// 		if derr != nil {
-	// 			log.Println("Database call error: " + derr.Error())
-	// 		}
-	// 		if tag.RowsAffected() != 1 {
-	// 			log.Println("Database update error, rows affected " + string(tag))
-	// 		}
-	// 	}
-	// 	if token.AccessToken == "" {
-	// 		sessdiscstate = generateRandomString(32)
-	// 		sessdiscurl = DiscordGetUrl(sessdiscstate)
-	// 		sessionManager.Put(r.Context(), "User.Discord.State", sessdiscstate)
-	// 	}
-	// 	sessdisctoken = token.AccessToken
-	// }
-	// wzprofile := getWzProfile(r.Context(), sesswzprofile, "old_players3")
-	// if wzprofile != nil {
-	// 	wzprofile["Userid"] = sessid
-	// }
-	// wzprofile2 := getWzProfile(r.Context(), sesswzprofile2, "players")
-	// if wzprofile2 != nil {
-	// 	wzprofile2["Userid"] = sessid
-	// }
 	a["User"] = map[string]any{
-		"Username": sessuname,
-		"Id":       sessid,
-		"Email":    sessemail,
-		"Econf":    sesseconf,
-		// "WzProfile":  wzprofile,
-		// "WzProfile2": wzprofile2,
-		// "Discord": map[string]any{
-		// 	"Token":   sessdisctoken,
-		// 	"AuthUrl": sessdiscurl,
-		// 	"Data":    sessdisc,
-		// },
-		// "VK": map[string]any{
-		// 	"Token":   sessvktoken,
-		// 	"AuthUrl": sessvkurl,
-		// 	"Data":    sessvk,
-		// },
+		"Username":    sessuname,
+		"Id":          sessid,
+		"Email":       sessemail,
+		"Econf":       sesseconf,
+		"HasIdentity": hasIdentities,
 	}
 	a["UserAuthorized"] = "True"
 	a["IsSuperadmin"] = isSuperadmin(r.Context(), sessionGetUsername(r))
@@ -197,34 +134,35 @@ func shouldCache(maxage int, h http.Handler) http.HandlerFunc {
 
 func accountMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if checkUserAuthorized(r) {
-			u := sessionGetUsername(r)
-			go func() {
-				tag, err := dbpool.Exec(context.Background(), "UPDATE accounts SET last_seen = now() WHERE username = $1", u)
-				if err != nil {
-					log.Printf("Failed to set last seen on user [%q]", u)
-					return
-				}
-				if !tag.Update() || tag.RowsAffected() != 1 {
-					log.Printf("Last seen update for [%q] is sus (%s)", u, tag.String())
-				}
-			}()
-			var t bool
-			err := dbpool.QueryRow(r.Context(), "SELECT terminated FROM accounts WHERE username = $1", u).Scan(&t)
+		if !checkUserAuthorized(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		u := sessionGetUsername(r)
+		go func() {
+			tag, err := dbpool.Exec(context.Background(), "UPDATE accounts SET last_seen = now() WHERE username = $1", u)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					log.Printf("Error checking account terminated username [%q]: %s", u, err.Error())
-					terminatedHandler(w, r)
-					return
-				}
+				log.Printf("Failed to set last seen on user [%q]", u)
+				return
 			}
-			if t {
-				log.Printf("Terminated user performed request, username [%q]", u)
+			if !tag.Update() || tag.RowsAffected() != 1 {
+				log.Printf("Last seen update for [%q] is sus (%s)", u, tag.String())
+			}
+		}()
+		var t bool
+		err := dbpool.QueryRow(r.Context(), "SELECT terminated FROM accounts WHERE username = $1", u).Scan(&t)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				log.Printf("Error checking account terminated username [%q]: %s", u, err.Error())
 				terminatedHandler(w, r)
 				return
 			}
 		}
-		next.ServeHTTP(w, r)
+		if t {
+			log.Printf("Terminated user performed request, username [%q]", u)
+			terminatedHandler(w, r)
+			return
+		}
 	})
 }
 
