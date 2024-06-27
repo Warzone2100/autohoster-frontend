@@ -32,10 +32,9 @@
 							<div class="col-sm-4"><h6 class="mb-0">Username</h6></div>
 							<div class="col-sm-8">{{ .User.Username }}</div>
 						</div><hr>
-						<div class="row">
+						{{/* <div class="row">
 							<div class="col-sm-4"><h6 class="mb-0">Discord</h6></div>
 							<div class="col-sm-8">
-								{{/* FIXME: Discord integration not working rn */}}
 								{{if .Uesr.Discord.DiscordError}}
 									{{.Uesr.Discord.DiscordError}}
 								{{end}}
@@ -46,7 +45,7 @@
 									<a href="{{.User.Discord.AuthUrl}}">Link</a>
 								{{end}}
 							</div>
-						</div>
+						</div> */}}
 					</div>
 				</div>
 			</div>
@@ -76,7 +75,7 @@
 			<a href="/register" class="btn btn-primary">Register</a>
 			</div>
 			{{else}}
-			{{if not .User.WzProfile2}}
+			{{if not .User.HasIdentity}}
 			<div class="text-center">
 			<h4>Please link in-game profile before reporting others.</h4>
 			</div>
