@@ -395,9 +395,9 @@ func main() {
 	// router.HandleFunc("/resstat", resstatHandler)
 	router.HandleFunc("/bans", bansHandler)
 
-	router.HandleFunc("/b/begin", GameAcceptCreateHandler)
-	router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
-	router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
+	// router.HandleFunc("/b/begin", GameAcceptCreateHandler)
+	// router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
+	// router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
 
 	router.HandleFunc("/api/ws/lobby", func(w http.ResponseWriter, r *http.Request) {
 		APIWSHub(LobbyWSHub, w, r)
