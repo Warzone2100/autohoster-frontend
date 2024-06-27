@@ -16,6 +16,7 @@
 			Hash: {{$v.Hash}}<br>
 			Public key: {{if $v.Pkey}}{{base64encode $v.Pkey}}{{else}}Not known!{{end}}</p>
 			{{end}}
+			<p><a href="/wzlinkcheck" class="btn btn-primary">Link identity</a></p>
 		</div>
 	</body>
 </html>
@@ -31,17 +32,15 @@
 		<div class="container text-center py-2" style="max-width: 750px;">
 			{{if eq .LinkStatus "done"}}
 			<p>You successfully linked your account to in-game profile:</p>
-			Hash: <code>{{.PlayerHash}}</code><br>
-			Player ID: <code>{{.PlayerID}}</code><br>
+			Public key: <code>{{.PlayerKey}}</code><br>
 			Player name: <code>{{.PlayerName}}</code>
 			{{else}}
 			<h2>Warzone 2100 Profile linking</h2>
 			<p><b>WARNING:</b> Anyone who sees this code is capable of taking over your account, games and rating!
-			And administration will be unable to help you in such case. Your .sta2 file has same power as combination of your login and password!
-			You must be the first one who sends this code!</p>
-			<p>Due to not synchronized identity handshake it is advised to wait 2-5 seconds before sending the message.</p>
-			<p><b>Refresh this page after you sent the message.</b></p>
+			Administration will be unable to help you in case of an account takeover that involves identity linking.
+			Your .sta2 file has same power as combination of your login and password.</p>
 			<p>There will be no indication in-game that you sent the code, just refresh this page once you sent it. No need to send it multiple times.</p>
+			<p>Only send this code to lobbies that are hosted by the Autohoster! Verify that it is by checking host's identity, it must be: <code>a0c124533ddcaf5a19cc</code></p>
 			<style>.hiddenConfirmCode { display: none; }</style>
 			<noscript>
 				<style>yes-script { display: none; }</style>
@@ -61,6 +60,7 @@
 			<div id="showBlock" class="hiddenConfirmCode">
 			<p>To link an in-game profile to your account send following message in chat of any Autohoster room:<p>
 			<code>{{.WzConfirmCode}}</code>
+			<p><b>Refresh this page after you sent the message.</b></p>
 			</div>
 			{{end}}
 		</div>
