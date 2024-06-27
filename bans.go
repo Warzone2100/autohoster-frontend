@@ -10,46 +10,51 @@ import (
 
 func bansHandler(w http.ResponseWriter, r *http.Request) {
 	type viewBan struct {
-		ID        int
-		Player    PlayerLeaderboard
-		Reason    string
-		IssuedAt  string
-		ExpiresAt string
-		IsBanned  bool
+		ID           int
+		Identity     *int
+		IdentityName *string
+		Account      *int
+		AccountName  *string
+		Reason       string
+		IssuedAt     string
+		ExpiresAt    string
+		IsBanned     bool
 	}
 	ret := []viewBan{}
 
-	var banid, duration int
-	var whenbanned time.Time
-	var reason string
+	var (
+		banid       int
+		whenbanned  time.Time
+		whenexpires *time.Time
+		reason      string
+		ident       *int
+		identName   *string
+		acc         *int
+		accName     *string
+	)
 
-	var pid, pelo2, pautoplayed, pautolost, pautowon, puid int
-	var pname, phash string
 	_, err := dbpool.QueryFunc(r.Context(),
-		`select bans.id, time_issued, time_expires, reason
-		from bans
-		order by bans.id desc;`, []any{},
-		[]any{&banid, &whenbanned, &duration, &reason},
+		`select
+	bans.id, accounts.id, accounts.display_name, identities.id, identities.name, time_issued, time_expires, reason
+from bans
+left join identities on bans.identity = identities.id
+left join accounts on bans.account = accounts.id
+order by bans.id desc;`, []any{},
+		[]any{&banid, &acc, &accName, &ident, &identName, &whenbanned, &whenexpires, &reason},
 		func(_ pgx.QueryFuncRow) error {
 			v := viewBan{
-				ID: banid,
-				Player: PlayerLeaderboard{
-					ID:         pid,
-					Name:       pname,
-					Hash:       phash,
-					Elo2:       pelo2,
-					Autoplayed: pautoplayed,
-					Autolost:   pautolost,
-					Autowon:    pautowon,
-					Userid:     puid,
-				},
-				Reason:   reason,
-				IssuedAt: whenbanned.Format(time.DateTime),
+				ID:           banid,
+				Identity:     ident,
+				IdentityName: identName,
+				Account:      acc,
+				AccountName:  accName,
+				Reason:       reason,
+				IssuedAt:     whenbanned.Format(time.DateTime),
 			}
-			if duration == 0 {
+			if whenexpires == nil {
 				v.ExpiresAt = "Never"
 			} else {
-				expiresAt := whenbanned.Add(time.Second * time.Duration(duration))
+				expiresAt := *whenexpires
 				v.ExpiresAt = expiresAt.Format(time.DateTime)
 				v.IsBanned = time.Now().Before(expiresAt)
 			}
