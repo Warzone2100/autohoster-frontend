@@ -325,6 +325,33 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, any) {
 	}
 }
 
+func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
+	return genericViewRequest[struct {
+		ID      int
+		Name    string
+		Pkey    []byte
+		Hash    string
+		Account *int
+	}](r, genericRequestParams{
+		tableName:               "identities_view",
+		limitClamp:              500,
+		sortDefaultOrder:        "desc",
+		sortDefaultColumn:       "id",
+		sortColumns:             []string{"id", "name", "account"},
+		filterColumnsFull:       []string{"id"},
+		filterColumnsStartsWith: []string{"pkey", "hash"},
+		searchColumn:            "name",
+		searchSimilarity:        0.3,
+		columnMappings: map[string]string{
+			"ID":      "id",
+			"Name":    "name",
+			"Pkey":    "pkey",
+			"Hash":    "hash",
+			"Account": "account",
+		},
+	})
+}
+
 func modResendEmailConfirm(accountID int) error {
 	var email, emailcode string
 	err := dbpool.QueryRow(context.Background(), `SELECT email, email_confirm_code FROM accounts WHERE id = $1`, accountID).Scan(&email, &emailcode)

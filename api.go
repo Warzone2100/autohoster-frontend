@@ -228,14 +228,6 @@ func APIgetClassChartGame(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return 200, CountClassification(resl)
 }
 
-func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
-	ret, err := db.GetIdentities(r.Context(), dbpool)
-	if err != nil {
-		return 500, err
-	}
-	return 200, ret
-}
-
 func APIgetRatingCategories(_ http.ResponseWriter, r *http.Request) (int, any) {
 	var ret []byte
 	err := dbpool.QueryRow(r.Context(), `select json_agg(rating_categories) from rating_categories`).Scan(&ret)
