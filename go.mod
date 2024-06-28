@@ -4,8 +4,6 @@ go 1.22.3
 
 toolchain go1.22.4
 
-replace github.com/warzone2100/autohoster-db => /home/max/p/autohoster-db
-
 require (
 	github.com/DataDog/zstd v1.5.2
 	github.com/MakeNowJust/heredoc v1.0.0
@@ -14,7 +12,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/georgysavva/scany v1.2.2
-	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
@@ -49,7 +46,6 @@ require (
 	github.com/lib/pq v1.10.6 // indirect
 	github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18
 	github.com/shopspring/decimal v1.3.1 // indirect
-	github.com/warzone2100/autohoster-db v0.0.0-00010101000000-000000000000
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0
 	golang.org/x/text v0.14.0 // indirect

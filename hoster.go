@@ -14,7 +14,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/pgxpool"
-	db "github.com/warzone2100/autohoster-db"
 )
 
 var regexMaphash = regexp.MustCompile(`^[a-zA-Z0-9-]*$`)
@@ -259,13 +258,43 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
 		return
 	}
-	i, err := db.GetUserIdentities(r.Context(), dbpool, sessionGetUserID(r))
+	idt := []struct {
+		ID      int
+		Name    string
+		Pkey    []byte
+		Hash    string
+		Account int
+	}{}
+	var (
+		ID      int
+		Name    string
+		Pkey    []byte
+		Hash    string
+		Account int
+	)
+	_, err := dbpool.QueryFunc(r.Context(), `select id, name, pkey, hash, account from identities where account = $1`, []any{sessionGetUserID(r)},
+		[]any{&ID, &Name, &Pkey, &Hash, &Account}, func(qfr pgx.QueryFuncRow) error {
+			idt = append(idt, struct {
+				ID      int
+				Name    string
+				Pkey    []byte
+				Hash    string
+				Account int
+			}{
+				ID:      ID,
+				Name:    Name,
+				Pkey:    Pkey,
+				Hash:    Hash,
+				Account: Account,
+			})
+			return nil
+		})
 	if err != nil && err != pgx.ErrNoRows {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + err.Error()})
 		return
 	}
 	basicLayoutLookupRespond("wzlink", w, r, map[string]any{
-		"Identities": i,
+		"Identities": idt,
 	})
 }
 

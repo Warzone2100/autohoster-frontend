@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
-	db "github.com/warzone2100/autohoster-db"
 )
 
 func APIcall(c func(http.ResponseWriter, *http.Request) (int, any)) func(http.ResponseWriter, *http.Request) {
@@ -238,7 +238,26 @@ func APIgetRatingCategories(_ http.ResponseWriter, r *http.Request) (int, any) {
 }
 
 func APIgetAccounts(_ http.ResponseWriter, r *http.Request) (int, any) {
-	ret, err := db.GetAccounts(r.Context(), dbpool)
+	type requestRow struct {
+		ID               int
+		Username         string
+		Email            string
+		AccountCreated   time.Time
+		LastSeen         *time.Time
+		Terminated       bool
+		EmailConfirmed   *time.Time
+		AllowHostRequest bool
+		DisplayName      *string
+		LastReport       time.Time
+		LastRequest      time.Time
+	}
+	ret := []requestRow{}
+	scanRow := requestRow{}
+	_, err := dbpool.QueryFunc(r.Context(), `select id, username, email, account_created, last_seen, terminated, email_confirmed, allow_host_request, display_name, last_report, last_request from accounts order by id desc`, []any{},
+		[]any{&scanRow.ID, &scanRow.Username, &scanRow.Email, &scanRow.AccountCreated, &scanRow.LastSeen, &scanRow.Terminated, &scanRow.EmailConfirmed, &scanRow.AllowHostRequest, &scanRow.DisplayName, &scanRow.LastReport, &scanRow.LastRequest}, func(qfr pgx.QueryFuncRow) error {
+			ret = append(ret, scanRow)
+			return nil
+		})
 	if err != nil {
 		return 500, err
 	}
