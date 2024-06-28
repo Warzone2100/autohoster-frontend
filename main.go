@@ -292,7 +292,6 @@ func main() {
 	router.HandleFunc("/request", hostRequestHandler)
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
-	router.HandleFunc("/wzrecover", wzProfileRecoveryHandlerGET)
 	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
 
 	// moderation endpoints
@@ -329,14 +328,7 @@ func main() {
 	router.HandleFunc("/leaderboards", LeaderboardsHandler)
 	router.HandleFunc("/leaderboards/{category:[0-9]+}", LeaderboardHandler).Methods("GET")
 	router.HandleFunc("/api/leaderboards/{category:[0-9]+}", APIcall(APIgetLeaderboard)).Methods("GET", "OPTIONS")
-	// router.HandleFunc("/account/{id:[0-9]+}", PlayerHandler)
-	// router.HandleFunc("/stats", statsHandler)
-	// router.HandleFunc("/resstat", resstatHandler)
 	router.HandleFunc("/bans", bansHandler)
-
-	// router.HandleFunc("/b/begin", GameAcceptCreateHandler)
-	// router.HandleFunc("/b/frame/{gid:[0-9]+}", GameAcceptFrameHandler)
-	// router.HandleFunc("/b/end/{gid:[0-9]+}", GameAcceptEndHandler)
 
 	router.HandleFunc("/api/ws/lobby", func(w http.ResponseWriter, r *http.Request) {
 		APIWSHub(LobbyWSHub, w, r)

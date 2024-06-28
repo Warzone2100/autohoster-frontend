@@ -48,36 +48,3 @@ func WSLobbyUpdateLobby(lobby map[string]any) {
 		"data": lobby,
 	}
 }
-
-func WSLobbyNewAutohosterRoom(room JSONgame, dbgid int) {
-	in := layouts.Lookup("roomAutohoster")
-	if in == nil {
-		log.Print("Failed to find layout [roomAutohoster]!")
-		return
-	}
-	LobbyWSHub.bcast <- map[string]any{
-		"type": "AutohosterRoomNew",
-		"gid":  dbgid,
-		"data": basicLayoutLookupExecuteAnonymus(in, room),
-	}
-}
-
-func WSLobbyUpdateAutohosterRoom(room JSONgame, dbgid int) {
-	in := layouts.Lookup("roomAutohoster")
-	if in == nil {
-		log.Print("Failed to find layout [roomAutohoster]!")
-		return
-	}
-	LobbyWSHub.bcast <- map[string]any{
-		"type": "AutohosterRoomUpdate",
-		"gid":  dbgid,
-		"data": basicLayoutLookupExecuteAnonymus(in, room),
-	}
-}
-
-func WSLobbyEndAutohosterRoom(dbgid int) {
-	LobbyWSHub.bcast <- map[string]any{
-		"type": "AutohosterRoomEnd",
-		"gid":  dbgid,
-	}
-}

@@ -234,27 +234,24 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 	tag, err := dbpool.Exec(context.Background(), `
 		insert into identities (name, pkey, hash, account)
 		values ($1, $2, encode(sha256($2), 'hex'), $3)
-		on conflict (hash) do update set account = $3 where account is not null and pkey = $2`,
+		on conflict (hash) do update set account = $3 where identities.account is null and identities.pkey = $2`,
 		logname, logkey, sessionGetUserID(r))
 	if err != nil {
 		log.Printf("Error inserting identity: %s", err.Error())
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + err.Error()})
 		return
 	}
-	if tag.Insert() {
-		basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]any{"LinkStatus": "done", "PlayerKey": logkey, "PlayerName": logname})
+	if tag.Update() && tag.RowsAffected() == 0 {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Tyou attempted to link already claimed identity, this is not allowed."})
 		return
 	}
-	if tag.Update() {
-		if tag.RowsAffected() == 0 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Tyou attempted to link already claimed identity, this is not allowed."})
-			return
-		} else {
-			basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]any{"LinkStatus": "done", "PlayerKey": logkey, "PlayerName": logname})
-			return
-		}
+	_, err = dbpool.Exec(context.Background(), `update accounts set wz_confirm_code = null where username = $1`, sessionGetUsername(r))
+	if err != nil {
+		log.Printf("Error clearing confirm code: %s", err.Error())
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + err.Error()})
+		return
 	}
-	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "SUS tag: " + tag.String()})
+	basicLayoutLookupRespond("wzlinkcheck", w, r, map[string]any{"LinkStatus": "done", "PlayerKey": logkey, "PlayerName": logname})
 }
 
 func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
@@ -457,139 +454,4 @@ func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, 
 	}
 	bodyString := string(bodyBytes)
 	return true, bodyString
-}
-
-func wzProfileRecoveryHandlerGET(w http.ResponseWriter, r *http.Request) {
-	if !checkUserAuthorized(r) {
-		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
-		return
-	}
-	var profileID int
-	var recoveryCode string
-	var oldHash string
-	var lastRecovery time.Time
-	username := sessionGetUsername(r)
-	log.Println("Recovery")
-	log.Println("Username ", username)
-	err := dbpool.QueryRow(context.Background(), `SELECT coalesce(wzprofile2, -1), coalesce((SELECT players.hash FROM players WHERE players.id = wzprofile2), ''), coalesce(profilerecoverycode, ''), lastprofilerecovery FROM accounts WHERE username = $1`,
-		username).Scan(&profileID, &oldHash, &recoveryCode, &lastRecovery)
-	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Initial ", err)
-		return
-	}
-	log.Println("Profile id ", profileID)
-	log.Println("Old hash ", oldHash)
-	if profileID <= -1 {
-		w.Header().Add("Location", "/wzlinkcheck")
-		w.WriteHeader(http.StatusFound)
-		return
-	}
-	log.Println("Code ", recoveryCode)
-	if recoveryCode == "" {
-		recoveryCode = "recover-" + generateRandomString(20)
-		log.Println("New code ", recoveryCode)
-		tag, err := dbpool.Exec(context.Background(), `UPDATE accounts SET profilerecoverycode = $1 WHERE username = $2`, recoveryCode, username)
-		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-			log.Println("Update recovery code ", err)
-			return
-		}
-		if !tag.Update() || tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-			log.Println("Update recovery code ", tag)
-			return
-		}
-		basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
-		return
-	}
-	var newHash string
-	err = dbpool.QueryRow(context.Background(), `SELECT hash FROM chatlog WHERE TRIM(msg) = $1 ORDER BY whensent ASC LIMIT 1`, "/hostmsg "+recoveryCode).Scan(&newHash)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			log.Println("Hash not found")
-			basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "code", "WzConfirmCode": "/hostmsg " + recoveryCode})
-			return
-		}
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Hash find ", err)
-		return
-	}
-	log.Println("Found hash ", newHash)
-	var collisionCheck int
-	err = dbpool.QueryRow(context.Background(), `SELECT COUNT(*) FROM players WHERE hash = $1`, newHash).Scan(&collisionCheck)
-	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Collision check ", err)
-		return
-	}
-	log.Println("Fresh check ", collisionCheck)
-	if collisionCheck != 0 {
-		recoveryCode = "recover-" + generateRandomString(20)
-		log.Println("New code ", recoveryCode)
-		tag, err := dbpool.Exec(context.Background(), `UPDATE accounts SET profilerecoverycode = $1 WHERE username = $2`, recoveryCode, username)
-		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-			log.Println("Update recovery code ", err)
-			return
-		}
-		if !tag.Update() || tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-			log.Println("Update recovery code ", tag)
-			return
-		}
-		basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "collision", "WzConfirmCode": "/hostmsg " + recoveryCode})
-		return
-	}
-	tx, err := dbpool.Begin(context.Background())
-	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Begin ", err)
-		return
-	}
-	tag, err := tx.Exec(context.Background(), `UPDATE players SET hash = $1 WHERE hash = $2;`, newHash, oldHash)
-	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Update last recovery date", err)
-		err = tx.Rollback(context.Background())
-		if err != nil {
-			log.Println("Roll back ", err)
-		}
-		return
-	}
-	if !tag.Update() || tag.RowsAffected() != 1 {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Update last recovery date", err)
-		err = tx.Rollback(context.Background())
-		if err != nil {
-			log.Println("Roll back ", err)
-		}
-		return
-	}
-	tag, err = tx.Exec(context.Background(), `UPDATE accounts SET lastprofilerecovery = now(), profilerecoverycode = '' WHERE username = $1;`, username)
-	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Update last recovery date", err)
-		err = tx.Rollback(context.Background())
-		if err != nil {
-			log.Println("Roll back ", err)
-		}
-		return
-	}
-	if !tag.Update() || tag.RowsAffected() != 1 {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Update last recovery date", err)
-		err = tx.Rollback(context.Background())
-		if err != nil {
-			log.Println("Roll back ", err)
-		}
-		return
-	}
-	err = tx.Commit(context.Background())
-	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Error occured, please contact administratiors"})
-		log.Println("Commit ", err)
-		return
-	}
-	basicLayoutLookupRespond("wzrecovery", w, r, map[string]any{"RecoveryStatus": "done", "OldHash": oldHash, "NewHash": newHash})
 }
