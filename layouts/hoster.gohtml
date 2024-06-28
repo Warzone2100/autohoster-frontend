@@ -327,9 +327,11 @@ var presets = [
 				<!-- name -->
 				<td rowspan="3" class="rank-link">
 					{{if gt .Account 0}}
-					<a class="text-nowrap rank-name-checkmark" href="/account/{{.Account}}">{{.Name}}</a><br>
+					{{/* <a class="text-nowrap rank-name-checkmark" href="/account/{{.Account}}">{{.Name}}</a><br> */}}
+					<text class="text-nowrap">{{.Name}}</text><br>
 					{{else}}
-					<a class="text-nowrap" href="/identity/{{.IdentityKey}}">{{.Name}}</a><br>
+					{{/* <a class="text-nowrap" href="/identity/{{.IdentityKey}}">{{.Name}}</a><br> */}}
+					<text class="text-nowrap">{{.Name}}</text><br>
 					{{end}}
 					{{if gt .Account 0}}{{.Elo}}{{else}}<small class="text-muted text-nowrap">not registered</small>{{end}}
 					{{/* {{if avail "EloDiff" .}}{{if not (eq .EloDiff 0)}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}{{end}} */}}

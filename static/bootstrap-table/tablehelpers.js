@@ -39,10 +39,12 @@ function nameFormatter(value, row) {
 	ret += `</td><td rowspan="3" class="rank-link">`;
 	// ret += `<a href="/players/${ID}" class="text-nowrap${Userid>0?' rank-Displayname-checkmark':""}" title="Hash: ${Hash}">${DisplayName}</a>`;
 	if(Account <= 0) {
-		ret += `<a href="/identities/${Identity}" class="text-nowrap">${DisplayName}</a>`;
+		// ret += `<a href="/identities/${Identity}" class="text-nowrap">${DisplayName}</a>`;
+		ret += `<text class="text-nowrap">${DisplayName}</text>`;
 		ret += '<br><small class="text-muted class="text-nowrap"">not registered</small>';
 	} else {
-		ret += `<a href="/players/${Account}" class="text-nowrap">${DisplayName}</a>`;
+		// ret += `<a href="/players/${Account}" class="text-nowrap">${DisplayName}</a>`;
+		ret += `<text class="text-nowrap">${DisplayName}</text>`;
 		ret += `<br>${Elo}`;
 	}
 	if(EloDiff != undefined && EloDiff != 0) {
