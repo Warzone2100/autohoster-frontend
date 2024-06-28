@@ -25,7 +25,7 @@
 						<td>{{$v.IssuedAt}}</td>
 						<td>{{$v.ExpiresAt}}</td>
 						<td>
-						{{if $v.Identity}}<a href="/identity/{{$v.Identity}}">{{$v.IdentityName}}</a>{{if $v.Account}}<br>{{end}}{{end}}
+						{{if $v.Identity}}<a href="/identity/{{$v.IdentityKey}}">{{$v.IdentityName}}</a>{{if $v.Account}}<br>{{end}}{{end}}
 						{{if $v.Account}}<a href="/account/{{$v.Account}}">{{$v.AccountName}}</a>{{end}}
 						</td>
 						<td>{{$v.Reason}}</td>
