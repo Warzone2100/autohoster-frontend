@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/georgysavva/scany/pgxscan"
@@ -112,7 +111,7 @@ func genericViewRequest[T any](r *http.Request, params genericRequestParams) (in
 	var totalsNoFilter int
 	var totals int
 	var rows []*T
-	log.Println(`SELECT * FROM ` + tn + ` ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter)
+	// log.Println(`SELECT * FROM ` + tn + ` ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter)
 	err := RequestMultiple(func() error {
 		return dbpool.QueryRow(r.Context(), `SELECT count(`+tn+`) FROM `+tn).Scan(&totalsNoFilter)
 	}, func() error {
