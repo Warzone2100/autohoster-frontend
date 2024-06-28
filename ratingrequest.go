@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -72,29 +71,19 @@ func ratingLookup(hash string) Ra {
 		m.EloTextColorOverride = [3]int{0xff, 0x00, 0x00}
 		return m
 	}
-	var delo2, dautoplayed, dautowon, dautolost, duuserid, dplayerid int
+	var delo, dautoplayed, dautowon, dautolost, duuserid int
 	var dbanned, drbanned bool
 	var dname string
-	var dallowed bool
-	var drenames []string
-	derr := dbpool.QueryRow(context.Background(), `SELECT
-	players.id AS pid, name, elo2, autoplayed, autowon, autolost,
-	COALESCE(accounts.id, -1) AS uid, COALESCE(accounts.allow_preset_request OR accounts.allow_host_request, false) AS appr,
-	COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval > now() END, false) as banned,
- 	COALESCE(CASE WHEN bans.duration = 0 THEN true ELSE bans.whenbanned + (bans.duration || ' second')::interval + '1 month' > now() END, false) AS rbanned,
-	ARRAY(
-		(SELECT oldname
-		 FROM (SELECT DISTINCT ON (oldname) oldname, time
-			   FROM plrenames
-			   WHERE plrenames.id = players.id AND plrenames.oldname != players.name) AS a
-		 ORDER BY time DESC
-		 LIMIT 5))
-FROM players
-LEFT JOIN accounts ON players.id = accounts.wzprofile2
-LEFT JOIN bans ON players.id = bans.playerid
-WHERE players.hash = $1
-ORDER BY banned DESC, rbanned DESC
-LIMIT 1`, hash).Scan(&dplayerid, &dname, &delo2, &dautoplayed, &dautowon, &dautolost, &duuserid, &dallowed, &dbanned, &drbanned, &drenames)
+	// var dallowed bool
+	// var drenames []string
+	derr := dbpool.QueryRow(context.Background(), `select
+	identities.name, accounts.id, rating.elo, rating.played, rating.won, rating.lost
+from identities
+left join accounts on identities.account = accounts.id
+left join rating on accounts.id = rating.account
+left join rating_categories on rating.category = rating_categories.id
+where hash = $1 and category = 2`, hash).
+		Scan(&dname, &duuserid, &delo, &dautoplayed, &dautowon, &dautolost)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if m.Elo == "" {
@@ -113,31 +102,31 @@ LIMIT 1`, hash).Scan(&dplayerid, &dname, &delo2, &dautoplayed, &dautowon, &dauto
 
 	if duuserid > 0 {
 		m.Level = 8
-		m.Details += fmt.Sprintf("Rating: %d\n", delo2)
+		m.Details += fmt.Sprintf("Rating: %d\n", delo)
 		m.Details = fmt.Sprintf("%s\nPlayed: %d\n", dname, dautoplayed)
 		m.Details += fmt.Sprintf("Won: %d Lost: %d\n", dautowon, dautolost)
-		if dallowed {
-			m.Details += "Allowed to moderate and request rooms\n"
-			m.NameTextColorOverride = [3]int{0x33, 0xff, 0x33}
-		}
+		// if dallowed {
+		// 	m.Details += "Allowed to moderate and request rooms\n"
+		// 	m.NameTextColorOverride = [3]int{0x33, 0xff, 0x33}
+		// }
 	} else {
 		m.Details += "Not registered user.\n"
 	}
-	if len(drenames) > 0 {
-		m.Details += "Other names:"
-		for _, v := range drenames {
-			m.Details += "\n" + v
-		}
-	}
+	// if len(drenames) > 0 {
+	// 	m.Details += "Other names:"
+	// 	for _, v := range drenames {
+	// 		m.Details += "\n" + v
+	// 	}
+	// }
 	// m.Details += fmt.Sprintf("Elo: %d (#%d)\n", de, dep)
 
-	if isAprilFools() {
-		dbpool.QueryRow(context.Background(), `select elo2, autoplayed, autolost, autowon from players join accounts on accounts.wzprofile2 = players.id where autoplayed > 5 and accounts.id != 0 order by random() limit 1;`).Scan(&delo2, &dautoplayed, &dautolost, &dautowon)
-		m.Level = rand.Intn(8)
-		if duuserid == 14 || duuserid == 17 {
-			m.Level = 8
-		}
-	}
+	// if isAprilFools() {
+	// 	dbpool.QueryRow(context.Background(), `select elo2, autoplayed, autolost, autowon from players join accounts on accounts.wzprofile2 = players.id where autoplayed > 5 and accounts.id != 0 order by random() limit 1;`).Scan(&delo2, &dautoplayed, &dautolost, &dautowon)
+	// 	m.Level = rand.Intn(8)
+	// 	if duuserid == 14 || duuserid == 17 {
+	// 		m.Level = 8
+	// 	}
+	// }
 
 	if m.Elo == "" {
 		var pc string
@@ -147,7 +136,7 @@ LIMIT 1`, hash).Scan(&dplayerid, &dname, &delo2, &dautoplayed, &dautowon, &dauto
 			pc = "-"
 		}
 		if duuserid != -1 && duuserid != 0 {
-			m.Elo = fmt.Sprintf("R[%d] %d %s", delo2, dautoplayed, pc)
+			m.Elo = fmt.Sprintf("R[%d] %d %s", delo, dautoplayed, pc)
 		} else {
 			m.Elo = "Unauthorized player"
 			m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
@@ -175,11 +164,11 @@ LIMIT 1`, hash).Scan(&dplayerid, &dname, &delo2, &dautoplayed, &dautowon, &dauto
 		} else if dautowon >= 6 && float64(dautowon)/float64(dautolost) > 3.0 {
 			m.Medal = 3
 		}
-		if delo2 > 1800 {
+		if delo > 1800 {
 			m.Star[0] = 1
-		} else if delo2 > 1550 {
+		} else if delo > 1550 {
 			m.Star[0] = 2
-		} else if delo2 > 1400 {
+		} else if delo > 1400 {
 			m.Star[0] = 3
 		}
 		if dautoplayed > 60 {
