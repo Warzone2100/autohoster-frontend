@@ -333,9 +333,6 @@ func main() {
 	router.HandleFunc("/api/ws/lobby", func(w http.ResponseWriter, r *http.Request) {
 		APIWSHub(LobbyWSHub, w, r)
 	})
-	// router.HandleFunc("/api/ws/games", func(w http.ResponseWriter, r *http.Request) {
-	// 	APIWSHub(GamesWSHub, w, r)
-	// })
 
 	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster).Methods("GET")
 
@@ -353,7 +350,7 @@ func main() {
 	router.HandleFunc("/api/playersavg", APIcall(APIgetUniquePlayersPerDay)).Methods("GET")
 	router.HandleFunc("/api/mapcount", APIcall(APIgetMapNameCount)).Methods("GET")
 
-	router.HandleFunc("/elo/calc", EloRecalcHandler)
+	// router.HandleFunc("/elo/calc", EloRecalcHandler)
 
 	// handlers.CompressHandler(router1)
 	// handlers.RecoveryHandler()(router3)
