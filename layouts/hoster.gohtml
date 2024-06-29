@@ -301,6 +301,7 @@ var presets = [
 		<tbody>
 			<tr>
 				<td class="rank-star">
+					{{with .Rating}}
 					{{if gt .Played 4}}
 						{{if gt .Elo 1800}}
 						<object class="rank rank-starGold"></object>
@@ -310,9 +311,11 @@ var presets = [
 						<object class="rank rank-starBronze"></object>
 						{{end}}
 					{{end}}
+					{{end}}
 				</td>
 				<!-- medal -->
 				<td rowspan="3" class="rank-medal">
+					{{with .Rating}}
 					{{if le .Played 4}}
 					<object class="rank rank-pacifier"></object>
 					{{else if eq .Lost 0}}
@@ -322,6 +325,7 @@ var presets = [
 					<object class="rank rank-medalDouble"></object>
 					{{else if and (ge .Won 6) (gt (divtf64 .Won .Lost) 3.0)}}
 					<object class="rank rank-medalSilver"></object>
+					{{end}}
 					{{end}}
 				</td>
 				<!-- name -->
@@ -333,13 +337,14 @@ var presets = [
 					{{/* <a class="text-nowrap" href="/identity/{{.IdentityKey}}">{{.Name}}</a><br> */}}
 					<text class="text-nowrap">{{.Name}}</text><br>
 					{{end}}
-					{{if gt .Account 0}}{{.Elo}}{{else}}<small class="text-muted text-nowrap">not registered</small>{{end}}
+					{{if gt .Account 0}}{{with .Rating}}{{.Elo}}{{end}}{{else}}<small class="text-muted text-nowrap">not registered</small>{{end}}
 					{{/* {{if avail "EloDiff" .}}{{if not (eq .EloDiff 0)}}({{if ge .EloDiff 1}}+{{end}}{{.EloDiff}}){{end}}{{end}} */}}
 					{{if avail "RatingDiff" .}}{{if not (eq .RatingDiff 0)}}({{if ge .RatingDiff 1}}+{{end}}{{.RatingDiff}}){{end}}{{end}}
 				</td>
 			</tr><tr>
 				<!-- middle star -->
 				<td class="rank-star">
+					{{with .Rating}}
 					{{if gt .Played 60}}
 					<object class="rank rank-starGold"></object>
 					{{else if gt .Played 30}}
@@ -347,10 +352,12 @@ var presets = [
 					{{else if gt .Played 10}}
 					<object class="rank rank-starBronze"></object>
 					{{end}}
+					{{end}}
 				</td>
 			</tr><tr>
 				<!-- bottom star -->
 				<td class="rank-star">
+					{{with .Rating}}
 					{{if gt .Played 4}}
 						{{if gt .Won 60}}
 						<object class="rank rank-starGold"></object>
@@ -359,6 +366,7 @@ var presets = [
 						{{else if gt .Won 10}}
 						<object class="rank rank-starBronze"></object>
 						{{end}}
+					{{end}}
 					{{end}}
 				</td>
 			</tr>

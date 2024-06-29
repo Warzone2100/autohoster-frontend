@@ -212,15 +212,24 @@
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
-							<td>{{if $player.RatingDiff}}{{$player.RatingDiff}}{{end}}</td>
-							<td>{{if $player.Kills}}{{$player.Kills}}{{end}}</td>
-							<td>{{if $player.DroidLost}}{{$player.DroidLost}}{{end}}</td>
-							<td>{{if $player.DroidBuilt}}{{$player.DroidBuilt}}{{end}}</td>
-							<td>{{if $player.StructLost}}{{$player.StructLost}}{{end}}</td>
-							<td>{{if $player.StructBuilt}}{{$player.StructBuilt}}{{end}}</td>
-							<td>{{if $player.Power}}{{$player.Power}}{{end}}</td>
-							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{if and $player.PowerWon $player.PowerLost}}{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}{{end}}</td>
-							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							{{/* <td>{{if avail "RatingDiff" $player}}{{$player.RatingDiff}}{{end}}</td>
+							<td>{{if avail "Kills" $player}}{{$player.Kills}}{{end}}</td>
+							<td>{{if avail "DroidLost" $player}}{{$player.DroidLost}}{{end}}</td>
+							<td>{{if avail "DroidBuilt" $player}}{{$player.DroidBuilt}}{{end}}</td>
+							<td>{{if avail "StructLost" $player}}{{$player.StructLost}}{{end}}</td>
+							<td>{{if avail "StructBuilt" $player}}{{$player.StructBuilt}}{{end}}</td>
+							<td>{{if avail "Power" $player}}{{$player.Power}}{{end}}</td>
+							<td title="Power won: {{if avail "PowerWon" $player}}{{$player.PowerWon}}{{end}} Power lost: {{if avail "PowerLost" $player}}{{$player.PowerLost}}{{end}}">{{if and $player.PowerWon $player.PowerLost}}{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}{{end}}</td>
+							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}</td> */}}
 						</tr>
 						{{end}}
 						{{end}}
@@ -233,15 +242,24 @@
 								{{template "wzprofile" $player}}
 							</td>
 							<td>{{$player.Position}}</td>
-							<td>{{if $player.RatingDiff}}{{$player.RatingDiff}}{{end}}</td>
-							<td>{{if $player.Kills}}{{$player.Kills}}{{end}}</td>
-							<td>{{if $player.DroidLost}}{{$player.DroidLost}}{{end}}</td>
-							<td>{{if $player.DroidBuilt}}{{$player.DroidBuilt}}{{end}}</td>
-							<td>{{if $player.StructLost}}{{$player.StructLost}}{{end}}</td>
-							<td>{{if $player.StructBuilt}}{{$player.StructBuilt}}{{end}}</td>
-							<td>{{if $player.Power}}{{$player.Power}}{{end}}</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							<td>TODO</td>
+							{{/* <td>{{if avail "RatingDiff" $player}}{{$player.RatingDiff}}{{end}}</td>
+							<td>{{if avail "Kills" $player}}{{$player.Kills}}{{end}}</td>
+							<td>{{if avail "DroidLost" $player}}{{$player.DroidLost}}{{end}}</td>
+							<td>{{if avail "DroidBuilt" $player}}{{$player.DroidBuilt}}{{end}}</td>
+							<td>{{if avail "StructLost" $player}}{{$player.StructLost}}{{end}}</td>
+							<td>{{if avail "StructBuilt" $player}}{{$player.StructBuilt}}{{end}}</td>
+							<td>{{if avail "Power" $player}}{{$player.Power}}{{end}}</td>
 							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{if and $player.PowerWon $player.PowerLost}}{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}{{end}}</td>
-							<td>{{if $player.LabPerformance $player.LabPotential}}{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}{{end}}</td>
+							<td>{{if $player.LabPerformance $player.LabPotential}}{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}{{end}}</td> */}}
 						</tr>
 						{{end}}
 						{{end}}
@@ -453,7 +471,7 @@
 				ChartUpdateStyle();
 			}
 			function PlotData(JsonData) {
-				const resp = JSON.parse(JsonData).sort((f, s) => { return f.gametime - s.gametime });
+				const resp = JSON.parse(JsonData).sort((f, s) => { return f.gameTime - s.gameTime });
 				let ctx = document.getElementById('GraphCanvas').getContext('2d');
 				let l = [];
 				dfields.forEach((v) => {
@@ -462,8 +480,8 @@
 				let xmin = "0:02";
 				let xmax = "0:04";
 				resp.forEach((tick, i) => {
-					let minutes = Math.floor(tick.gametime / 60000);
-					let seconds = ((tick.gametime % 60000) / 1000).toFixed(0);
+					let minutes = Math.floor(tick.gameTime / 60000);
+					let seconds = ((tick.gameTime % 60000) / 1000).toFixed(0);
 					let tstamp = minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 					l.push(tstamp);
 					xmax = tstamp;
