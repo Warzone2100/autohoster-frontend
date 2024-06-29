@@ -244,7 +244,7 @@ func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Tyou attempted to link already claimed identity, this is not allowed."})
 		return
 	}
-	_, err = dbpool.Exec(context.Background(), `update accounts set wz_confirm_code = null where username = $1`, sessionGetUsername(r))
+	_, err = dbpool.Exec(context.Background(), `update accounts set wz_confirm_code = null, display_name = $1 where username = $2`, logname, sessionGetUsername(r))
 	if err != nil {
 		log.Printf("Error clearing confirm code: %s", err.Error())
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + err.Error()})
