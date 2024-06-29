@@ -1,31 +1,39 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
-	"slices"
 	_ "sort"
 	"strconv"
 	"time"
 
-	"github.com/georgysavva/scany/pgxscan"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
 
+type PlayerRating struct {
+	Elo        int
+	Played     int
+	Won        int
+	Lost       int
+	TimePlayed int
+	Account    int
+	Category   int
+}
+
 type Player struct {
-	Position int
-	Name     string
-	Team     int
-	Color    int
-	Identity int
-	Usertype string
-	Account  int
-	Elo      int
-	Played   int
-	Won      int
-	Lost     int
+	Position    int
+	Name        string
+	Team        int
+	Color       int
+	Identity    int
+	Usertype    string
+	Rating      *PlayerRating
+	Account     int
+	DisplayName string
 }
 
 type Game struct {
@@ -48,6 +56,7 @@ type Game struct {
 	DebugTriggered  bool
 	Players         []Player
 	ReplayFound     bool
+	DisplayCategory int
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,43 +68,46 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	req := `select
 	g.id, g.version, g.instance, g.time_started, g.time_ended, g.game_time,
 	g.setting_scavs, g.setting_alliance, g.setting_power, g.setting_base,
-	map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
-	json_agg(json_build_object(
-		'Position', players.position,
-		'Name', identities.name,
-		'Team', players.team,
-		'Usertype', players.usertype,
-		'Color', players.color,
-		'Account', coalesce(accounts.id, 0),
-		'Elo', coalesce(rating.elo, 0),
-		'Played', coalesce(rating.played, 0),
-		'Won', coalesce(rating.won, 0),
-		'Lost', coalesce(rating.lost, 0)
-	)) as players
+	g.map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
+	g.display_category,
+	jsonb_pretty(json_agg(json_build_object(
+		'Position', p.position,
+		'Name', i.name,
+		'Team', p.team,
+		'Usertype', p.usertype,
+		'Color', p.color,
+		'Identity', i.id,
+		'Account', a.id,
+		'DisplayName', coalesce(i.name, a.display_name),
+		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account)
+	))::jsonb) as players
 from games as g
-join players on game = g.id
-join identities on identity = identities.id
-left join accounts on identities.account = accounts.id
-full outer join rating on identities.account = rating.account
-where rating.category = $1 and g.id = $2
-group by g.id
-order by time_started desc`
-	var gmsStage []*Game
-	ratingCategory := 2
-	err = pgxscan.Select(r.Context(), dbpool, &gmsStage, req, ratingCategory, id)
+join players as p on p.game = g.id
+join identities as i on i.id = p.identity
+left join accounts as a on a.id = i.account
+where g.id = $1
+group by g.id`
+	g := Game{}
+	g.Players = []Player{}
+	playersJSON := ""
+	err = dbpool.QueryRow(r.Context(), req, id).Scan(&g.ID, &g.Version, &g.Instance, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+		&g.SettingScavs, &g.SettingAlliance, &g.SettingPower, &g.SettingBase,
+		&g.MapName, &g.MapHash, &g.Mods, &g.Deleted, &g.Hidden, &g.Calculated, &g.DebugTriggered, &g.DisplayCategory,
+		&playersJSON)
 	if err != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + err.Error()})
 		return
 	}
-	if len(gmsStage) == 0 {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Game not found"})
+	err = json.Unmarshal([]byte(playersJSON), &g.Players)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json unmarshal error: " + err.Error()})
 		return
 	}
-	gmsStage[0].ReplayFound = checkReplayExistsInStorage(id)
-	slices.SortFunc(gmsStage[0].Players, func(a Player, b Player) int {
-		return a.Position - b.Position
-	})
-	basicLayoutLookupRespond("gamedetails2", w, r, map[string]any{"Game": gmsStage[0]})
+	g.ReplayFound = checkReplayExistsInStorage(id)
+	// slices.SortFunc(gmsStage[0].Players, func(a Player, b Player) int {
+	// 	return a.Position - b.Position
+	// })
+	basicLayoutLookupRespond("gamedetails2", w, r, map[string]any{"Game": g})
 }
 
 func DbGamesHandler(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +148,199 @@ func DbGamesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	basicLayoutLookupRespond("games2", w, r, map[string]any{"Total": dtotal, "Maps": dmaps})
+}
+
+func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
+	reqLimit := parseQueryInt(r, "limit", 50)
+	if reqLimit > 200 {
+		reqLimit = 200
+	}
+	if reqLimit <= 0 {
+		reqLimit = 1
+	}
+	reqOffset := parseQueryInt(r, "offset", 0)
+	if reqOffset < 0 {
+		reqOffset = 0
+	}
+	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
+	fieldmappings := map[string]string{
+		"TimeStarted": "time_started",
+		"TimeEnded":   "time_ended",
+		"ID":          "id",
+		"MapName":     "map_name",
+		"GameTime":    "game_time",
+	}
+	reqSortField := parseQueryStringMapped(r, "sort", "time_started", fieldmappings)
+
+	reqFilterJ := parseQueryString(r, "filter", "")
+	reqFilterFields := map[string]string{}
+	reqDoFilters := false
+	if reqFilterJ != "" {
+		err := json.Unmarshal([]byte(reqFilterJ), &reqFilterFields)
+		if err == nil && len(reqFilterFields) > 0 {
+			reqDoFilters = true
+		}
+	}
+
+	wherecase := "WHERE deleted = false AND hidden = false"
+	if sessionGetUsername(r) == "Flex seal" {
+		wherecase = ""
+	}
+	pid := parseQueryInt(r, "player", -1)
+	if pid > 0 {
+		if wherecase == "" {
+			wherecase = fmt.Sprintf("WHERE %d = p.id", pid)
+		} else {
+			wherecase += fmt.Sprintf(" AND %d = p.id", pid)
+		}
+	}
+	whereargs := []any{}
+	if reqDoFilters {
+		val, ok := reqFilterFields["MapName"]
+		if ok {
+			whereargs = append(whereargs, val)
+			if wherecase == "" {
+				wherecase = "WHERE g.map_name = $1"
+			} else {
+				wherecase += " AND g.map_name = $1"
+			}
+		}
+	}
+
+	// reqSearch := parseQueryString(r, "search", "")
+
+	// similarity := 0.3
+
+	// if reqSearch != "" {
+	// 	whereargs = append(whereargs, reqSearch)
+	// 	if wherecase == "" {
+	// 		wherecase = fmt.Sprintf("WHERE similarity(p.name, $1::text) > %f", similarity)
+	// 	} else {
+	// 		wherecase += fmt.Sprintf(" AND similarity(p.name, $%d::text) > %f", len(whereargs), similarity)
+	// 	}
+	// }
+
+	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
+	offset := fmt.Sprintf("OFFSET %d", reqOffset)
+	joincase := ""
+
+	totalsc := make(chan int)
+	var totals int
+	totalspresent := false
+
+	totalsNoFilterc := make(chan int)
+	var totalsNoFilter int
+	totalsNoFilterpresent := false
+
+	growsc := make(chan []Game)
+	var gms []Game
+	gpresent := false
+
+	echan := make(chan error)
+	go func() {
+		var c int
+		derr := dbpool.QueryRow(r.Context(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsNoFilterc <- c
+	}()
+	go func() {
+		var c int
+		req := `select count(distinct g.id) from games as g ` + joincase + ` ` + wherecase + `;`
+		derr := dbpool.QueryRow(r.Context(), req, whereargs...).Scan(&c)
+		// log.Println(req)
+		if derr != nil {
+			echan <- derr
+			return
+		}
+		totalsc <- c
+	}()
+
+	go func() {
+		req := `select
+	g.id, g.version, g.time_started, g.time_ended, g.game_time,
+	g.setting_scavs, g.setting_alliance, g.setting_power, g.setting_base,
+	g.map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
+	g.display_category,
+	jsonb_pretty(json_agg(json_build_object(
+		'Position', p.position,
+		'Name', i.name,
+		'Team', p.team,
+		'Usertype', p.usertype,
+		'Color', p.color,
+		'Identity', i.id,
+		'Account', a.id,
+		'DisplayName', coalesce(i.name, a.display_name),
+		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account)
+	))::jsonb) as players
+from games as g
+join players as p on p.game = g.id
+join identities as i on i.id = p.identity
+left join accounts as a on a.id = i.account
+group by g.id
+	` + ordercase + `
+	` + limiter + `
+	` + offset
+		gmsStage := []Game{}
+		g := Game{}
+		playersJSON := ""
+		_, err := dbpool.QueryFunc(r.Context(), req, whereargs, []any{
+			&g.ID, &g.Version, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+			&g.SettingScavs, &g.SettingAlliance, &g.SettingPower, &g.SettingBase,
+			&g.MapName, &g.MapHash, &g.Mods, &g.Deleted, &g.Hidden, &g.Calculated, &g.DebugTriggered, &g.DisplayCategory,
+			&playersJSON,
+		}, func(qfr pgx.QueryFuncRow) error {
+			g.Players = []Player{}
+			err := json.Unmarshal([]byte(playersJSON), &g.Players)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			gmsStage = append(gmsStage, g)
+			return nil
+		})
+		if err != nil {
+			echan <- err
+			return
+		}
+		// err := pgxscan.Select(r.Context(), dbpool, &gmsStage, req)
+		// if err != nil {
+		// 	echan <- err
+		// 	return
+		// }
+		// for _, v := range gmsStage {
+		// 	if v == nil {
+		// 		continue
+		// 	}
+		// 	slices.SortFunc(v.Players, func(a Player, b Player) int {
+		// 		return a.Position - b.Position
+		// 	})
+		// }
+		growsc <- gmsStage
+	}()
+	for !(gpresent && totalspresent && totalsNoFilterpresent) {
+		select {
+		case derr := <-echan:
+			if derr == pgx.ErrNoRows {
+				return 200, []byte(`{"total": 0, "totalNotFiltered": 0, "rows": []}`)
+			}
+			return 500, derr
+		case gms = <-growsc:
+			gpresent = true
+		case totals = <-totalsc:
+			totalspresent = true
+		case totalsNoFilter = <-totalsNoFilterc:
+			totalsNoFilterpresent = true
+		}
+	}
+	return 200, map[string]any{
+		"total":            totals,
+		"totalNotFiltered": totalsNoFilter,
+		"rows":             gms,
+	}
 }
 
 func GameTimeToString(t any) string {

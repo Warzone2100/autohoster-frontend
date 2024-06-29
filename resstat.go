@@ -100,15 +100,15 @@ func resstatHandler(w http.ResponseWriter, r *http.Request) {
 	if sqver == "any" {
 		rows, derr = dbpool.Query(context.Background(), `
 		SELECT
-		games.id, players, researchlog
+		games.id, players, research_log
 		FROM games
-		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND alliancetype = 3 AND id > $2`, sqbase, ming)
+		WHERE research_log is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND alliancetype = 3 AND id > $2`, sqbase, ming)
 	} else {
 		rows, derr = dbpool.Query(context.Background(), `
 		SELECT
-		games.id, players, researchlog
+		games.id, players, research_log
 		FROM games
-		WHERE researchlog is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND alliancetype = 3 AND version = $2 AND id > $3`, sqbase, sqver, ming)
+		WHERE research_log is not null AND baselevel = $1 AND calculated = true AND hidden = false AND deleted = false AND alliancetype = 3 AND version = $2 AND id > $3`, sqbase, sqver, ming)
 	}
 	if derr != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
