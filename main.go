@@ -284,7 +284,7 @@ func main() {
 	router.HandleFunc("/account", basicLayoutHandler("account"))
 	router.HandleFunc("/activate", emailconfHandler)
 	router.HandleFunc("/recover", recoverPasswordHandler)
-	router.HandleFunc("/oauth/discord", DiscordCallbackHandler)
+	// router.HandleFunc("/oauth/discord", DiscordCallbackHandler)
 	router.HandleFunc("/report", basicLayoutHandler("report")).Methods("GET")
 	router.HandleFunc("/report", reportHandler).Methods("POST")
 
