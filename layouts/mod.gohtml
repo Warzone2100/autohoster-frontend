@@ -207,14 +207,14 @@
 		}
 		function idFormatter(value, row) {
 			return `${value}  <button class="btn btn-outline-${row.Terminated ? "danger" : "success"} btn-sm" data-value="${row.Terminated}" onclick="SendToggleRequest(this, 'terminated', '${row.Username}');">` +
-			`${row.terminated ? "Yes" : "No"}</button>`;
+			`${row.Terminated ? "Yes" : "No"}</button>`;
 		}
 		function ispBypassFormatter(value, row) {
-			return `<button class="btn btn-outline-${row.BypassISPBan ? "success" : "danger"} btn-sm" data-value="${row.BypassISPBan}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.username}');">` +
-			`${row.bypass_ispban ? "Yes" : "No"}</button>`;
+			return `<button class="btn btn-outline-${row.BypassISPBan ? "success" : "danger"} btn-sm" data-value="${row.BypassISPBan}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.Username}');">` +
+			`${row.BypassISPBan ? "Yes" : "No"}</button>`;
 		}
 		function ispAllowPresetFormatter(value, row) {
-			return `<button class="btn btn-outline-${row.AllowHostRequest ? "success" : "danger"} btn-sm" data-value="${row.AllowHostRequest}" onclick="SendToggleRequest(this, 'allow_host_request', '${row.username}');">` +
+			return `<button class="btn btn-outline-${row.AllowHostRequest ? "success" : "danger"} btn-sm" data-value="${row.AllowHostRequest}" onclick="SendToggleRequest(this, 'allow_host_request', '${row.Username}');">` +
 			`${row.AllowHostRequest ? "Yes" : "No"}</button>`;
 		}
 		</script>
