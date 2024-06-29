@@ -405,7 +405,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	join identities on identity = identities.id
 	left join accounts on identities.account = accounts.id
 	full outer join rating on identities.account = rating.account
-	where rating.category = g.display_category
+	--where rating.category = g.display_category
 	group by g.id
 	` + ordercase + `
 	` + limiter + `
