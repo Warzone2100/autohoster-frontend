@@ -285,23 +285,30 @@ group by g.id
 	` + limiter + `
 	` + offset
 		gmsStage := []Game{}
-		g := Game{}
-		playersJSON := ""
-		_, err := dbpool.QueryFunc(r.Context(), req, whereargs, []any{
-			&g.ID, &g.Version, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
-			&g.SettingScavs, &g.SettingAlliance, &g.SettingPower, &g.SettingBase,
-			&g.MapName, &g.MapHash, &g.Mods, &g.Deleted, &g.Hidden, &g.Calculated, &g.DebugTriggered, &g.DisplayCategory,
-			&playersJSON,
-		}, func(qfr pgx.QueryFuncRow) error {
-			g.Players = []Player{}
-			err := json.Unmarshal([]byte(playersJSON), &g.Players)
+		rows, err := dbpool.Query(r.Context(), req, whereargs...)
+		if err != nil {
+			echan <- err
+			return
+		}
+		for rows.Next() {
+			g := Game{}
+			playersJSON := ""
+			err = rows.Scan(&g.ID, &g.Version, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+				&g.SettingScavs, &g.SettingAlliance, &g.SettingPower, &g.SettingBase,
+				&g.MapName, &g.MapHash, &g.Mods, &g.Deleted, &g.Hidden, &g.Calculated, &g.DebugTriggered, &g.DisplayCategory,
+				&playersJSON)
 			if err != nil {
-				log.Println(err)
-				return err
+				echan <- err
+				return
+			}
+			g.Players = []Player{}
+			err = json.Unmarshal([]byte(playersJSON), &g.Players)
+			if err != nil {
+				echan <- err
+				return
 			}
 			gmsStage = append(gmsStage, g)
-			return nil
-		})
+		}
 		if err != nil {
 			echan <- err
 			return
