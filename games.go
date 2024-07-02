@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"slices"
 	_ "sort"
 	"strconv"
 	"time"
@@ -307,6 +308,9 @@ group by g.id
 				echan <- err
 				return
 			}
+			slices.SortFunc(g.Players, func(a Player, b Player) int {
+				return a.Position - b.Position
+			})
 			gmsStage = append(gmsStage, g)
 		}
 		if err != nil {
