@@ -338,8 +338,8 @@ func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
 		sortDefaultOrder:        "desc",
 		sortDefaultColumn:       "id",
 		sortColumns:             []string{"id", "name", "account"},
-		filterColumnsFull:       []string{"id"},
-		filterColumnsStartsWith: []string{"pkey", "hash"},
+		filterColumnsFull:       []string{"id", "account"},
+		filterColumnsStartsWith: []string{"name", "pkey", "hash"},
 		searchColumn:            "name",
 		searchSimilarity:        0.3,
 		columnMappings: map[string]string{
