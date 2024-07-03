@@ -15,8 +15,8 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	mapsdatabase "github.com/maxsupermanhd/go-wz/maps-database"
 	"github.com/maxsupermanhd/go-wz/packet"
-	"github.com/maxsupermanhd/go-wz/phobos"
 	"github.com/maxsupermanhd/go-wz/replay"
 	"golang.org/x/image/draw"
 )
