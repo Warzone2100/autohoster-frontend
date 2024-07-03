@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/jackc/pgx/v4 v4.18.3
-	github.com/maxsupermanhd/go-wz v0.0.0-20230820232257-04d1891e10e7
+	github.com/maxsupermanhd/go-wz v0.0.0-20240703114804-d37b0cd0ee7d
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/ravener/discord-oauth2 v0.0.0-20210928130214-d7697a35c387
 	golang.org/x/crypto v0.20.0
