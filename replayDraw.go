@@ -40,7 +40,7 @@ func getReplayStuffs(gid int) (rpl *replay.Replay, mapimg image.Image, err error
 	}
 	log.Println("Fetching map hash...")
 	maphash := ""
-	err = dbpool.QueryRow(context.Background(), `SELECT maphash FROM games WHERE id = $1`, gid).Scan(&maphash)
+	err = dbpool.QueryRow(context.Background(), `SELECT map_hash FROM games WHERE id = $1`, gid).Scan(&maphash)
 	if err != nil {
 		return
 	}
