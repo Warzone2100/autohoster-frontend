@@ -45,7 +45,7 @@ func getReplayStuffs(gid int) (rpl *replay.Replay, mapimg image.Image, err error
 		return
 	}
 	log.Println("Fetching map image...")
-	mapimg, err = phobos.FetchMapPreview(maphash, phobos.PreviewTypePixelPerfect)
+	mapimg, err = mapsdatabase.FetchMapPreview(maphash)
 	if err != nil {
 		return
 	}
