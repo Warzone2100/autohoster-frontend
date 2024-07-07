@@ -116,6 +116,28 @@ where a.id = any($1) and i.pkey is not null;`, r.Form["additionalAdmin"]).Scan(&
 	case "ratingNonRegistered":
 		ratingCategories = []int{4}
 	case "ratingRegular":
+		whitelistedMaps, ok := cfg.GetMapStringAny("whitelistedMaps")
+		if !ok {
+			whitelistedMaps = map[string]any{}
+		}
+		isWhitelisted := false
+		for _, v := range whitelistedMaps {
+			switch vv := v.(type) {
+			case map[string]any:
+				h, ok := vv["hash"].(string)
+				if !ok {
+					continue
+				}
+				if h == inf.Download.Hash {
+					isWhitelisted = true
+					break
+				}
+			}
+		}
+		if !isWhitelisted {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Map is not whitelisted for rating"})
+			return
+		}
 		ratingCategories = []int{3}
 	}
 
