@@ -1,188 +1,232 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"html/template"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"regexp"
 	"strconv"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/pgxpool"
+	mapsdatabase "github.com/maxsupermanhd/go-wz/maps-database"
 )
 
 var regexMaphash = regexp.MustCompile(`^[a-zA-Z0-9-]*$`)
-var regexAlliances = regexp.MustCompile(`^[0-2]$`)
-var regexLevelbase = regexp.MustCompile(`^[1-3]$`)
-var regexScav = regexp.MustCompile(`^[0-1]$`)
 
-func hosterHandler(w http.ResponseWriter, r *http.Request) {
-	if checkUserAuthorized(r) {
-		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
+func hostRequestHandlerPOST(w http.ResponseWriter, r *http.Request) {
+	if !hostRequestAccountPassesChecks(w, r) {
 		return
 	}
-	if r.Method == "POST" {
-		err := r.ParseForm()
-		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Form parse error: " + err.Error()})
-			return
-		}
-		if !regexMaphash.MatchString(r.PostFormValue("maphash")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "maphash must match `^[a-zA-Z0-9-]*$`"})
-			return
-		}
-		if !regexAlliances.MatchString(r.PostFormValue("alliances")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "alliances must match `^[0-2]$`"})
-			return
-		}
-		if !regexLevelbase.MatchString(r.PostFormValue("base")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "base must match `^[0-2]$`"})
-			return
-		}
-		if !regexScav.MatchString(r.PostFormValue("scav")) {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "scav must match `^[0-1]$`, got [" + r.PostFormValue("scav") + "]"})
-			return
-		}
-		var mapname string
-		var allowedalliances int
-		var allowedbase int
-		var allowedscav int
-		var numplayers int
-		var laststr string
-		var adminhash string
-		var allow_preset_request bool
+	err := r.ParseForm()
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Failed to parse from"})
+		return
+	}
 
-		derr := dbpool.QueryRow(context.Background(), `
-		SELECT mapname, alliances, levelbase, scav, players, 
-			(SELECT coalesce(extract(epoch from last_host_request), 0) FROM accounts WHERE username = $2)::text as last_host_request,
-			(SELECT allow_preset_request FROM accounts WHERE username = $2) as allow_preset_request,
-			coalesce((SELECT hash FROM players WHERE id = (SELECT coalesce(wzprofile2, 0) FROM accounts WHERE username = $2)), '') as adminhash
-		FROM presets
-		WHERE maphash = $1 AND NOT ((SELECT id FROM accounts WHERE username = $2) = ANY(coalesce(disallowed_accounts, array[]::int[])))
-		LIMIT 1`, r.PostFormValue("maphash"), sessionManager.GetString(r.Context(), "User.Username")).Scan(
-			&mapname, &allowedalliances, &allowedbase, &allowedscav, &numplayers, &laststr, &allow_preset_request, &adminhash)
-		if derr != nil {
-			if derr == pgx.ErrNoRows {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Selected map is not allowed."})
-				w.Header().Set("Refresh", "3; /request")
-				return
-			}
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
-			return
+	roomName := parseFormString(r, "roomName", nil)
+	if roomName == nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Invalid roomName"})
+		return
+	}
+	mapHash := parseFormString(r, "mapHash", regexMaphash)
+	if mapHash == nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Invalid mapHash"})
+		return
+	}
+	timeLimit := 90
+	if v := parseFormInt(r, "timeLimit"); v != nil {
+		timeLimit = *v
+		if timeLimit < 15 {
+			timeLimit = 15
 		}
-		if !allow_preset_request {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Sorry, you are not allowed to request games."})
-			return
-		}
-
-		lastfloat, cerr := strconv.ParseFloat(laststr, 64)
-		if cerr != nil {
-			log.Println(cerr.Error())
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database timestamp error: " + cerr.Error()})
-			return
-		}
-		lastint := int64(lastfloat)
-		if lastint-10800+300 > time.Now().Unix() && sessionManager.GetString(r.Context(), "User.Username") != "Flex seal" {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true,
-				"msg": "Please wait before requesting another room. " + strconv.FormatInt(300-(time.Now().Unix()-(lastint-10800)), 10) + " seconds left."})
-			return
-		}
-
-		tag, derr := dbpool.Exec(context.Background(), "UPDATE accounts SET last_host_request = now() WHERE username = $1", sessionManager.GetString(r.Context(), "User.Username"))
-		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
-			return
-		}
-		if tag.RowsAffected() != 1 {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
-			return
-		}
-
-		_, derr = dbpool.Exec(context.Background(), "UPDATE presets SET last_requested = now() WHERE maphash = $1", r.PostFormValue("maphash"))
-		if derr != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + derr.Error()})
-			return
-		}
-		// if tag.RowsAffected() != 1 {
-		// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database update error, rows affected " + string(tag)})
-		// 	return
-		// }
-		gamever := r.PostFormValue("gamever")
-		k, versraw := RequestVersions()
-		vers := map[string]any{}
-		if k {
-			if err := json.Unmarshal([]byte(versraw), &vers); err != nil {
-				basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json parse error: " + err.Error()})
-				return
-			}
-		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": versraw})
-		}
-		vershave := false
-		for _, nextver := range vers["versions"].([]any) {
-			nextvers := nextver.(string)
-			if nextvers == gamever {
-				vershave = true
-				break
-			}
-		}
-		if !vershave {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Game version is not present"})
-			return
-		}
-		roomname := r.PostFormValue("roomname")
-		if roomname == "" {
-			roomname = "Autohoster"
-		}
-		mixmod := ""
-		// if r.PostFormValue("AddSpecs") == "on" {
-		// 	mixmod = "spec"
-		// }
-		if r.PostFormValue("AddBalance") == "on" {
-			mixmod += "masterbal"
-		}
-		onlyregistered := "0"
-		if r.PostFormValue("onlyregistered") == "on" {
-			onlyregistered = "1"
-		}
-		alliancen, err := strconv.Atoi(r.PostFormValue("alliances"))
-		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Malformed alliances field: " + err.Error()})
-			return
-		}
-		if alliancen > 0 {
-			alliancen++
-		}
-		basen, err := strconv.Atoi(r.PostFormValue("base"))
-		if err != nil {
-			basicLayoutLookupRespond("error400", w, r, map[string]any{})
-			return
-		}
-		s, reqres := RequestHost(r.PostFormValue("maphash"),
-			mapname, strconv.FormatInt(int64(alliancen), 10), strconv.FormatInt(int64(basen), 10),
-			r.PostFormValue("scav"), strconv.FormatInt(int64(numplayers), 10), adminhash, roomname, mixmod, gamever, onlyregistered)
-		log.Printf("Host request: [%s] [%s]", sessionManager.Get(r.Context(), "User.Username"), mapname)
-		if s {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msggreen": true, "msg": reqres})
-		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Request error: " + reqres})
-		}
-		w.Header().Set("Refresh", "10; /lobby")
-	} else {
-		s, reqres := RequestStatus()
-		if s {
-			basicLayoutLookupRespond("multihoster", w, r, map[string]any{
-				"MultihosterStatus": template.HTML(reqres),
-			})
-		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Request error: " + reqres})
+		if timeLimit > 60*3 {
+			timeLimit = 60 * 3
 		}
 	}
+	settingsAlliances := 1
+	if v := parseFormIntWhitelist(r, "settingsAlliances", 0, 1, 2); v != nil {
+		settingsAlliances = *v
+	}
+	settingsScav := 0
+	if v := parseFormIntWhitelist(r, "settingsScav", 0, 1); v != nil {
+		settingsScav = *v
+	}
+	settingsBase := 2
+	if v := parseFormIntWhitelist(r, "settingsBase", 1, 2, 3); v != nil {
+		settingsBase = *v
+	}
+
+	inf, err := mapsdatabase.FetchMapInfo(*mapHash)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Failed to fetch map info: " + err.Error()})
+		return
+	}
+	if !inf.Player.Units.Eq ||
+		!inf.Player.Structs.Eq ||
+		!inf.Player.ResourceExtr.Eq ||
+		!inf.Player.PwrGen.Eq ||
+		!inf.Player.RegFact.Eq ||
+		!inf.Player.VtolFact.Eq ||
+		!inf.Player.CyborgFact.Eq ||
+		!inf.Player.ResearchCent.Eq ||
+		!inf.Player.DefStruct.Eq {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Provided map does not meet balance requirements"})
+		return
+	}
+
+	userAdminFound := false
+	for _, v := range r.Form["additionalAdmin"] {
+		adminId, err := strconv.Atoi(v)
+		if err != nil {
+			continue
+		}
+		if sessionGetUserID(r) == adminId {
+			userAdminFound = true
+			break
+		}
+	}
+	if !userAdminFound {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Map requester must be an admin"})
+		return
+	}
+
+	var adminHashes []string
+	err = dbpool.QueryRow(r.Context(),
+		`select
+	coalesce(array_agg(encode(sha256(i.pkey), 'hex')), '{}'::text[])
+from accounts as a
+join identities as i on i.account = a.id
+where a.id = any($1) and i.pkey is not null;`, r.Form["additionalAdmin"]).Scan(&adminHashes)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + err.Error()})
+		return
+	}
+
+	ratingCategories := []int{4}
+	switch r.Form.Get("ratingCategories") {
+	case "ratingNoCategories":
+		ratingCategories = []int{}
+	case "ratingNonRegistered":
+		ratingCategories = []int{4}
+	case "ratingRegular":
+		ratingCategories = []int{3}
+	}
+
+	toSendPreset := map[string]any{
+		"adminsPolicy":       "whitelist",
+		"admins":             adminHashes,
+		"allowNonLinkedJoin": parseFormBool(r, "allowNonRegisteredJoin"),
+		"allowNonLinkedPlay": parseFormBool(r, "allowNonRegisteredPlay"),
+		"allowNonLinkedChat": parseFormBool(r, "allowNonRegisteredChat"),
+		"timelimit":          timeLimit,
+		"displayCategory":    3,
+		"ratingCategories":   ratingCategories,
+		"players":            inf.Slots,
+		"roomName":           roomName,
+		"settingsBase":       strconv.Itoa(settingsBase),
+		"settingsPower":      "2",
+		"settingsAlliance":   strconv.Itoa(settingsAlliances),
+		"settingsScavs":      strconv.Itoa(settingsScav),
+		"maps": map[string]any{
+			inf.Name: map[string]any{
+				"hash": inf.Download.Hash,
+			},
+		},
+	}
+	spew.Dump(toSendPreset)
+
+	hosterResponse, err := RequestHosting(toSendPreset)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Hoster returned error: " + err.Error()})
+		return
+	}
+
+	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Success, hoster responded: " + hosterResponse})
+
+}
+
+func hostRequestHandlerGET(w http.ResponseWriter, r *http.Request) {
+	if !hostRequestAccountPassesChecks(w, r) {
+		return
+	}
+	s, _ := RequestStatus()
+	if !s {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Autohoster backend unavaliable"})
+		return
+	}
+	admins := []*struct {
+		DisplayName string
+		ID          int
+	}{}
+	err := pgxscan.Select(r.Context(), dbpool, &admins, `select distinct on (a.id) a.display_name, a.id
+from accounts as a
+join identities as i on i.account = a.id
+where a.allow_host_request = true and i.pkey is not null
+order by a.id`)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + err.Error()})
+		return
+	}
+	whitelistedMaps, ok := cfg.GetMapStringAny("whitelistedMaps")
+	if !ok {
+		whitelistedMaps = map[string]any{"not": "set"}
+	}
+	basicLayoutLookupRespond("hostrequest", w, r, map[string]any{
+		"Admins":          admins,
+		"WhitelistedMaps": whitelistedMaps,
+	})
+}
+
+func hostRequestAccountPassesChecks(w http.ResponseWriter, r *http.Request) bool {
+	if !checkUserAuthorized(r) {
+		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
+		return false
+	}
+	identCount := 0
+	err := dbpool.QueryRow(r.Context(), `select count(pkey) from identities where account = $1 and pkey is not null`, sessionGetUserID(r)).Scan(&identCount)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Unauthorized?!"})
+			sessionManager.Destroy(r.Context())
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + err.Error()})
+		}
+		return false
+	}
+	if identCount < 1 {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "You must have at least one linked identity with known public key"})
+		return false
+	}
+	var allow_host_request bool
+	var no_request_reason string
+	var last_request time.Time
+	err = dbpool.QueryRow(r.Context(), `SELECT allow_host_request, no_request_reason, last_request FROM accounts WHERE username = $1`,
+		sessionGetUsername(r)).Scan(&allow_host_request, &no_request_reason, &last_request)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Unauthorized?!"})
+			sessionManager.Destroy(r.Context())
+		} else {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + err.Error()})
+		}
+		return false
+	}
+	if !allow_host_request {
+		basicLayoutLookupRespond("errornorequest", w, r, map[string]any{"ForbiddenReason": no_request_reason})
+		return false
+	}
+	if time.Since(last_request) < 5*time.Minute {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "You can only request one room every so often, please wait before opening next one"})
+		return false
+	}
+	return true
 }
 
 func wzlinkCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -298,124 +342,8 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func hostRequestHandler(w http.ResponseWriter, r *http.Request) {
-	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
-		return
-	}
-	s, mhstatus := RequestStatus()
-	if !s {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Multihoster unavaliable"})
-		return
-	}
-	var allow_any bool
-	var allow_presets bool
-	var norequest_reason string
-	derr := dbpool.QueryRow(context.Background(),
-		`SELECT allow_host_request, allow_preset_request, norequest_reason FROM accounts WHERE username = $1`,
-		sessionManager.GetString(r.Context(), "User.Username")).Scan(&allow_any, &allow_presets, &norequest_reason)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Unauthorized?!"})
-			sessionManager.Destroy(r.Context())
-		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
-		}
-		return
-	}
-	if !(allow_any || allow_presets) {
-		basicLayoutLookupRespond("errornorequest", w, r, map[string]any{"ForbiddenReason": norequest_reason})
-		return
-	}
-	rows, derr := dbpool.Query(context.Background(), `
-	SELECT
-		id,
-		maphash,
-		mapname,
-		players,
-		levelbase,
-		alliances,
-		scav,
-		last_requested,
-		disallowed_accounts
-	FROM presets
-	WHERE NOT ((SELECT id FROM accounts WHERE username = $1) = ANY(coalesce(disallowed_accounts, array[]::int[])))
-	ORDER BY last_requested DESC
-	`, sessionManager.GetString(r.Context(), "User.Username"))
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "No maps avaliable"})
-		} else {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + derr.Error()})
-		}
-		return
-	}
-	defer rows.Close()
-	type RequestPrototype struct {
-		NumID             int
-		ID                int
-		MapHash           string
-		MapName           string
-		Playercount       int
-		LevelBase         int
-		LevelAlliances    int
-		LevelScav         int
-		LastRequested     time.Time
-		Forbiddenaccounts []int
-	}
-	var pres []RequestPrototype
-	IID := 0
-	for rows.Next() {
-		var n RequestPrototype
-		err := rows.Scan(&n.ID, &n.MapHash, &n.MapName, &n.Playercount, &n.LevelBase, &n.LevelAlliances, &n.LevelScav, &n.LastRequested, &n.Forbiddenaccounts)
-		if err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database scan error: " + err.Error()})
-			return
-		}
-		n.NumID = IID
-		pres = append(pres, n)
-		IID++
-	}
-	k, versraw := RequestVersions()
-	vers := map[string]any{}
-	if k {
-		if err := json.Unmarshal([]byte(versraw), &vers); err != nil {
-			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json parse error: " + err.Error()})
-			return
-		}
-	} else {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": versraw})
-	}
-	basicLayoutLookupRespond("multihoster-templates", w, r, map[string]any{
-		"MultihosterStatus": template.HTML(mhstatus),
-		"Presets":           pres,
-		"Versions":          vers,
-		"RandomSelection":   rand.Intn(len(pres)),
-	})
-}
-
-//lint:ignore U1000 for dedicated rooms page
-func createdRoomsHandler(w http.ResponseWriter, r *http.Request) {
-	if !sessionManager.Exists(r.Context(), "User.Username") || sessionManager.Get(r.Context(), "UserAuthorized") != "True" {
-		basicLayoutLookupRespond("noauth", w, r, map[string]any{})
-		return
-	}
-	s, reqres := RequestHosters()
-	var rooms []any
-	err := json.Unmarshal([]byte(reqres), &rooms)
-	if err != nil {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "JSON error: " + err.Error()})
-		return
-	}
-	if s {
-		basicLayoutLookupRespond("rooms", w, r, map[string]any{"Rooms": rooms})
-	} else {
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Request error: " + reqres})
-	}
-}
-
-func MultihosterRequest(url string) (bool, string) {
-	req, err := http.NewRequest("GET", cfg.GetDSString("http://localhost:34206/", "multihoster", "urlBase")+url, nil)
+func RequestStatus() (bool, string) {
+	req, err := http.NewRequest("GET", cfg.GetDSString("http://localhost:9271/", "backendUrl")+"status", nil)
 	if err != nil {
 		log.Print(err)
 		return false, err.Error()
@@ -437,50 +365,26 @@ func MultihosterRequest(url string) (bool, string) {
 	return true, bodyString
 }
 
-func RequestHosters() (bool, string) {
-	return MultihosterRequest("hosters-online")
-}
-
-func RequestVersions() (bool, string) {
-	return MultihosterRequest("wzversions")
-}
-
-func RequestStatus() (bool, string) {
-	return MultihosterRequest("status")
-}
-
-func RequestHost(maphash, mapname, alliances, base, scav, players, admin, name, mods, ver, onlyregistered string) (bool, string) {
-	req, err := http.NewRequest("GET", cfg.GetDSString("http://localhost:34206/", "multihoster", "urlBase")+"request-room", nil)
+func RequestHosting(preset map[string]any) (string, error) {
+	reqBodyBytes, err := json.Marshal(preset)
 	if err != nil {
-		log.Print(err)
-		return false, "Error creating request"
+		return "", err
 	}
-	q := req.URL.Query()
-	q.Add("maphash", maphash)
-	q.Add("mapname", mapname)
-	q.Add("alliances", alliances)
-	q.Add("base", base)
-	q.Add("scav", scav)
-	q.Add("maxplayers", players)
-	q.Add("adminhash", admin)
-	q.Add("roomname", name)
-	q.Add("mod", mods)
-	q.Add("version", ver)
-	q.Add("onlyregistered", onlyregistered)
-	req.URL.RawQuery = q.Encode()
+	reqBodyBuf := bytes.NewBuffer(reqBodyBytes)
+	req, err := http.NewRequest("POST", cfg.GetDSString("http://localhost:9271/", "backendUrl")+"request", reqBodyBuf)
+	if err != nil {
+		return "", err
+	}
 	var netClient = &http.Client{
 		Timeout: time.Second * 2,
 	}
 	resp, err := netClient.Do(req)
 	if err != nil {
-		log.Print(err)
-		return false, "Error executing request"
+		return "", err
 	}
-	bodyBytes, err := io.ReadAll(resp.Body)
+	rspBodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Print(err)
-		return false, "Error reading response"
+		return "", err
 	}
-	bodyString := string(bodyBytes)
-	return true, bodyString
+	return string(rspBodyBytes) + "\n", nil
 }

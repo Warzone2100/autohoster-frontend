@@ -235,30 +235,6 @@
 	</body>
 </html>
 {{end}}
-{{define "modMerge"}}
-<!doctype html>
-<html translate="no">
-	<head>
-		{{template "head"}}
-	</head>
-	<body>
-		{{template "NavPanel" . }}
-		<div class="px-4 py-5 my-5 container">
-			<h3>Mod merge</h3>
-			<form method="POST" action="/moderation/merge" target="_self">
-				<p>
-					<label for="into">Into profile ID: </label>
-					<input type="number" name="into">
-				</p><p>
-					<label for="into">From profile IDs (JSON!): </label>
-					<input type="text" name="from">
-				</p>
-				<input type="submit">
-			</form>
-		</div>
-	</body>
-</html>
-{{end}}
 {{define "modNews"}}
 <!doctype html>
 <html translate="no">

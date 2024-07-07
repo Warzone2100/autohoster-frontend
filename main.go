@@ -288,8 +288,8 @@ func main() {
 	router.HandleFunc("/report", basicLayoutHandler("report")).Methods("GET")
 	router.HandleFunc("/report", reportHandler).Methods("POST")
 
-	router.HandleFunc("/hoster", hosterHandler)
-	router.HandleFunc("/request", hostRequestHandler)
+	router.HandleFunc("/request", hostRequestHandlerGET).Methods("GET")
+	router.HandleFunc("/request", hostRequestHandlerPOST).Methods("POST")
 	router.HandleFunc("/wzlink", wzlinkHandler)
 	router.HandleFunc("/wzlinkcheck", wzlinkCheckHandler)
 	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
@@ -334,7 +334,7 @@ func main() {
 		APIWSHub(LobbyWSHub, w, r)
 	})
 
-	router.HandleFunc("/api/multihoster/alive", APItryReachMultihoster).Methods("GET")
+	router.HandleFunc("/api/backend/alive", APItryReachBackend).Methods("GET")
 
 	router.HandleFunc("/api/graph/{gid:[0-9]+}", APIcall(APIgetGraphData)).Methods("GET")
 	router.HandleFunc("/api/classify/game/{gid:[0-9]+}", APIcall(APIgetClassChartGame)).Methods("GET")

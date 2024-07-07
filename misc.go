@@ -31,6 +31,19 @@ func measureHandlerTimings(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func parseFormString(r *http.Request, field string, re *regexp.Regexp) *string {
+	f := r.FormValue(field)
+	if f == "" {
+		return nil
+	}
+	if re != nil {
+		if !re.MatchString(f) {
+			return nil
+		}
+	}
+	return &f
+}
+
 func parseFormInt(r *http.Request, field string) *int {
 	f := r.FormValue(field)
 	if f == "" {
@@ -41,6 +54,19 @@ func parseFormInt(r *http.Request, field string) *int {
 		return nil
 	}
 	return &ret
+}
+
+func parseFormIntWhitelist(r *http.Request, field string, whitelist ...int) *int {
+	i := parseFormInt(r, field)
+	if i == nil {
+		return nil
+	}
+	for _, v := range whitelist {
+		if v == *i {
+			return i
+		}
+	}
+	return nil
 }
 
 func parseFormBool(r *http.Request, field string) bool {

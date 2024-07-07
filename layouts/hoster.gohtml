@@ -1,28 +1,10 @@
-{{define "multihoster"}}
+{{define "hostrequest"}}
 <!doctype html>
 <html translate="no">
 	<head>
 		{{template "head"}}
-		<meta content="Multihoster status" property="og:title">
-		<meta content="Feel free to DM me if this page responds with error" property="og:description">
-		<meta content="https://wz2100-autohost.net/hoster" property="og:url">
-		<title>Multihoster status</title>
-	</head>
-	<body>
-		{{template "NavPanel" . }}
-		<div class="container px-4 py-5 my-5">
-			<pre>{{.MultihosterStatus}}</pre>
-		</div>
-	</body>
-</html>
-{{end}}
-{{define "multihoster-templates"}}
-<!doctype html>
-<html translate="no">
-	<head>
-		{{template "head"}}
-		<meta content="Multihoster room request" property="og:title">
-		<meta content="Select a map and you are good to go, feedback appreciated" property="og:description">
+		<meta content="Autohoster room request" property="og:title">
+		<meta content="Select settings and you are good to go, feedback appreciated" property="og:description">
 		<meta content="https://wz2100-autohost.net/request" property="og:url">
 		<title>Autohoster room request</title>
 	</head>
@@ -31,149 +13,151 @@
 		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 		{{template "NavPanel" . }}
 		<div class="container" style="margin-bottom:180px">
-			<p><noscript><div style="margin-top: 11px" class="alert alert-danger" role="alert">Please enable script execution in order to map search to function properly.</div></noscript></p>
 			<h2 class="mt-5">Request hosting</h2>
-			<a class="link" href="/autohoster">How to control Autohoster in lobby</a>
-			<form action="/hoster" method="POST" id="SettingsForm" target="_self">
-			<table><tr>
-				<td style="padding:18px">
-					<p>Selected map: <text id="FinalHash-mapname"></text></p>
-					<p><img id="FinalHash-preveiw" src=""></p>
-					<p><input class="form-control" id="FinalHash" name="maphash" type="text" maxlength="64" size="64" placeholder="" required></p>
-				</td>
-				<td style="padding:18px">
-					{{with .Versions}}
-					<div class="row g-3 align-items-center">
-						<div class="col-auto">
-							<label for="inputPassword6" class="col-form-label">Game version: </label>
-						</div>
-						<div class="col-auto">
-							<select class="form-select form-select-sm" name="gamever">
-								{{range $i, $j := .versions}}
-								<option value="{{$j}}">{{$j}}</option>
-								{{end}}
-							</select>
+			<p><a class="link" href="/autohoster">How to control Autohoster in lobby</a></p>
+			<form action="/request" method="POST" target="_self">
+			<div class="row">
+				<div class="col">
+					<div class="d-flex align-items-center">
+						<div class="p-2 text-nowrap">Map hash:</div>
+						<div class="p-2"><input class="form-control" name="mapHash" id="SelectedMapHash" type="text" maxlength="64" size="64" placeholder="" required></div>
+					</div>
+					<p class="mt-2">To obtain correct hash of the map navigate to <a href="https://maps.wz2100.net/">maps.wz2100.net</a>,
+					open details about the map and copy SHA-256 hash.</p>
+					<p> Map requirements:
+					<ul>
+						<li>Even number of players (2, 4, 6, 8, 10)</li>
+						<li>Equal balance (all balance labels must be green)</li>
+						<li>For start with bases or advanced bases map must have building upgrades installed</li>
+					</ul>
+				</div>
+				<div class="col">
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col">Room name:</div>
+						<div class="col"><input type="text" class="form-control form-control" name="roomName" value="Autohoster" required></div>
+					</div>
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col"><text class="label-radio">Alliances:</text></div>
+						<div class="col"><label>
+							<input id="alliance-0-radio" type="radio" class="hostsettings-radio" name="settingsAlliances" value="0">
+							<img class="icons icons-alliance0">
+						</label> <label>
+							<input id="alliance-1-radio" type="radio" class="hostsettings-radio" name="settingsAlliances" value="2">
+							<img class="icons icons-alliance1">
+						</label> <label>
+							<input id="alliance-2-radio" type="radio" class="hostsettings-radio" name="settingsAlliances" value="3" checked required>
+							<img class="icons icons-alliance2">
+						</label></div>
+					</div>
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col"><text class="label-radio">Base:</text></div>
+						<div class="col"><label>
+							<input id="base-0-radio" type="radio" class="hostsettings-radio" name="settingsBase" value="1">
+							<img class="icons icons-base0">
+						</label> <label>
+							<input id="base-1-radio" type="radio" class="hostsettings-radio" name="settingsBase" value="2">
+							<img class="icons icons-base1">
+						</label> <label>
+							<input id="base-2-radio" type="radio" class="hostsettings-radio" name="settingsBase" value="3" checked required>
+							<img class="icons icons-base2">
+						</label></div>
+					</div>
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col"><text class="label-radio">Scavangers:</text></div>
+						<div class="col"><label>
+							<input id="scav-0-radio" type="radio" class="hostsettings-radio" name="settingsScav" value="0" checked required>
+							<img class="icons icons-scav0">
+						</label> <label>
+							<input id="scav-1-radio" type="radio" class="hostsettings-radio" name="settingsScav" value="1">
+							<img class="icons icons-scav1">
+						</label></div>
+					</div>
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col">
+							<label class="form-check-label" for="allowNonRegisteredJoin">Allow non-registered join
+							<span title="Autohoster will not allow players who did not link their profile on the website to join room.">&#9432;</span>
+							</label>
+						</div><div class="col">
+							<input class="form-check-input" type="checkbox" id="allowNonRegisteredJoin" name="allowNonRegisteredJoin" checked>
 						</div>
 					</div>
-					{{end}}
-					<p><div class="row g-3 align-items-center">
-						<div class="col-auto">
-							<label for="inputPassword6" class="col-form-label">Room name: </label>
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col">
+							<label class="form-check-label" for="allowNonRegisteredPlay">Allow non-registered play
+							<span title="Autohoster will not allow players who did not link their profile on the website to play in the room. (they will be forced to spectate)">&#9432;</span>
+							</label>
+						</div><div class="col">
+							<input class="form-check-input" type="checkbox" id="allowNonRegisteredPlay" name="allowNonRegisteredPlay">
 						</div>
-						<div class="col-auto">
-							<input type="text" id="roomname" class="form-control form-control-sm" name="roomname" value="Autohoster" required>
+					</div>
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col">
+							<label class="form-check-label" for="allowNonRegisteredChat">Allow non-registered chat
+							<span title="Autohoster will not allow players who did not link their profile on the website to chat in the room.">&#9432;</span>
+							</label>
+						</div><div class="col">
+							<input class="form-check-input" type="checkbox" id="allowNonRegisteredChat" name="allowNonRegisteredChat">
 						</div>
-					</div></p>
-					<p>
-					<label>
-						<text class="label-radio">Alliances:</text>
-						<input id="alliance-0-radio" type="radio" class="hostsettings-radio" name="alliances" value="0">
-						<img class="icons icons-alliance0">
-					</label>
-					<label>
-						<input id="alliance-1-radio" type="radio" class="hostsettings-radio" name="alliances" value="2">
-						<img class="icons icons-alliance1">
-					</label>
-					<label>
-						<input id="alliance-2-radio" type="radio" class="hostsettings-radio" name="alliances" value="1" checked required>
-						<img class="icons icons-alliance2">
-					</label>
-					</p>
-					<p>
-					<label>
-						<text class="label-radio">Base:</text>
-						<input id="base-0-radio" type="radio" class="hostsettings-radio" name="base" value="1">
-						<img class="icons icons-base0">
-					</label>
-					<label>
-						<input id="base-1-radio" type="radio" class="hostsettings-radio" name="base" value="2" checked required>
-						<img class="icons icons-base1">
-					</label>
-					<label>
-						<input id="base-2-radio" type="radio" class="hostsettings-radio" name="base" value="3">
-						<img class="icons icons-base2">
-					</label>
-					</p>
-					<p>
-					<label>
-						<text class="label-radio">Scavangers:</text>
-						<input id="scav-0-radio" type="radio" class="hostsettings-radio" name="scav" value="0" checked required>
-						<img class="icons icons-scav0">
-					</label>
-					<label>
-						<input id="scav-1-radio" type="radio" class="hostsettings-radio" name="scav" value="1">
-						<img class="icons icons-scav1">
-					</label>
-					</p>
-					{{/*<p><div class="form-check form-switch">
-						<input class="form-check-input" type="checkbox" id="specswitch" name="AddSpecs">
-						<label class="form-check-label" for="specswitch">Add spectator slots (WIP)
-							<i id="AddSpecsTooltip" class="icon-info-sign" data-toggle="tooltip" title="Autohoster will preload spectator mod and open extra slots for spectators to enjoy the battle. They can not inerfeer with fighters but can see all map and write to public and private chat.">
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
-									<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-									<path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-								</svg>
-							</i>
-						</span>
-						</label>
-					</div></p>
-					*/}}
-					{{/* <p><div class="form-check form-switch">
-						<input class="form-check-input" type="checkbox" id="balanceswitch" name="AddBalance">
-						<label class="form-check-label" for="balanceswitch">Add master-balance
-							<i id="AddBalanceTooltip" class="icon-info-sign" data-toggle="tooltip" title="Autohoster will preload mod that changes balance to one that is currently being discussed and merged into master branch.">
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
-									<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-									<path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-								</svg>
-							</i>
-						</span>
-						</label>
-					</div></p> */}}
-					<p><div class="form-check form-switch">
-						<input class="form-check-input" type="checkbox" id="onlyregistered" name="onlyregistered">
-						<label class="form-check-label" for="onlyregistered">Allow only registered
-							<i id="OnlyRegisteredTooltip" class="icon-info-sign" data-toggle="tooltip" title="Autohoster will not allow players who did not link their profile on the website to join or spectate the room.">
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
-									<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-									<path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-								</svg>
-							</i>
-						</span>
-						</label>
-					</div></p>
-					<p><input class="btn btn-primary" type="submit" value="Request hosting!" id="SubmitButton"></p>
-				</td>
-			</tr></table>
-			</form>
-			<p><label>Map name: <input class="form-control" id="FuzzySearchField" type="text"></label></p>
-			<!-- <p><button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#CRes" aria-expanded="true" aria-controls="CRes">Show/hide maps</button></p>
-			<div class="collapse show" id="CRes"> -->
-				<!-- class="overflow-auto" style="height: 400px;resize: vertical;border: 1px solid" -->
-				<div id="MapSearchResult">
+					</div>
+					<div class="row p-2 d-flex align-items-center">
+						<div class="col">
+							Time limit: (in minutes)
+						</div><div class="col">
+							<input type="number" class="form-control form-control" name="timeLimit" value="90" min="15" max="180" required>
+						</div>
+					</div>
 				</div>
-			<!-- </div> -->
-			</p>
+			</div>
+			<div class="row">
+				<div class="col p-3">
+					<fieldset>
+						<legend>Select rating categories:</legend>
+						<div>
+							<input type="radio" class="form-check-input" id="ratingNoCategories" name="ratingCategories" value="ratingNoCategories" />
+							<label for="ratingNoCategories">No rating categories (not even counts towards wins of non-registered)</label>
+						</div><div>
+							<input type="radio" class="form-check-input" id="ratingNonRegistered" name="ratingCategories" value="ratingNonRegistered" />
+							<label for="ratingNonRegistered">Category of non-registered games</label>
+						</div><div>
+							<input type="radio" class="form-check-input" id="ratingRegular" name="ratingCategories" value="ratingRegular" checked />
+							<label for="ratingRegular">Regular rating</label>
+						</div>
+					</fieldset>
+					<small>Note: if game will begin with non-registered player, it's category will be for non-registered even if regular rating is selected</small>
+				</div>
+				<div class="col p-3">
+					<fieldset style="max-height: 200px; overflow: scroll;">
+						<legend>Select room admins:</legend>
+						{{range $i, $j := .Admins}}
+						<div>
+							<input type="checkbox" class="form-check-input" id="additionalAdmin{{$j.ID}}" name="additionalAdmin" value="{{$j.ID}}" {{if eq $j.ID $.User.Id}}checked onclick="return false;"{{end}} />
+							<label for="additionalAdmin{{$j.ID}}">{{$j.DisplayName}}</label>
+						</div>
+						{{end}}
+					</fieldset>
+				</div>
+			</div>
+			<p><input class="btn btn-primary" type="submit" value="Request host" id="SubmitButton"></p>
+			</form>
+			<p><h3>Rating-whitelisted maps</h3>Search: <input class="form-control" type="text" id="FuzzySearchField"></p>
+			<p><div id="MapSearchResult"></div></p>
 		</div>
 	</body>
 	<script>
-var presets = [
-	{{range $i, $j := .Presets}}{"id": {{$j.ID}},"name": {{$j.MapName}},"hash": {{$j.MapHash}},"base":{{$j.LevelBase}},"alliance":{{$j.LevelAlliances}},"scav":{{$j.LevelScav}},"players": {{$j.Playercount}}},{{end}}
-]
+	var whitelisted = [
+		{{range $i, $j := .WhitelistedMaps}}{"name": {{$i}},"hash": {{$j.Hash}},"players": {{$j.Players}}},{{end}}
+	]
 	window.onload = function() {
-		$('#AddSpecsTooltip').tooltip();
-		$('#AddBalanceTooltip').tooltip();
-		presets.forEach(t => t.PresetPrepared = fuzzysort.prepare(t.name))
+		whitelisted.forEach(t => t.PresetPrepared = fuzzysort.prepare(t.name))
 		document.getElementById("FuzzySearchField").addEventListener('keyup', function(evt) {
 			if (evt.which === 13) {
-		        evt.preventDefault();
-		        evt.stopPropagation();
-		        return false;
-		    }
+				evt.preventDefault();
+				evt.stopPropagation();
+				return false;
+			}
 			DoSearch();
 		});
-		document.getElementById("MapSearchResult").innerHTML = GetHtmlPresets();
-		
+		document.getElementById("MapSearchResult").innerHTML = GetHtmlMapsTable(whitelisted);
 	}
 	function DoSearch() {
 		const options = {
@@ -182,81 +166,35 @@ var presets = [
 			key: "name"
 		}
 		if(document.getElementById("FuzzySearchField").value != "") {
-			let result = fuzzysort.go(document.getElementById("FuzzySearchField").value, presets, options)
+			let result = fuzzysort.go(document.getElementById("FuzzySearchField").value, whitelisted, options)
 			console.log(result)
 			result.sort(function (a, b) {
 				return b.score - a.score;
 			});
-			document.getElementById("MapSearchResult").innerHTML = GetHtmlResults(result);
+			document.getElementById("MapSearchResult").innerHTML = GetHtmlMapsTable(result);
 		} else {
-			document.getElementById("MapSearchResult").innerHTML = GetHtmlPresets();
+			document.getElementById("MapSearchResult").innerHTML = GetHtmlMapsTable(whitelisted);
 			
 		}
 	}
-	function GetHtmlResults(results) {
-		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Players<td>Name<td>Actions</thead>"
-		for (var i = 0; i < results.length; i++) {
-			const result = results[i]
-			html += "<tr><td>"+result.obj.id+"</td>"
-			html += "<td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+result.obj.hash+".png\"></td>"
-			html += "<td>"+result.obj.players+"</td>"
-			html += "<td>"+fuzzysort.highlight(result)+"</td>"
-			//data-bs-toggle=\"collapse\" data-bs-target=\"#CRes\" aria-expanded=\"true\" aria-controls=\"CRes\" 
-			html += "<td><p><a class=\"btn btn-primary\" onClick=\"SelectMap('"+result.obj.hash+"', '"+result.obj.name+"')\" href=\"#PageTop\">Select</a></p></td></tr>"
-		}
-		html += '</table>'
-		return html
-	}
-	function GetHtmlPresets() {
-		var html = "<table class=\"table\"> <thead><td>ID<td>Preview<td>Players<td>Name<td>Actions</thead>"
+	function GetHtmlMapsTable(presets) {
+		var html = "<table class=\"table\"><thead><td>Preview<td>Players<td>Name<td>Actions</thead>"
 		for (var i = 0; i < presets.length; i++) {
-			const preset = presets[i]
-			html += "<tr><td>"+preset.id+"</td>"
-			html += "<td><img src=\"https://wz2100.euphobos.ru/maps/preview/"+preset.hash+".png\"></td>"
+			let preset = presets[i].obj;
+			if (preset === undefined) {
+				preset = presets[i];
+			}
+			html += "<tr><td><img src=\"https://maps-assets.wz2100.net/v1/maps/"+preset.hash+"/preview.png\"></td>"
 			html += "<td>"+preset.players+"</td>"
 			html += "<td>"+preset.name+"</td>"
-			// data-bs-toggle=\"collapse\" data-bs-target=\"#CRes\" aria-expanded=\"true\" aria-controls=\"CRes\" 
-			html += "<td><p><a class=\"btn btn-primary\" onClick=\"SelectMap('"+preset.hash+"', '"+preset.name+"')\" href=\"#PageTop\">Select</a></p></td></tr>"
+			html += `<td><p><a class=\"btn btn-primary\" onClick=\"SelectMap('${preset.hash}', '${preset.name}')\" href=\"#PageTop\">Select</a>
+			<a class=\"btn btn-primary\" href=\"https://maps.wz2100.net/#/map/hash/${preset.hash}\">Database</a></p></td></tr>`
 		}
 		html += '</table>'
 		return html
 	}
-	// base 0-0 1-1 2-2 3-01 4-12 5-02 6-012
 	function SelectMap(hash, name) {
-
-		document.getElementById("FinalHash").value = hash;
-		document.getElementById("FinalHash-mapname").innerHTML = name;
-		document.getElementById("FinalHash-preveiw").src = "https://wz2100.euphobos.ru/maps/preview/"+hash+".png";
-		let attr = presets.find(e => e.hash == hash)
-		
-		console.log(attr)
-		if(attr["scav"] == "0") {
-			document.getElementById("scav-0-radio").disabled = false;
-			document.getElementById("scav-1-radio").disabled = true;
-			document.getElementById("scav-0-radio").checked = true;
-			document.getElementById("scav-1-radio").checked = false;
-		} else if(attr["scav"] == "1") {
-			document.getElementById("scav-0-radio").disabled = true;
-			document.getElementById("scav-1-radio").disabled = false;
-			document.getElementById("scav-0-radio").checked = false;
-			document.getElementById("scav-1-radio").checked = true;
-		} else if(attr["scav"] == "2") {
-			document.getElementById("scav-0-radio").disabled = false;
-			document.getElementById("scav-1-radio").disabled = false;
-			document.getElementById("scav-0-radio").checked = true;
-			document.getElementById("scav-1-radio").checked = false;
-		}
-		
-		document.getElementById("base-0-radio").disabled = attr['base'] < 3 || attr['base'] == 4;
-		document.getElementById("base-1-radio").disabled = attr['base'] < 3 || attr['base'] == 5;
-		document.getElementById("base-2-radio").disabled = attr['base'] < 3 || attr['base'] == 3;
-		document.getElementById("base-2-radio").checked = 1;
-		
-		document.getElementById("alliance-0-radio").disabled = attr['alliance'] < 3 || attr['alliance'] == 4;
-		document.getElementById("alliance-1-radio").disabled = attr['alliance'] < 3 || attr['alliance'] == 5;
-		document.getElementById("alliance-2-radio").disabled = attr['alliance'] < 3 || attr['alliance'] == 3;
-		document.getElementById("alliance-2-radio").checked = 1;
-		
+		document.getElementById("SelectedMapHash").value = hash;
 	}
 	</script>
 </html>
@@ -266,7 +204,7 @@ var presets = [
 <html translate="no">
 	<head>
 		{{template "head"}}
-		<title>Multihoster chat commands</title>
+		<title>Autohoster chat commands</title>
 	</head>
 	<body>
 		{{template "NavPanel" . }}

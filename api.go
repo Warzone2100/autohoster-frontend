@@ -57,7 +57,7 @@ func APIcall(c func(http.ResponseWriter, *http.Request) (int, any)) func(http.Re
 	}
 }
 
-func APItryReachMultihoster(w http.ResponseWriter, _ *http.Request) {
+func APItryReachBackend(w http.ResponseWriter, _ *http.Request) {
 	s, m := RequestStatus()
 	io.WriteString(w, m)
 	if s {
