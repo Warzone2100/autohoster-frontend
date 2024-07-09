@@ -91,7 +91,7 @@ where hash = $1 and category = 2`, hash).
 				err := dbpool.QueryRow(context.Background(), `select count(p)
 from players as p
 join identities as i on p.identity = i.id
-where p.usertype = 'winner' and i.hash = $1`).Scan(&wonCount)
+where p.usertype = 'winner' and i.hash = $1`, hash).Scan(&wonCount)
 				m.Details = "Casual noname"
 				m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
 				m.EloTextColorOverride = [3]int{0xff, 0x44, 0x44}
