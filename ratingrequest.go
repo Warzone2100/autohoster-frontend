@@ -87,10 +87,22 @@ where hash = $1 and category = 2`, hash).
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if m.Elo == "" {
-				m.Elo = "Unknown player"
-				m.Details = "Casual noname"
-				m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
-				m.EloTextColorOverride = [3]int{0xff, 0x44, 0x44}
+				wonCount := 0
+				err := dbpool.QueryRow(context.Background(), `select count(p)
+from players as p
+join identities as i on p.identity = i.id
+where p.usertype = 'winner' and i.hash = $1`).Scan(&wonCount)
+				if err != nil {
+					m.Elo = "Unknown player"
+					m.Details = "Casual noname"
+					m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
+					m.EloTextColorOverride = [3]int{0xff, 0x44, 0x44}
+				} else {
+					m.Elo = fmt.Sprintf("Unknown player (%d wins)", wonCount)
+					m.Details = "Casual noname"
+					m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
+					m.EloTextColorOverride = [3]int{0xff, 0x44, 0x44}
+				}
 			}
 		} else {
 			log.Print(derr)
