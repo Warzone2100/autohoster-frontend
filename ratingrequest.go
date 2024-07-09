@@ -92,16 +92,16 @@ where hash = $1 and category = 2`, hash).
 from players as p
 join identities as i on p.identity = i.id
 where p.usertype = 'winner' and i.hash = $1`).Scan(&wonCount)
+				m.Details = "Casual noname"
+				m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
+				m.EloTextColorOverride = [3]int{0xff, 0x44, 0x44}
 				if err != nil {
+					if err != pgx.ErrNoRows {
+						log.Println(err)
+					}
 					m.Elo = "Unknown player"
-					m.Details = "Casual noname"
-					m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
-					m.EloTextColorOverride = [3]int{0xff, 0x44, 0x44}
 				} else {
 					m.Elo = fmt.Sprintf("Unknown player (%d wins)", wonCount)
-					m.Details = "Casual noname"
-					m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
-					m.EloTextColorOverride = [3]int{0xff, 0x44, 0x44}
 				}
 			}
 		} else {
