@@ -114,16 +114,13 @@
 						<legend>Select rating categories:</legend>
 						<div>
 							<input type="radio" class="form-check-input" id="ratingNoCategories" name="ratingCategories" value="ratingNoCategories" />
-							<label for="ratingNoCategories">No rating categories (not even counts towards wins of non-registered)</label>
-						</div><div>
-							<input type="radio" class="form-check-input" id="ratingNonRegistered" name="ratingCategories" value="ratingNonRegistered" />
-							<label for="ratingNonRegistered">Category of non-registered games</label>
+							<label for="ratingNoCategories">No rating categories</label>
 						</div><div>
 							<input type="radio" class="form-check-input" id="ratingRegular" name="ratingCategories" value="ratingRegular" checked />
 							<label for="ratingRegular">Regular rating</label>
 						</div>
 					</fieldset>
-					<small>Note: if game will begin with non-registered player, it's category will be for non-registered even if regular rating is selected</small>
+					<small>Note: if game will begin with non-registered player, it's category will be removed</small>
 				</div>
 				<div class="col p-3">
 					<fieldset style="max-height: 200px; overflow: scroll;">
