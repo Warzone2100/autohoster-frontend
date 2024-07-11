@@ -114,7 +114,7 @@ where a.id = any($1) and i.pkey is not null;`, r.Form["additionalAdmin"]).Scan(&
 	case "ratingNoCategories":
 		ratingCategories = []int{}
 	case "ratingNonRegistered":
-		ratingCategories = []int{4}
+		ratingCategories = []int{}
 	case "ratingRegular":
 		whitelistedMaps, ok := cfg.GetMapStringAny("whitelistedMaps")
 		if !ok {
