@@ -50,8 +50,8 @@ func hostRequestHandlerPOST(w http.ResponseWriter, r *http.Request) {
 			timeLimit = 60 * 3
 		}
 	}
-	settingsAlliances := 1
-	if v := parseFormIntWhitelist(r, "settingsAlliances", 0, 1, 2); v != nil {
+	settingsAlliances := 2
+	if v := parseFormIntWhitelist(r, "settingsAlliances", 0, 1, 2, 3); v != nil {
 		settingsAlliances = *v
 	}
 	settingsScav := 0
