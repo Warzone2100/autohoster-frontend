@@ -357,5 +357,9 @@ func main() {
 	routerMiddle := sessionManager.LoadAndSave(handlers.CustomLoggingHandler(os.Stdout, handlers.ProxyHeaders(accountMiddleware(router)), customLogger))
 	listenAddr := ":" + cfg.GetDSString("3001", "httpPort")
 	log.Printf("Started web server at %s", listenAddr)
-	log.Panic(http.ListenAndServeTLS(listenAddr, cfg.GetDSString("cert.pem", "tls", "certFile"), cfg.GetDSString("cert.key", "tls", "keyFile"), routerMiddle))
+	if cfg.GetDBool(false, "tls", "enable") {
+		log.Panic(http.ListenAndServeTLS(listenAddr, cfg.GetDSString("cert.pem", "tls", "certFile"), cfg.GetDSString("cert.key", "tls", "keyFile"), routerMiddle))
+	} else {
+		log.Panic(http.ListenAndServe(listenAddr, routerMiddle))
+	}
 }
