@@ -122,7 +122,7 @@ where a.id = any($1) and i.pkey is not null;`, r.Form["additionalAdmin"]).Scan(&
 		for _, v := range whitelistedMaps {
 			switch vv := v.(type) {
 			case map[string]any:
-				h, ok := vv["hash"].(string)
+				h, ok := vv["Hash"].(string)
 				if !ok {
 					continue
 				}
