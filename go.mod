@@ -19,7 +19,7 @@ require (
 	github.com/maxsupermanhd/go-wz v0.0.0-20240707192712-35af664a298a
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/ravener/discord-oauth2 v0.0.0-20210928130214-d7697a35c387
-	golang.org/x/crypto v0.20.0
+	golang.org/x/crypto v0.21.0
 	golang.org/x/image v0.18.0
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401
 )
@@ -46,8 +46,8 @@ require (
 	github.com/lib/pq v1.10.6 // indirect
 	github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18
 	github.com/shopspring/decimal v1.3.1 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0
+	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
