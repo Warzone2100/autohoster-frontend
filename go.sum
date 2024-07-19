@@ -243,6 +243,8 @@ github.com/maxsupermanhd/go-wz v0.0.0-20240703114804-d37b0cd0ee7d h1:1/mDaetY41E
 github.com/maxsupermanhd/go-wz v0.0.0-20240703114804-d37b0cd0ee7d/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
 github.com/maxsupermanhd/go-wz v0.0.0-20240703120222-0408e296e99f h1:bG7cZjOQzj5AlM6ghrb1/khEG2zwfyaho7yPXUmYmk8=
 github.com/maxsupermanhd/go-wz v0.0.0-20240703120222-0408e296e99f/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
+github.com/maxsupermanhd/go-wz v0.0.0-20240707192712-35af664a298a h1:epB8KRiwI9mSobkRrlMOJd0MmlQK9RbtTwE41GPhaS0=
+github.com/maxsupermanhd/go-wz v0.0.0-20240707192712-35af664a298a/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
 github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18 h1:iRgozdiAA9zhAEC6fpcuIsT0hoVz7sQX6l0UVMZRaCM=
 github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18/go.mod h1:xQezeA7Tf0qvyr6DuOjmBJTcAyM9RS7cUKxOlnQLZKo=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
