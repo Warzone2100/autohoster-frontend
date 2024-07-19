@@ -50,6 +50,6 @@ require (
 	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )
