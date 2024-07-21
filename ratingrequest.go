@@ -101,7 +101,7 @@ where p.usertype = 'winner' and i.hash = $1`, hash).Scan(&wonCount)
 					}
 					m.Elo = "Unknown player"
 				} else {
-					m.Elo = fmt.Sprintf("Unknown player (%04d wins)", wonCount)
+					m.Elo = fmt.Sprintf("Unknown player (% 4d wins)", wonCount)
 				}
 			}
 		} else {
@@ -114,9 +114,9 @@ where p.usertype = 'winner' and i.hash = $1`, hash).Scan(&wonCount)
 
 	if duuserid > 0 {
 		m.Level = 8
-		m.Details += fmt.Sprintf("Rating: %04d\n", delo)
-		m.Details = fmt.Sprintf("%s\nPlayed: %04d\n", dname, dautoplayed)
-		m.Details += fmt.Sprintf("Won: %04d Lost: %04d\n", dautowon, dautolost)
+		m.Details += fmt.Sprintf("Rating: % 4d\n", delo)
+		m.Details = fmt.Sprintf("%s\nPlayed: % 4d\n", dname, dautoplayed)
+		m.Details += fmt.Sprintf("Won: % 4d Lost: % 4d\n", dautowon, dautolost)
 		// if dallowed {
 		// 	m.Details += "Allowed to moderate and request rooms\n"
 		// 	m.NameTextColorOverride = [3]int{0x33, 0xff, 0x33}
@@ -148,7 +148,7 @@ where p.usertype = 'winner' and i.hash = $1`, hash).Scan(&wonCount)
 			pc = "-"
 		}
 		if duuserid != -1 && duuserid != 0 {
-			m.Elo = fmt.Sprintf("R[%04d] %04d %s", delo, dautoplayed, pc)
+			m.Elo = fmt.Sprintf("R[% 4d] % 4d %s", delo, dautoplayed, pc)
 		} else {
 			m.Elo = "Unauthorized player"
 			m.NameTextColorOverride = [3]int{0x66, 0x66, 0x66}
