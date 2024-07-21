@@ -101,7 +101,7 @@ where p.usertype = 'winner' and i.hash = $1`, hash).Scan(&wonCount)
 					}
 					m.Elo = "Unknown player"
 				} else {
-					m.Elo = fmt.Sprintf("Unknown player (%d wins)", wonCount)
+					m.Elo = fmt.Sprintf("Unknown player (%04d wins)", wonCount)
 				}
 			}
 		} else {
