@@ -35,6 +35,7 @@ type Player struct {
 	Rating      *PlayerRating
 	Account     int
 	DisplayName string
+	Props       map[string]any
 }
 
 type Game struct {
@@ -80,7 +81,8 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		'Identity', i.id,
 		'Account', a.id,
 		'DisplayName', coalesce(i.name, a.display_name),
-		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account)
+		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account),
+		'Props', p.props
 	))::jsonb) as players
 from games as g
 join players as p on p.game = g.id

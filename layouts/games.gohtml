@@ -191,7 +191,7 @@
 						</tr><tr>
 							<th>Players</th>
 							<th>Position</th>
-							<th>Rating transfer</th>
+							<th>Rating<br>transfer</th>
 							<th>Kills</th>
 							<th>Lost</th>
 							<th>Built</th>
@@ -212,23 +212,18 @@
 							</td>
 							<td>{{$player.Position}}</td>
 							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							{{/* <td>{{if avail "RatingDiff" $player}}{{$player.RatingDiff}}{{end}}</td>
-							<td>{{if avail "Kills" $player}}{{$player.Kills}}{{end}}</td>
-							<td>{{if avail "DroidLost" $player}}{{$player.DroidLost}}{{end}}</td>
-							<td>{{if avail "DroidBuilt" $player}}{{$player.DroidBuilt}}{{end}}</td>
-							<td>{{if avail "StructLost" $player}}{{$player.StructLost}}{{end}}</td>
-							<td>{{if avail "StructBuilt" $player}}{{$player.StructBuilt}}{{end}}</td>
-							<td>{{if avail "Power" $player}}{{$player.Power}}{{end}}</td>
-							<td title="Power won: {{if avail "PowerWon" $player}}{{$player.PowerWon}}{{end}} Power lost: {{if avail "PowerLost" $player}}{{$player.PowerLost}}{{end}}">{{if and $player.PowerWon $player.PowerLost}}{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}{{end}}</td>
-							<td>{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}</td> */}}
+							<td>{{if avail "kills" $player.Props}}{{$player.Props.kills}}{{end}}</td>
+							<td>{{if avail "droidsLost" $player.Props}}{{$player.Props.droidsLost}}{{end}}</td>
+							<td>{{if avail "droidsBuilt" $player.Props}}{{$player.Props.droidsBuilt}}{{end}}</td>
+							<td>{{if avail "structuresLost" $player.Props}}{{$player.Props.structuresLost}}{{end}}</td>
+							<td>{{if avail "structuresBuilt" $player.Props}}{{$player.Props.structuresBuilt}}{{end}}</td>
+							<td>{{if avail "power" $player.Props}}{{$player.Props.power}}{{end}}</td>
+							<td  title="Power won: {{if avail "recentPowerWon" $player.Props}}{{$player.Props.recentPowerWon}}{{end}}
+										Power lost: {{if avail "recentPowerLost" $player.Props}}{{$player.Props.recentPowerLost}}{{end}}">
+								{{if and $player.Props.recentPowerWon $player.Props.recentPowerLost}}
+								{{f64tostring (divf64 $player.Props.recentPowerWon $player.Props.recentPowerLost)}}
+								{{end}}</td>
+							<td>{{f64tostring (multf64 100 (divf64 $player.Props.recentResearchPerformance $player.Props.recentResearchPotential))}}</td>
 						</tr>
 						{{end}}
 						{{end}}
@@ -242,23 +237,18 @@
 							</td>
 							<td>{{$player.Position}}</td>
 							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							<td>TODO</td>
-							{{/* <td>{{if avail "RatingDiff" $player}}{{$player.RatingDiff}}{{end}}</td>
-							<td>{{if avail "Kills" $player}}{{$player.Kills}}{{end}}</td>
-							<td>{{if avail "DroidLost" $player}}{{$player.DroidLost}}{{end}}</td>
-							<td>{{if avail "DroidBuilt" $player}}{{$player.DroidBuilt}}{{end}}</td>
-							<td>{{if avail "StructLost" $player}}{{$player.StructLost}}{{end}}</td>
-							<td>{{if avail "StructBuilt" $player}}{{$player.StructBuilt}}{{end}}</td>
-							<td>{{if avail "Power" $player}}{{$player.Power}}{{end}}</td>
-							<td title="Power won: {{$player.PowerWon}} Power lost: {{$player.PowerLost}}">{{if and $player.PowerWon $player.PowerLost}}{{f64tostring (divtf64 $player.PowerWon $player.PowerLost)}}{{end}}</td>
-							<td>{{if $player.LabPerformance $player.LabPotential}}{{f64tostring (multf64 100 (divtf64 $player.LabPerformance $player.LabPotential))}}{{end}}</td> */}}
+							<td>{{if avail "kills" $player.Props}}{{$player.Props.kills}}{{end}}</td>
+							<td>{{if avail "droidsLost" $player.Props}}{{$player.Props.droidsLost}}{{end}}</td>
+							<td>{{if avail "droidsBuilt" $player.Props}}{{$player.Props.droidsBuilt}}{{end}}</td>
+							<td>{{if avail "structuresLost" $player.Props}}{{$player.Props.structuresLost}}{{end}}</td>
+							<td>{{if avail "structuresBuilt" $player.Props}}{{$player.Props.structuresBuilt}}{{end}}</td>
+							<td>{{if avail "power" $player.Props}}{{$player.Props.power}}{{end}}</td>
+							<td  title="Power won: {{if avail "recentPowerWon" $player.Props}}{{$player.Props.recentPowerWon}}{{end}}
+										Power lost: {{if avail "recentPowerLost" $player.Props}}{{$player.Props.recentPowerLost}}{{end}}">
+								{{if and $player.Props.recentPowerWon $player.Props.recentPowerLost}}
+								{{f64tostring (divf64 $player.Props.recentPowerWon $player.Props.recentPowerLost)}}
+								{{end}}</td>
+							<td>{{f64tostring (multf64 100 (divf64 $player.Props.recentResearchPerformance $player.Props.recentResearchPotential))}}</td>
 						</tr>
 						{{end}}
 						{{end}}
