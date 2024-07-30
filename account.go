@@ -27,7 +27,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		var passdb string
 		var iddb int
 		var terminated bool
-		derr := dbpool.QueryRow(r.Context(), "SELECT password, id, terminated FROM accounts WHERE username = $1 or email = $1", r.PostFormValue("username")).Scan(&passdb, &iddb, &terminated)
+		var username string
+		derr := dbpool.QueryRow(r.Context(), "SELECT username, password, id, terminated FROM accounts WHERE username = $1 or email = $1", r.PostFormValue("username")).Scan(&username, &passdb, &iddb, &terminated)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
 				basicLayoutLookupRespond(templateLogin, w, r, map[string]any{"LoginError": true})
@@ -42,15 +43,15 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			if terminated {
 				basicLayoutLookupRespond(templateLogin, w, r, map[string]any{"LoginError": true,
 					"LoginDetailedError": template.HTML("<p><b>Account was terminated.</b></p><p><a href=\"/about#contact\">Contact administrator</a> for further information.</p><p>Creating more accounts will not help and will only get you permanently banned.</p>")})
-				log.Printf("Terminated account [%s] success login attempt", r.PostFormValue("username"))
+				log.Printf("Terminated account [%s] success login attempt", username)
 				return
 			}
-			sessionManager.Put(r.Context(), "User.Username", r.PostFormValue("username"))
+			sessionManager.Put(r.Context(), "User.Username", username)
 			sessionManager.Put(r.Context(), "User.Id", iddb)
 			sessionManager.Put(r.Context(), "UserAuthorized", "True")
 			w.Header().Set("Refresh", "1; /account")
-			basicLayoutLookupRespond(templateLogin, w, r, map[string]any{"LoginComplete": true, "User": map[string]any{"Username": r.PostFormValue("username")}})
-			log.Printf("Log in success: [%s]", r.PostFormValue("username"))
+			basicLayoutLookupRespond(templateLogin, w, r, map[string]any{"LoginComplete": true, "User": map[string]any{"Username": username}})
+			log.Printf("Log in success: [%s]", username)
 		} else {
 			basicLayoutLookupRespond("login", w, r, map[string]any{"LoginError": true})
 		}
