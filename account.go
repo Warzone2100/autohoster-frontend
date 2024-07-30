@@ -20,7 +20,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf("Login attempt: [%s]", r.PostFormValue(templateLoginFormUsername))
-		if !validateUsername(r.PostFormValue(templateLoginFormUsername)) || !validatePassword(r.PostFormValue(templateLoginFormPassword)) {
+		if !validatePassword(r.PostFormValue(templateLoginFormPassword)) {
 			basicLayoutLookupRespond(templateLogin, w, r, map[string]any{"LoginError": true})
 			return
 		}
