@@ -207,6 +207,9 @@ func validateUsername(u string) bool {
 	if len(u) < 3 || len(u) > 25 {
 		return false
 	}
+	if strings.Contains(u, "@") {
+		return false
+	}
 	return true
 }
 func validatePassword(u string) bool {

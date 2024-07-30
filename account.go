@@ -27,7 +27,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		var passdb string
 		var iddb int
 		var terminated bool
-		derr := dbpool.QueryRow(r.Context(), "SELECT password, id, terminated FROM accounts WHERE username = $1", r.PostFormValue("username")).Scan(&passdb, &iddb, &terminated)
+		derr := dbpool.QueryRow(r.Context(), "SELECT password, id, terminated FROM accounts WHERE username = $1 or email = $1", r.PostFormValue("username")).Scan(&passdb, &iddb, &terminated)
 		if derr != nil {
 			if derr == pgx.ErrNoRows {
 				basicLayoutLookupRespond(templateLogin, w, r, map[string]any{"LoginError": true})
@@ -92,7 +92,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		la := LastAttemptS{r.PostFormValue("username"), r.PostFormValue("password"), r.PostFormValue("email")}
 		if !validateUsername(r.PostFormValue("username")) {
-			basicLayoutLookupRespond("register", w, r, map[string]any{"RegisterErrorMsg": "Username length must be between 3 and 25", "LastAttempt": la})
+			basicLayoutLookupRespond("register", w, r, map[string]any{"RegisterErrorMsg": "Username length must be between 3 and 25 and not contain '@' character", "LastAttempt": la})
 			return
 		}
 		if !validatePassword(r.PostFormValue("password")) {
