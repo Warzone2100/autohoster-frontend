@@ -325,34 +325,11 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 	idt := []struct {
 		ID      int
 		Name    string
-		Pkey    []byte
+		Pkey    string
 		Hash    string
 		Account int
 	}{}
-	var (
-		ID      int
-		Name    string
-		Pkey    []byte
-		Hash    string
-		Account int
-	)
-	_, err := dbpool.QueryFunc(r.Context(), `select id, name, pkey, hash, account from identities where account = $1`, []any{sessionGetUserID(r)},
-		[]any{&ID, &Name, &Pkey, &Hash, &Account}, func(qfr pgx.QueryFuncRow) error {
-			idt = append(idt, struct {
-				ID      int
-				Name    string
-				Pkey    []byte
-				Hash    string
-				Account int
-			}{
-				ID:      ID,
-				Name:    Name,
-				Pkey:    Pkey,
-				Hash:    Hash,
-				Account: Account,
-			})
-			return nil
-		})
+	err := pgxscan.Select(r.Context(), dbpool, &idt, `select id, name, pkey, hash, account from identities where account = $1`, sessionGetUserID(r))
 	if err != nil && err != pgx.ErrNoRows {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database error: " + err.Error()})
 		return
