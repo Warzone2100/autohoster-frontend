@@ -14,7 +14,7 @@
 			{{range $k, $v := .Identities}}
 			<p>ID: {{$v.ID}} Name: {{$v.Name}}<br>
 			Hash: {{$v.Hash}}<br>
-			Public key: {{if $v.Pkey}}{{base64encode $v.Pkey}}{{else}}Not known!{{end}}</p>
+			Public key: {{if $v.Pkey}}{{$v.Pkey}}{{else}}Not known!{{end}}</p>
 			{{end}}
 			<p><a href="/wzlinkcheck" class="btn btn-primary">Link identity</a></p>
 		</div>
