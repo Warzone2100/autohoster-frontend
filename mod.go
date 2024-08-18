@@ -325,6 +325,35 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, any) {
 	}
 }
 
+func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
+	return genericViewRequest[struct {
+		ID       int
+		Whensent string
+		Pkey     string
+		Name     string
+		MsgType  string
+		Msg      string
+	}](r, genericRequestParams{
+		tableName:               "composelog",
+		limitClamp:              1500,
+		sortDefaultOrder:        "desc",
+		sortDefaultColumn:       "id",
+		sortColumns:             []string{"id", "whensent"},
+		filterColumnsFull:       []string{"id", "msg"},
+		filterColumnsStartsWith: []string{"name", "pkey"},
+		searchColumn:            "name || msg",
+		searchSimilarity:        0.3,
+		columnMappings: map[string]string{
+			"ID":       "id",
+			"Whensent": "whensent",
+			"Pkey":     "pkey",
+			"Name":     "name",
+			"MsgType":  "msgtype",
+			"Msg":      "msg",
+		},
+	})
+}
+
 func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return genericViewRequest[struct {
 		ID      int

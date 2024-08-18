@@ -304,7 +304,7 @@ func main() {
 	router.HandleFunc("/moderation/news", SuperadminCheck(modNewsPOST)).Methods("POST")
 
 	router.HandleFunc("/moderation/logs", basicSuperadminHandler("modLogs")).Methods("GET")
-	router.HandleFunc("/api/logs", APIcall(APISuperadminCheck(APIgetLogs))).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/logs", APIcall(APISuperadminCheck(APIgetLogs2))).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/moderation/bans", basicSuperadminHandler("modBans")).Methods("GET")
 	router.HandleFunc("/moderation/bans", SuperadminCheck(modBansPOST))
