@@ -358,7 +358,7 @@ func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return genericViewRequest[struct {
 		ID      int
 		Name    string
-		Pkey    []byte
+		Pkey    string
 		Hash    string
 		Account *int
 	}](r, genericRequestParams{
