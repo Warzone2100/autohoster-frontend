@@ -25,7 +25,7 @@ type genericRequestParams struct {
 func genericViewRequest[T any](r *http.Request, params genericRequestParams) (int, any) {
 	reqLimit := max(1, parseQueryInt(r, "limit", 50))
 	if reqLimit > params.limitClamp {
-		reqLimit = 500
+		reqLimit = params.limitClamp
 	}
 	reqOffset := max(0, parseQueryInt(r, "offset", 0))
 	reqSortOrder := parseQueryStringFiltered(r, "order", "desc", "asc")
