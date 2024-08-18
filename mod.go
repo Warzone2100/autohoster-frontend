@@ -351,6 +351,7 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 			"MsgType":  "msgtype",
 			"Msg":      "msg",
 		},
+		columnsSpecifier: "id, whensent, encode(pkey, 'base64'), name, msg",
 	})
 }
 

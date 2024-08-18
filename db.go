@@ -20,6 +20,7 @@ type genericRequestParams struct {
 	searchColumn            string
 	searchSimilarity        float64
 	addWhereCase            string
+	columnsSpecifier        string
 }
 
 func genericViewRequest[T any](r *http.Request, params genericRequestParams) (int, any) {
@@ -106,6 +107,11 @@ func genericViewRequest[T any](r *http.Request, params genericRequestParams) (in
 	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
 	offset := fmt.Sprintf("OFFSET %d", reqOffset)
 
+	columnsSpecifier := "*"
+	if params.columnsSpecifier != "" {
+		columnsSpecifier = params.columnsSpecifier
+	}
+
 	tn := params.tableName
 
 	var totalsNoFilter int
@@ -117,7 +123,7 @@ func genericViewRequest[T any](r *http.Request, params genericRequestParams) (in
 	}, func() error {
 		return dbpool.QueryRow(r.Context(), `SELECT count(`+tn+`) FROM `+tn+` `+wherecase, whereargs...).Scan(&totals)
 	}, func() error {
-		return pgxscan.Select(r.Context(), dbpool, &rows, `SELECT * FROM `+tn+` `+wherecase+` `+ordercase+` `+offset+` `+limiter, whereargs...)
+		return pgxscan.Select(r.Context(), dbpool, &rows, `SELECT `+columnsSpecifier+` FROM `+tn+` `+wherecase+` `+ordercase+` `+offset+` `+limiter, whereargs...)
 	})
 	if err != nil {
 		return 500, err
