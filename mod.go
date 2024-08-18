@@ -327,12 +327,12 @@ func APIgetLogs(_ http.ResponseWriter, r *http.Request) (int, any) {
 
 func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return genericViewRequest[struct {
-		ID       int
-		Whensent string
-		Pkey     string
-		Name     string
-		MsgType  string
-		Msg      string
+		ID       int       `json:"id"`
+		Whensent time.Time `json:"whensent"`
+		Pkey     string    `json:"pkey"`
+		Name     string    `json:"name"`
+		MsgType  string    `json:"msgtype"`
+		Msg      string    `json:"msg"`
 	}](r, genericRequestParams{
 		tableName:               "composelog",
 		limitClamp:              1500,
