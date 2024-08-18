@@ -351,7 +351,6 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 			"MsgType":  "msgtype",
 			"Msg":      "msg",
 		},
-		columnsSpecifier: "id, whensent, encode(pkey, 'base64'), name, msg",
 	})
 }
 
@@ -359,7 +358,7 @@ func APIgetIdentities(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return genericViewRequest[struct {
 		ID      int
 		Name    string
-		Pkey    string
+		Pkey    []byte
 		Hash    string
 		Account *int
 	}](r, genericRequestParams{
