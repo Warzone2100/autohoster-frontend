@@ -329,7 +329,7 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return genericViewRequest[struct {
 		ID       int       `json:"id"`
 		Whensent time.Time `json:"whensent"`
-		Pkey     string    `json:"pkey"`
+		Pkey     []byte    `json:"pkey"`
 		Name     string    `json:"name"`
 		MsgType  string    `json:"msgtype"`
 		Msg      string    `json:"msg"`
