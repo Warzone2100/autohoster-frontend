@@ -325,7 +325,7 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 	idt := []struct {
 		ID      int
 		Name    string
-		Pkey    string
+		Pkey    []byte
 		Hash    string
 		Account int
 	}{}
