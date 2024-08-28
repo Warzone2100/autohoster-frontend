@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -27,16 +29,30 @@ type PlayerLeaderboard struct {
 }
 
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {
-	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "not implemented"})
-	// params := mux.Vars(r)
-	// pids := params["id"]
-	// var pid int
-	// var err error
-	// pid, err = strconv.Atoi(pids)
-	// if err != nil {
-	// 	basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Badly formatted player id"})
-	// 	return
-	// }
+	identPubKeyB64 := mux.Vars(r)["id"]
+	identPubKey, err := base64.StdEncoding.DecodeString(identPubKeyB64)
+	if err != nil {
+		log.Println(err)
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Badly formatted player id"})
+		return
+	}
+	var identID int
+	var identName string
+	err = dbpool.QueryRow(r.Context(), `select id, name from identities where pkey = $1`, identPubKey).Scan(&identID, &identName)
+	if err != nil {
+		if !errors.Is(err, context.Canceled) && !errors.Is(err, pgx.ErrNoRows) {
+			log.Println(err)
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "request error"})
+			return
+		}
+	}
+	basicLayoutLookupRespond("player", w, r, map[string]any{
+		"Player": map[string]any{
+			"Name":           identName,
+			"IdentityPubKey": identPubKeyB64,
+		},
+	})
+
 	// var pp PlayerLeaderboard
 	// pp.ID = pid
 	// type renameEntry struct {

@@ -89,8 +89,7 @@
 	<head>
 		{{template "head"}}
 		<meta content="{{.Player.Name}}" property="og:title">
-		<meta content="Won {{.Player.Autowon}} Lost {{.Player.Autolost}} Played {{.Player.Autoplayed}} Rating {{.Player.Elo2}}" property="og:description">
-		<meta content="https://wz2100-autohost.net/players/{{.Player.ID}}" property="og:url">
+		<meta content="https://wz2100-autohost.net/players/{{.Player.IdentityPubKey}}" property="og:url">
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
@@ -112,22 +111,16 @@
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
 		<script src="/static/bootstrap-table/tablehelpers.js"></script>
 		<div class="px-4 py-2 my-2 container">
+			
 			<div class="d-flex">
-				<h3>{{template "wzprofile" .Player}}</h3>
+				<h3>{{.Player.Name}}</h3>
 				<div class="px-5 d-flex flex-column flex-grow-1 text-center">
-					<div>{{if $.IsSuperadmin}}AltCount: {{.AltCount}}{{end}} <code class="m-1">{{.Player.Hash}}</code></div>
+					<div><code class="m-1">{{.Player.IdentityPubKey}}</code></div>
 					<div class="d-flex flex-row justify-content-between flex-wrap">
-						<div class="m-1">Rating: {{if gt .Player.Userid 0}}{{.Player.Elo2}}{{else}}not registered{{end}}</div>
-						<div class="m-1">{{if .Player.Rwon}}Rwon: {{f64tostring .Player.Rwon}}{{end}}</div>
-						<div class="m-1">{{if .Player.Rwon}}Rlost: {{f64tostring .Player.Rlost}}{{end}}</div>
-						<div class="m-1">Played: {{.Player.Autoplayed}}</div>
-						<div class="m-1">Won: {{.Player.Autowon}}</div>
-						<div class="m-1">Lost: {{.Player.Autolost}}</div>
-						<div class="m-1">{{if ne .Player.Autoplayed 0}}Winrate: {{f64tostring (multf64 (divtf64 .Player.Autowon (sum .Player.Autowon .Player.Autolost)) 100)}}%{{end}}</div>
 					</div>
 				</div>
 			</div>
-			{{if gt .Player.Userid 0}}
+			{{/* {{if gt .Player.Userid 0}}
 			<div class="d-flex flex-row justify-content-between flex-wrap">
 				<div><canvas id="ClassificationGraphCanvasTotal"></div>
 				<div><canvas id="ClassificationGraphCanvasRecent"></div>
@@ -138,71 +131,23 @@
 				{{template "primitiveStackedChart" .ChartGamesByBaselevel}}
 				{{template "primitiveStackedChart" .ChartGamesByAlliances}}
 				{{template "primitiveStackedChart" .ChartGamesByScav}}
-				{{/* <div class="flex-grow-1">
-				filler
-				</div> */}}
 			</div>
-			{{end}}
-			{{if len .Renames}}
-			<details>
-				<summary>Renames</summary>
-				<table class="table">
-					<thead>
-						<td>From</td>
-						<td>To</td>
-						<td>When</td>
-					</thead>
-				{{range $i, $r := .Renames}}
-					<tr>
-						<td>{{$r.Oldname}}</td>
-						<td>{{$r.Newname}}</td>
-						<td>{{$r.Time}}</td>
-					</tr>
-				{{end}}
-				</table>
-			</details>
-			{{end}}
+			{{end}} */}}
 
 			<noscript>
 				Enable javascript to view table contents
 				<style> yes-script { display:none; } </style>
 			</noscript>
 			<yes-script>
-			<table id="table" class="smart-table"
-			data-url="/api/games"
-			data-filter-control="true"
-			data-sort-order="desc"
-			data-show-refresh="true"
-			data-toolbar="#table-toolbar"
-			data-cache="false"
-			data-toggle="table"
-			data-id-field="ID"
-			data-pagination="true"
-			data-page-size="50"
-			data-page-number="1"
-			data-pagination-loop="false"
-			data-show-extended-pagination="true"
-			data-page-list="[10, 15, 25, 35, 50, 100, all]"
-			data-buttons-prefix="btn btn-sm btn-primary"
-			data-classes="table table-striped table-sm"
-			{{/* data-search="true" */}}
-			data-show-search-button="true"
-			data-side-pagination="server"
-			{{/* data-search-highlight="true" */}}
-			data-show-export="true"
-			data-show-search-clear-button="true"
-			data-escape="true"
-			data-show-filter-control-switch="true"
-			data-filter-control-visible="false"
-			data-query-params="queryParams"
-			{{/* data-show-footer="true" */}}
-			data-sticky-header="true"
-			data-buttons="loadButtons">
+			<table
+			id="table"
+			class="smart-table"
+			>
 				<thead>
 					<tr>
 						<th data-rowspan="2" data-halign="center" data-formatter="IDFormatter" data-field="ID">ID</th>
 						<th data-rowspan="2" data-halign="center" data-formatter="TimeFormatter" data-field="TimeStarted">Time</th>
-						<th data-rowspan="2" data-halign="center" data-field="MapName" data-formatter="mapNameFormatter" data-sortable="true" data-filter-control="select">Map</th>
+						<th data-rowspan="2" data-halign="center" data-formatter="mapNameFormatter" data-field="MapName" data-sortable="true" data-filter-control="select">Map</th>
 						<th data-colspan="3" data-halign="center" data-class="noBottomBorder">Settings</th>
 						<th data-colspan="2" data-halign="center" data-class="noBottomBorder" data-formatter="playersFormatter" data-class="width45" data-filter-control="input">Players</th>
 						<th data-rowspan="2" data-halign="center" data-formatter="detailsBtn"></th>
@@ -219,24 +164,54 @@
 			</yes-script>
 		</div>
 		<script>
-		function queryParams(params) {
-			params.player = {{.Player.ID}}
-			return params
-		}
 		$(function() {
-			{{if gt .Player.Userid 0}}
-			PlotLinearData({{.RatingHistory}}, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Rating history');
-			PlotClassData({{.ResearchClassificationTotal}}, document.getElementById('ClassificationGraphCanvasTotal').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (all time)');
-			PlotClassData({{.ResearchClassificationRecent}}, document.getElementById('ClassificationGraphCanvasRecent').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (last 20 games)');
-			{{end}}
-			$('#table').bootstrapTable()
-			$("#table").on("page-change.bs.table", function (number, size) {
-				window.scrollTo({
-					top: 0,
-					left: 0,
-					behavior: 'smooth'
-				});
-			});
+			//PlotLinearData({{.RatingHistory}}, document.getElementById('ElodiffGraphCanvas').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Rating history');
+			//PlotClassData({{.ResearchClassificationTotal}}, document.getElementById('ClassificationGraphCanvasTotal').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (all time)');
+			//PlotClassData({{.ResearchClassificationRecent}}, document.getElementById('ClassificationGraphCanvasRecent').getContext('2d'), '{{.Player.ID}} - {{.Player.Name}}', 'Research classification (last 20 games)'); */}}
+			//data-url="/api/games"
+			//data-filter-control="true"
+			//data-sort-order="desc"
+			//data-show-refresh="true"
+			//data-toolbar="#table-toolbar"
+			//data-cache="false"
+			//data-toggle="table"
+			//data-id-field="ID"
+			//data-pagination="true"
+			//data-page-size="50"
+			//data-page-number="1"
+			//data-pagination-loop="false"
+			//data-show-extended-pagination="true"
+			//data-page-list="[10, 25, 50, 100]"
+			//data-buttons-prefix="btn btn-sm btn-primary"
+			//data-classes="table table-striped table-sm"
+			//{{/* data-search="true" */}}
+			//data-show-search-button="true"
+			//data-side-pagination="server"
+			//{{/* data-search-highlight="true" */}}
+			//data-show-export="true"
+			//data-show-search-clear-button="true"
+			//data-escape="true"
+			//data-show-filter-control-switch="true"
+			//data-filter-control-visible="false"
+			//data-query-params="queryParams"
+			//{{/* data-show-footer="true" */}}
+			//data-sticky-header="true"
+			//data-buttons="loadButtons"
+			
+			$('#table').bootstrapTable(Object.assign(defaultTableOptions, {
+				url: "/api/games",
+				queryParams: (params) => {
+					params.player = {{.Player.IdentityPubKey}}
+					return params
+				},
+			}))
+			//$("#table").on("page-change.bs.table", function (number, size) {
+			//	window.scrollTo({
+			//		top: 0,
+			//		left: 0,
+			//		behavior: 'smooth'
+			//	});
+			//});
 		})
 		function PlotClassData(resp, ctx, title, subtitle) {
 			if(Object.keys(resp).length == 0) {
