@@ -26,16 +26,17 @@ type PlayerRating struct {
 }
 
 type Player struct {
-	Position    int
-	Name        string
-	Team        int
-	Color       int
-	Identity    int
-	Usertype    string
-	Rating      *PlayerRating
-	Account     int
-	DisplayName string
-	Props       map[string]any
+	Position       int
+	Name           string
+	Team           int
+	Color          int
+	Identity       int
+	IdentityPubKey string
+	Usertype       string
+	Rating         *PlayerRating
+	Account        int
+	DisplayName    string
+	Props          map[string]any
 }
 
 type Game struct {
@@ -79,6 +80,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		'Usertype', p.usertype,
 		'Color', p.color,
 		'Identity', i.id,
+		'IdentityPubKey', encode(i.pkey, 'base64'),
 		'Account', a.id,
 		'DisplayName', coalesce(i.name, a.display_name),
 		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account),
@@ -210,23 +212,19 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 		}
 	}
 
-	// reqSearch := parseQueryString(r, "search", "")
-
-	// similarity := 0.3
-
-	// if reqSearch != "" {
-	// 	whereargs = append(whereargs, reqSearch)
-	// 	if wherecase == "" {
-	// 		wherecase = fmt.Sprintf("WHERE similarity(p.name, $1::text) > %f", similarity)
-	// 	} else {
-	// 		wherecase += fmt.Sprintf(" AND similarity(p.name, $%d::text) > %f", len(whereargs), similarity)
-	// 	}
-	// }
+	reqSearch := parseQueryString(r, "search", "")
 
 	ordercase := fmt.Sprintf("ORDER BY %s %s", reqSortField, reqSortOrder)
+	orderargs := []any{}
+
+	if reqSearch != "" {
+		orderargs = append(orderargs, reqSearch)
+		argnum := len(whereargs) + 1
+		ordercase = fmt.Sprintf("ORDER BY max(similarity(coalesce(i.name, a.display_name), $%d::text)) desc, %s %s", argnum, reqSortField, reqSortOrder)
+	}
+
 	limiter := fmt.Sprintf("LIMIT %d", reqLimit)
 	offset := fmt.Sprintf("OFFSET %d", reqOffset)
-	joincase := ""
 
 	totalsc := make(chan int)
 	var totals int
@@ -245,6 +243,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 		var c int
 		derr := dbpool.QueryRow(r.Context(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
 		if derr != nil {
+			log.Println(derr)
 			echan <- derr
 			return
 		}
@@ -252,10 +251,11 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	}()
 	go func() {
 		var c int
-		req := `select count(distinct g.id) from games as g ` + joincase + ` ` + wherecase + `;`
+		req := `select count(g.id) from games as g ` + wherecase + `;`
+		log.Printf("req %s args %#+v", req, whereargs)
 		derr := dbpool.QueryRow(r.Context(), req, whereargs...).Scan(&c)
-		// log.Println(req)
 		if derr != nil {
+			log.Println(derr)
 			echan <- derr
 			return
 		}
@@ -275,6 +275,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 		'Usertype', p.usertype,
 		'Color', p.color,
 		'Identity', i.id,
+		'IdentityPubKey', encode(i.pkey, 'base64'),
 		'Account', a.id,
 		'DisplayName', coalesce(i.name, a.display_name),
 		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account)
@@ -283,13 +284,17 @@ from games as g
 join players as p on p.game = g.id
 join identities as i on i.id = p.identity
 left join accounts as a on a.id = i.account
+` + wherecase + `
 group by g.id
-	` + ordercase + `
-	` + limiter + `
-	` + offset
+` + ordercase + `
+` + limiter + `
+` + offset
+		args := append(whereargs, orderargs...)
+		log.Printf("req %s args %#+v", req, args)
 		gmsStage := []Game{}
-		rows, err := dbpool.Query(r.Context(), req, whereargs...)
+		rows, err := dbpool.Query(r.Context(), req, args...)
 		if err != nil {
+			log.Println(err)
 			echan <- err
 			return
 		}
@@ -319,19 +324,6 @@ group by g.id
 			echan <- err
 			return
 		}
-		// err := pgxscan.Select(r.Context(), dbpool, &gmsStage, req)
-		// if err != nil {
-		// 	echan <- err
-		// 	return
-		// }
-		// for _, v := range gmsStage {
-		// 	if v == nil {
-		// 		continue
-		// 	}
-		// 	slices.SortFunc(v.Players, func(a Player, b Player) int {
-		// 		return a.Position - b.Position
-		// 	})
-		// }
 		growsc <- gmsStage
 	}()
 	for !(gpresent && totalspresent && totalsNoFilterpresent) {
