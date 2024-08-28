@@ -187,19 +187,22 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 		}
 	}
 
+	whereplayerscase := ""
 	wherecase := "WHERE deleted = false AND hidden = false"
-	if sessionGetUsername(r) == "Flex seal" {
+	whereargs := []any{}
+	if isSuperadmin(r.Context(), sessionGetUsername(r)) {
 		wherecase = ""
 	}
-	pid := parseQueryInt(r, "player", -1)
-	if pid > 0 {
+	playerPubKey := parseQueryString(r, "player", "")
+	if playerPubKey != "" {
+		whereplayerscase = "where $1 = encode(i.pkey, 'base64')"
+		whereargs = append(whereargs, playerPubKey)
 		if wherecase == "" {
-			wherecase = fmt.Sprintf("WHERE %d = p.id", pid)
+			wherecase = "WHERE g.id = any((select game from plf))"
 		} else {
-			wherecase += fmt.Sprintf(" AND %d = p.id", pid)
+			wherecase += " AND g.id = any((select game from plf))"
 		}
 	}
-	whereargs := []any{}
 	if reqDoFilters {
 		val, ok := reqFilterFields["MapName"]
 		if ok {
@@ -207,7 +210,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 			if wherecase == "" {
 				wherecase = "WHERE g.map_name = $1"
 			} else {
-				wherecase += " AND g.map_name = $1"
+				wherecase += fmt.Sprintf(" AND g.map_name = $%d", len(whereargs))
 			}
 		}
 	}
@@ -241,7 +244,11 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	echan := make(chan error)
 	go func() {
 		var c int
-		derr := dbpool.QueryRow(r.Context(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
+		req := `select count(games) from games where hidden = false and deleted = false;`
+		if isSuperadmin(r.Context(), sessionGetUsername(r)) {
+			req = `select count(games) from games;`
+		}
+		derr := dbpool.QueryRow(r.Context(), req).Scan(&c)
 		if derr != nil {
 			log.Println(derr)
 			echan <- derr
@@ -251,7 +258,20 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	}()
 	go func() {
 		var c int
-		req := `select count(g.id) from games as g ` + wherecase + `;`
+		req := `with plf as (
+	select *
+	from players as p
+	join identities as i on i.id = p.identity
+	left join accounts as a on a.id = i.account
+	` + whereplayerscase + `
+)
+select
+	count(distinct g.id)
+from games as g
+join players as p on p.game = g.id
+join identities as i on i.id = p.identity
+` + wherecase + `
+;`
 		log.Printf("req %s args %#+v", req, whereargs)
 		derr := dbpool.QueryRow(r.Context(), req, whereargs...).Scan(&c)
 		if derr != nil {
@@ -263,7 +283,14 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	}()
 
 	go func() {
-		req := `select
+		req := `with plf as (
+	select *
+	from players as p
+	join identities as i on i.id = p.identity
+	left join accounts as a on a.id = i.account
+	` + whereplayerscase + `
+)
+select
 	g.id, g.version, g.time_started, g.time_ended, g.game_time,
 	g.setting_scavs, g.setting_alliance, g.setting_power, g.setting_base,
 	g.map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
