@@ -272,7 +272,7 @@ join players as p on p.game = g.id
 join identities as i on i.id = p.identity
 ` + wherecase + `
 ;`
-		log.Printf("req %s args %#+v", req, whereargs)
+		// log.Printf("req %s args %#+v", req, whereargs)
 		derr := dbpool.QueryRow(r.Context(), req, whereargs...).Scan(&c)
 		if derr != nil {
 			log.Println(derr)
@@ -317,7 +317,7 @@ group by g.id
 ` + limiter + `
 ` + offset
 		args := append(whereargs, orderargs...)
-		log.Printf("req %s args %#+v", req, args)
+		// log.Printf("req %s args %#+v", req, args)
 		gmsStage := []Game{}
 		rows, err := dbpool.Query(r.Context(), req, args...)
 		if err != nil {
