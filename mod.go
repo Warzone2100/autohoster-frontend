@@ -195,8 +195,8 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 		columnMappings: map[string]string{
 			"ID":       "id",
 			"Whensent": "whensent",
-			"Pkey":     "pkey",
-			"Name":     "name",
+			"pkey":     "pkey",
+			"name":     "name",
 			"MsgType":  "msgtype",
 			"Msg":      "msg",
 		},
