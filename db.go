@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/georgysavva/scany/pgxscan"
@@ -123,7 +124,11 @@ func genericViewRequest[T any](r *http.Request, params genericRequestParams) (in
 	}, func() error {
 		return dbpool.QueryRow(r.Context(), `SELECT count(`+tn+`) FROM `+tn+` `+wherecase, whereargs...).Scan(&totals)
 	}, func() error {
-		return pgxscan.Select(r.Context(), dbpool, &rows, `SELECT `+columnsSpecifier+` FROM `+tn+` `+wherecase+` `+ordercase+` `+offset+` `+limiter, whereargs...)
+		req := `SELECT ` + columnsSpecifier + ` FROM ` + tn + ` ` + wherecase + ` ` + ordercase + ` ` + offset + ` ` + limiter
+		if cfg.GetDSBool(false, "displayQuery") {
+			log.Printf("req %s args %#+v", req, whereargs)
+		}
+		return pgxscan.Select(r.Context(), dbpool, &rows, req, whereargs...)
 	})
 	if err != nil {
 		return 500, err
