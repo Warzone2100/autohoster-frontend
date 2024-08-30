@@ -317,6 +317,8 @@ func main() {
 	router.HandleFunc("/moderation/ratingCategories", basicSuperadminHandler("modRatingCategories")).Methods("GET")
 	router.HandleFunc("/api/ratingCategories", APIcall(APIgetRatingCategories)).Methods("GET", "OPTIONS")
 
+	router.HandleFunc("/moderation/reloadConfig", modReloadConfig).Methods("GET")
+
 	router.HandleFunc("/rating/{hash:[0-9a-z]+}", ratingHandler)
 	router.HandleFunc("/rating/", ratingHandler)
 	router.HandleFunc("/lobby", lobbyHandler)

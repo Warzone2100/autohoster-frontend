@@ -245,3 +245,13 @@ func modResendEmailConfirm(accountID int) error {
 func modIdentitiesHandler(w http.ResponseWriter, r *http.Request) {
 
 }
+
+func modReloadConfig(w http.ResponseWriter, r *http.Request) {
+	if !isSuperadmin(r.Context(), sessionGetUsername(r)) {
+		w.WriteHeader(200)
+		w.Write([]byte("no auth\n\n"))
+	}
+	err := cfg.SetFromFileJSON("config.json")
+	w.WriteHeader(200)
+	w.Write([]byte(fmt.Sprintf("%v\n\n", err)))
+}
