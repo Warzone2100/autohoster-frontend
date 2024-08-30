@@ -189,7 +189,7 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 		sortDefaultColumn:       "id",
 		sortColumns:             []string{"id", "whensent"},
 		filterColumnsFull:       []string{"id", "msg"},
-		filterColumnsStartsWith: []string{"name", "pkey"},
+		filterColumnsStartsWith: []string{"name", "encode(pkey, 'base64')"},
 		searchColumn:            "name || msg",
 		searchSimilarity:        0.3,
 		columnMappings: map[string]string{
