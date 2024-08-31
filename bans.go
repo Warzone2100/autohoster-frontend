@@ -37,7 +37,7 @@ func bansHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err := dbpool.QueryFunc(r.Context(),
 		`select
-	bans.id, accounts.id, accounts.display_name, identities.id, identities.name, coalesce(encode(identities.pkey, 'base64'), identities.hash), time_issued, time_expires, reason
+	bans.id, accounts.id, accounts.display_name, identities.id, identities.name, coalesce(encode(identities.pkey, 'hex'), identities.hash), time_issued, time_expires, reason
 from bans
 left join identities on bans.identity = identities.id
 left join accounts on bans.account = accounts.id

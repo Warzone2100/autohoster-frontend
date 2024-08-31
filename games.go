@@ -80,7 +80,7 @@ func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		'Usertype', p.usertype,
 		'Color', p.color,
 		'Identity', i.id,
-		'IdentityPubKey', encode(i.pkey, 'base64'),
+		'IdentityPubKey', encode(i.pkey, 'hex'),
 		'Account', a.id,
 		'DisplayName', coalesce(i.name, a.display_name),
 		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account),
@@ -195,7 +195,7 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	}
 	playerPubKey := parseQueryString(r, "player", "")
 	if playerPubKey != "" {
-		whereplayerscase = "where $1 = encode(i.pkey, 'base64')"
+		whereplayerscase = "where $1 = encode(i.pkey, 'hex')"
 		whereargs = append(whereargs, playerPubKey)
 		if wherecase == "" {
 			wherecase = "WHERE g.id = any((select game from plf))"
@@ -302,7 +302,7 @@ select
 		'Usertype', p.usertype,
 		'Color', p.color,
 		'Identity', i.id,
-		'IdentityPubKey', encode(i.pkey, 'base64'),
+		'IdentityPubKey', encode(i.pkey, 'hex'),
 		'Account', a.id,
 		'DisplayName', coalesce(i.name, a.display_name),
 		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account)
