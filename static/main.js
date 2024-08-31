@@ -1,20 +1,23 @@
 function nameFormatter(value, row) {
-	console.log(row)
 	let ret = `<div align="left" style="height:45px;">
 <table cellspacing="0" cellpadding="0" style="margin: 0">
 <tbody><tr><td class="rank-star">`;
-	Played = row.Played
-	Won = row.Won
-	Lost = row.Lost
-	Elo = row.Elo
-	EloDiff = row.EloDiff
-	DisplayName = row.DisplayName !== undefined ? row.DisplayName : row.Name
-	Account = row.Account !== undefined ? row.Account : row.AccountID
-	Identity = row.Identity !== undefined ? row.Identity : row.Identity
-	IdentityPubKey = row.IdentityPubKey
-	// if(DisplayName !== undefined && DisplayName.length > 23) {
-	// 	DisplayName = DisplayName.slice(0, 20) + '...';
-	// }
+	let Played = row.Played;
+	let Won = row.Won;
+	let Lost = row.Lost;
+	let Elo = row.Elo;
+	let EloDiff = row.EloDiff;
+	let DisplayName = row.DisplayName !== undefined ? row.DisplayName : row.Name;
+	let Account = row.Account !== undefined ? row.Account : row.AccountID;
+	let Identity = row.Identity !== undefined ? row.Identity : row.Identity;
+	let IdentityPubKey = row.IdentityPubKey;
+	let url = "";
+	if (IdentityPubKey !== undefined) {
+		url = `href="/players/${IdentityPubKey}"`;
+	}
+	if(DisplayName !== undefined && DisplayName.length > 23) {
+		DisplayName = DisplayName.slice(0, 20) + '...';
+	}
 	if(Played > 4) {
 		if(Elo > 1800) {
 			ret += `<object class="rank rank-starGold"></object>`;
@@ -40,7 +43,7 @@ function nameFormatter(value, row) {
 	ret += `</td><td rowspan="3" class="rank-link">`;
 	let dn = document.createElement('text')
 	dn.appendChild(document.createTextNode(DisplayName))
-	ret += `<a href="/players/${IdentityPubKey}" class="text-nowrap">${dn.outerHTML}</a>`;
+	ret += `<a ${url} class="text-nowrap">${dn.outerHTML}</a>`;
 	if(Account <= 0) {
 		ret += '<br><small class="text-muted class="text-nowrap"">not registered</small>';
 	} else {
