@@ -37,7 +37,7 @@
 									{{$cl = "leaderboardBronze"}}
 									{{end}}
 									<td class="{{$cl}} pe-4">{{$i}}</td>
-									<td>{{template "wzprofile" $l}}</td>
+									<td><div loadPlayer="{{jsonencode $l}}"></td>
 								</tr>
 								{{end}}
 							</table>

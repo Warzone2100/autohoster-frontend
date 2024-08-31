@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -208,6 +209,13 @@ var layoutFuncs = template.FuncMap{
 	},
 	"base64encode": func(val []uint8) string {
 		return base64.StdEncoding.EncodeToString(val)
+	},
+	"jsonencode": func(val any) string {
+		b, err := json.Marshal(val)
+		if err != nil {
+			return err.Error()
+		}
+		return string(b)
 	},
 }
 
