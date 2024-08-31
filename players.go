@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"log"
 	"net/http"
@@ -30,7 +30,7 @@ type PlayerLeaderboard struct {
 
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	identPubKeyB64 := mux.Vars(r)["id"]
-	identPubKey, err := base64.StdEncoding.DecodeString(identPubKeyB64)
+	identPubKey, err := hex.DecodeString(identPubKeyB64)
 	if err != nil {
 		log.Println(err)
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Badly formatted player id"})
