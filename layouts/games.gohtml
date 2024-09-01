@@ -251,12 +251,12 @@
 						
 						{{$fighterLabelRowPrinted := false}}
 						{{range $k, $player := .Players}}
-						{{if eq $player.Usertype "fighter"}}
+						{{if or (eq $player.Usertype "fighter") (eq $player.Usertype "contender")}}
 						{{if $fighterLabelRowPrinted}}{{else}}<tr><td>Fighters</td></tr>{{$fighterLabelRowPrinted = true}}{{end}}
 						{{end}}
 						{{end}}
 						{{range $k, $player := .Players}}
-						{{if eq $player.Usertype "fighter"}}
+						{{if or (eq $player.Usertype "fighter") (eq $player.Usertype "contender")}}
 						<tr class="wz-color-background-{{$player.Color}}">
 							<td><div loadPlayer="{{jsonencode $player}}"></td>
 							<td>{{$player.Position}} - {{$player.Team}}</td>
