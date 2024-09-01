@@ -178,7 +178,7 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 	return genericViewRequest[struct {
 		ID       int       `json:"id"`
 		Whensent time.Time `json:"whensent"`
-		Pkey     []byte    `json:"pkey"`
+		Pkey     string    `json:"pkey"`
 		Name     string    `json:"name"`
 		MsgType  string    `json:"msgtype"`
 		Msg      string    `json:"msg"`
@@ -186,7 +186,7 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 		tableName:               "composelog",
 		limitClamp:              1500,
 		sortDefaultOrder:        "desc",
-		sortDefaultColumn:       "id",
+		sortDefaultColumn:       "whensent",
 		sortColumns:             []string{"id", "whensent"},
 		filterColumnsFull:       []string{"id", "msg"},
 		filterColumnsStartsWith: []string{"name", "pkey"},
