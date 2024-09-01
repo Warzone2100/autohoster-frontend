@@ -258,7 +258,7 @@
 						{{range $k, $player := .Players}}
 						{{if eq $player.Usertype "fighter"}}
 						<tr class="wz-color-background-{{$player.Color}}">
-							<td><div loadPlayer="{{jsonencode $player}}">/td>
+							<td><div loadPlayer="{{jsonencode $player}}"></td>
 							<td>{{$player.Position}} - {{$player.Team}}</td>
 							<td>---</td>
 							<td>---</td>
