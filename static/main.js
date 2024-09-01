@@ -79,9 +79,17 @@ function nameFormatter(value, row) {
 }
 
 function renderPlayers() {
-	let pls = document.querySelectorAll("div[loadPlayer]")
+	let pls = document.querySelectorAll("div[loadPlayer]");
 	for (const pl of pls) {
-		let ob = JSON.parse(pl.attributes['loadplayer'].nodeValue)
-		pl.outerHTML = nameFormatter(null, ob)
+		let ob = JSON.parse(pl.attributes['loadplayer'].nodeValue);
+		pl.outerHTML = nameFormatter(null, ob);
+	}
+}
+
+function renderTimestamps() {
+	let ts = document.querySelectorAll("time[datetime]");
+	for (const t of ts) {
+		let d = new Date(t.attributes['datetime'].nodeValue);
+		t.textContent = d.toLocaleString();
 	}
 }

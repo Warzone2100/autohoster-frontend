@@ -53,10 +53,16 @@ function TimeFormatter(value, row) {
 		let hours = Math.floor(minutes / 60);
 		seconds = seconds % 60;
 		minutes = minutes % 60;
-		igt = hours == 0 ? "" : hours + ":"
+		igt = hours == 0 ? "" : hours + ":";
 		igt += (hours != 0 && minutes < 10 ? '0' : '') + minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 	}
-	return value + `<br>` + igt;
+	return new Date(value).toLocaleString() + `<br>` + igt;
+}
+function MapNameFormatter(value, row) {
+	if (row.MapHash !== undefined) {
+		return `<a href="https://maps.wz2100.net/#/map/hash/${row.MapHash}">${value}</a>`;
+	}
+	return value;
 }
 function detailsBtn(value, row) {
 	return row.TimeEnded?`<a class="btn btn-primary text-nowrap" href="/games/${row.ID}">Results</a>`:`<a href="/games/${row.ID}" class="btn btn-primary text-nowrap" type="button"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;In game</a>`;

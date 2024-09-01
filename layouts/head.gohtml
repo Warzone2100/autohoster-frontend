@@ -6,7 +6,7 @@
 <meta property="og:site_name" content="Warzone 2100 Autohoster"/>
 <meta content="#229954" data-react-helmet="true" name="theme-color">
 <meta content="https://wz2100-autohost.net/favicon.ico" property="og:image">
-<script src="/static/main.js?v=1"></script>
+<script src="/static/main.js?v=2"></script>
 <script type="text/javascript">
 function initDarkModeTheme() {
 	const systemPrefersDarkMode = localStorage.getItem('darkSwitch') === null && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -42,6 +42,7 @@ window.addEventListener("load", function () {
 		console.log("Failed to add darkSwitch event!");
 	}
 	renderPlayers();
+	renderTimestamps();
 });
 </script>
 {{end}}

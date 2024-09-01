@@ -18,7 +18,7 @@
 		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
-		<script src="/static/bootstrap-table/tablehelpers.js"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=1"></script>
 		<div class="px-4 py container">
 			<div id="table-toolbar">
 				<h4>Autohoster games</h4>
@@ -63,8 +63,8 @@
 				<thead>
 					<tr>
 						<th data-rowspan="2" data-halign="center" data-formatter="IDFormatter" data-field="ID">ID</th>
-						<th data-rowspan="2" data-halign="center" data-formatter="TimeFormatter" data-field="TimeStarted">Time</th>
-						<th data-rowspan="2" data-halign="center" data-formatter="mapNameFormatter" data-field="MapName" data-filter-control="select" data-filter-data="var:MapsSelection">Map</th>
+						<th data-rowspan="2" data-halign="center" data-formatter="TimeFormatter" data-field="TimeStarted">Date / Duration</th>
+						<th data-rowspan="2" data-halign="center" data-formatter="MapNameFormatter" data-field="MapName" data-filter-control="select" data-filter-data="var:MapsSelection">Map</th>
 						<th data-colspan="3" data-halign="center" data-class="noBottomBorder">Settings</th>
 						<th data-colspan="2" data-halign="center" data-class="noBottomBorder" data-formatter="playersFormatter" data-class="width45" data-filter-control="input">Players</th>
 						<th data-rowspan="2" data-halign="center" data-formatter="detailsBtn"></th>
@@ -122,7 +122,7 @@
 				<div class="col-sm">
 					<h3>Game {{.ID}}</h4>
 					<p>Map: {{.MapName}} ({{.MapHash}})</p>
-					<p>When: {{datefmt .TimeStarted}} <=> {{if .TimeEnded}}{{datefmt .TimeEnded}}{{else}}in-game{{end}} GMT</p>
+					<p>When: <time datetime="{{.TimeStarted}}"></time> <=> {{if .TimeEnded}}<time datetime="{{.TimeEnded}}"></time>{{else}}in-game{{end}}</p>
 					<p>Game time: {{if .GameTime}}{{GameTimeToStringI .GameTime}}{{else}}in-game{{end}}</p>
 					<p>Settings:
 						<img class="icons icons-base{{.SettingBase}}">
