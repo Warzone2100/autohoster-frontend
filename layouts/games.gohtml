@@ -148,14 +148,16 @@
 					<p>No replay avaliable</p>
 					{{end}}
 				</div>
-				<div class="col-sm">
+				<div class="col-sm text-center">
 					<img src="https://maps-assets.wz2100.net/v1/maps/{{.MapHash}}/preview.png">
 				</div>
+				<div class="col-sm text-end">
 				{{if .ReplayFound}}
-				<div class="col-sm" id="HeatmapContainer">
-					<a class="btn btn-primary" href="/api/heatmap/{{.ID}}">Load heatmap</a>
-				</div>
+					<a class="btn btn-primary" href="/api/heatmap/{{.ID}}">Load orders heatmap</a>
+				{{else}}
+					<button type="button" class="btn btn-primary" disabled>Load orders heatmap</a>
 				{{end}}
+				</div>
 			</div>
 			{{if $.IsSuperadmin}}
 			<p style="border-left: 3px solid red;padding-left: 1rem;">
