@@ -38,7 +38,7 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var identID int
 	var identName string
-	err = dbpool.QueryRow(r.Context(), `select id, name from identities where pkey = $1 or hash = $1`, identPubKey).Scan(&identID, &identName)
+	err = dbpool.QueryRow(r.Context(), `select id, name from identities where pkey = $1 or hash = sha256($1)`, identPubKey).Scan(&identID, &identName)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, pgx.ErrNoRows) {
 			log.Println(err)
