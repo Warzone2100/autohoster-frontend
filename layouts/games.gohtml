@@ -121,9 +121,9 @@
 			<div class="row">
 				<div class="col-sm">
 					<h3>Game {{.ID}}</h4>
-					<p>Map: {{.MapName}} ({{.MapHash}})</p>
+					<p>Map: <a href="https://maps.wz2100.net/#/map/hash/{{.MapHash}}">{{.MapName}}</a></p>
 					<p>When: <time datetime="{{.TimeStarted}}"></time> <=> {{if .TimeEnded}}<time datetime="{{.TimeEnded}}"></time>{{else}}in-game{{end}}</p>
-					<p>Game time: {{if .GameTime}}{{GameTimeToStringI .GameTime}}{{else}}in-game{{end}}</p>
+					<p>Duration: {{if .GameTime}}{{GameTimeToStringI .GameTime}}{{else}}in-game{{end}}</p>
 					<p>Settings:
 						<img class="icons icons-base{{.SettingBase}}">
 						<img class="icons icons-alliance{{allianceToClassI .SettingAlliance}}">
