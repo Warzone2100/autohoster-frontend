@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -71,17 +72,89 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j string
-	derr := dbpool.QueryRow(r.Context(), `SELECT coalesce(graphs, 'null') FROM games WHERE id = $1;`, gid).Scan(&j)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
+	err := dbpool.QueryRow(r.Context(), `SELECT coalesce(graphs, 'null') FROM games WHERE id = $1;`, gid).Scan(&j)
+	if err != nil {
+		if err == pgx.ErrNoRows {
 			return 204, nil
 		}
-		return 500, derr
+		return 500, err
 	}
 	if j == "null" {
 		return 204, nil
 	}
-	return 200, []byte(j)
+	frames := []map[string]any{}
+	err = json.Unmarshal([]byte(j), &frames)
+	if err != nil {
+		return 500, err
+	}
+	sort.Slice(frames, func(i, j int) bool {
+		gti, ok := frames[i]["gameTime"].(float64)
+		if !ok {
+			return true
+		}
+		gtj, ok := frames[j]["gameTime"].(float64)
+		if !ok {
+			return true
+		}
+		return gti < gtj
+	})
+	avg := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	avgw := float64(60)
+	for i, v := range frames {
+		val := []int{}
+		v["labActivityP60t"] = val
+		if i == 0 {
+			continue
+		}
+		prfs, ok := v["recentResearchPerformance"].([]any)
+		if !ok {
+			continue
+		}
+		pots, ok := v["recentResearchPotential"].([]any)
+		if !ok {
+			continue
+		}
+		prevPrfs, ok := frames[i-1]["recentResearchPerformance"].([]any)
+		if !ok {
+			continue
+		}
+		prevPots, ok := frames[i-1]["recentResearchPotential"].([]any)
+		if !ok {
+			continue
+		}
+		for p := 0; p < min(len(prfs), len(pots)); p++ {
+			prf, ok := prfs[p].(float64)
+			if !ok {
+				continue
+			}
+			pot, ok := pots[p].(float64)
+			if !ok {
+				continue
+			}
+			prevPrf, ok := prevPrfs[p].(float64)
+			if !ok {
+				continue
+			}
+			prevPot, ok := prevPots[p].(float64)
+			if !ok {
+				continue
+			}
+			navg := int(0)
+			if pot > 1 && prf > 1 && prevPrf > 1 && prevPot > 1 {
+				avg[p] -= avg[p] / avgw
+				nval := (prf - prevPrf) / (pot - prevPot)
+				if pot == prevPot {
+					nval = 0
+				}
+				avg[p] += (100 * nval) / avgw
+				navg = int(avg[p])
+			}
+			val = append(val, navg)
+		}
+		v["labActivityP60t"] = val
+	}
+
+	return 200, frames
 }
 
 func getDatesGraphData(ctx context.Context, interval string) ([]map[string]int, error) {
