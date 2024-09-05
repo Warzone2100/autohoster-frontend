@@ -105,7 +105,7 @@ func modNewsPOST(w http.ResponseWriter, r *http.Request) {
 		respondWithCodeAndPlaintext(w, 400, "Failed to parse form: "+err.Error())
 		return
 	}
-	tag, err := dbpool.Exec(r.Context(), `insert into news (title, content, color, when_posted) values ($1, $2, $3, $4)`, r.FormValue("title"), r.FormValue("content"), r.FormValue("color"), r.FormValue("date"))
+	tag, err := dbpool.Exec(r.Context(), `insert into announcements (title, content, color, when_posted) values ($1, $2, $3, $4)`, r.FormValue("title"), r.FormValue("content"), r.FormValue("color"), r.FormValue("date"))
 	result := ""
 	if err != nil {
 		result = err.Error()
