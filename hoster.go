@@ -103,7 +103,7 @@ func hostRequestHandlerPOST(w http.ResponseWriter, r *http.Request) {
 	coalesce(array_agg(encode(sha256(i.pkey), 'hex')), '{}'::text[])
 from accounts as a
 join identities as i on i.account = a.id
-where a.id = any($1) and i.pkey is not null;`, r.Form["additionalAdmin"]).Scan(&adminHashes)
+where (a.id = any($1) or a.superadmin = true) and i.pkey is not null;`, r.Form["additionalAdmin"]).Scan(&adminHashes)
 	if err != nil {
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Database query error: " + err.Error()})
 		return
