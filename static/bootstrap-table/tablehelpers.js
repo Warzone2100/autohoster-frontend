@@ -45,6 +45,9 @@ function AlliancesSettingsFormatter(value, row) {
 function IDFormatter(value, row) {
 	return `${row.ID} ${row.Calculated?"":"<text style=\"color:red;\">C</text>"} ${row.DebugTriggered?"<text class=\"rainbow\">D</text>":""}<br>${row.Version}`;
 }
+function SimpleTimeFromatter(value, row) {
+	return new Date(value).toLocaleString()
+}
 function TimeFormatter(value, row) {
 	let igt = "in-game";
 	if(row.GameTime > 200) {

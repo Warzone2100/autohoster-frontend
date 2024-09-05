@@ -16,7 +16,7 @@
 		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
-		<script src="/static/bootstrap-table/tablehelpers.js?v=1"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=2"></script>
 		<script>
 		function SendToggleRequest(el, param, name) {
 			let val = "true";
@@ -307,7 +307,7 @@
 		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
-		<script src="/static/bootstrap-table/tablehelpers.js?v=1"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=2"></script>
 		<div class="px-4 py">
 			<div id="table-toolbar">
 				<h4>Logs</h4>
@@ -353,7 +353,8 @@
 				<thead>
 					<tr>
 						<th data-field="id" data-sortable="true">id</th>
-						<th data-field="whensent" data-sortable="true">whensent</th>
+						<th data-field="msgtype" data-sortable="true">msgtype</th>
+						<th data-field="whensent" data-sortable="true" data-formatter="SimpleTimeFromatter" data-class="text-nowrap">whensent</th>
 						<th data-field="pkey" data-formatter="hashFormatter" data-filter-control="input">pkey</th>
 						<th data-field="name" data-class="w-25 overflow-scroll text-nowrap" data-filter-control="input">name</th>
 						<th data-field="msg" data-class="w-100 overflow-scroll text-nowrap">msg</th>
@@ -402,7 +403,7 @@
 		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
-		<script src="/static/bootstrap-table/tablehelpers.js?v=1"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=2"></script>
 		<div class="px-4 py container">
 			<details class="mt-2">
 				<summary>Bonk somebody</summary>
@@ -537,7 +538,7 @@
 		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
-		<script src="/static/bootstrap-table/tablehelpers.js?v=1"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=2"></script>
 		<div class="px-4 py container">
 			<div id="table-toolbar">
 				<h4>Identities</h4>
@@ -603,7 +604,7 @@
 		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
-		<script src="/static/bootstrap-table/tablehelpers.js?v=1"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=2"></script>
 		<div class="px-4 py">
 			<h4>Instances</h4>
 

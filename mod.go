@@ -182,7 +182,7 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 		Whensent time.Time `json:"whensent"`
 		Pkey     string    `json:"pkey"`
 		Name     string    `json:"name"`
-		MsgType  string    `json:"msgtype"`
+		Msgtype  *string   `json:"msgtype"`
 		Msg      string    `json:"msg"`
 	}](r, genericRequestParams{
 		tableName:               "composelog",
@@ -191,16 +191,16 @@ func APIgetLogs2(_ http.ResponseWriter, r *http.Request) (int, any) {
 		sortDefaultColumn:       "whensent",
 		sortColumns:             []string{"id", "whensent"},
 		filterColumnsFull:       []string{"id", "msg"},
-		filterColumnsStartsWith: []string{"name", "pkey"},
+		filterColumnsStartsWith: []string{"name", "pkey", "msgtype"},
 		searchColumn:            "name || msg",
 		searchSimilarity:        0.3,
 		columnMappings: map[string]string{
-			"ID":       "id",
-			"Whensent": "whensent",
+			"id":       "id",
+			"whensent": "whensent",
 			"pkey":     "pkey",
 			"name":     "name",
-			"MsgType":  "msgtype",
-			"Msg":      "msg",
+			"msgtype":  "msgtype",
+			"msg":      "msg",
 		},
 	})
 }
