@@ -260,9 +260,9 @@ func modReloadConfig(w http.ResponseWriter, r *http.Request) {
 
 func APImodInstances(w http.ResponseWriter, r *http.Request) (int, any) {
 	cl := http.Client{Timeout: 2 * time.Second}
-	h, ok := cfg.GetString("multihoster", "urlBase")
+	h, ok := cfg.GetString("backend", "urlBase")
 	if !ok {
-		return 500, "multihoster url base not set"
+		return 500, "backend url base not set"
 	}
 	rsp, err := cl.Get(h + "instances")
 	if err != nil {
