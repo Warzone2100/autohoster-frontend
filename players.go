@@ -29,18 +29,22 @@ type PlayerLeaderboard struct {
 }
 
 func PlayersHandler(w http.ResponseWriter, r *http.Request) {
-	identPubKeyHex := mux.Vars(r)["id"]
-	identPubKey, err := hex.DecodeString(identPubKeyHex)
+	identSpecifier, err := hex.DecodeString(mux.Vars(r)["id"])
 	if err != nil {
-		log.Println(err)
-		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Badly formatted player id"})
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Incorrectly formatted identity key or hash (please ensure it has even number of characters when specifying beginning of sha256 hash of public key)"})
 		return
 	}
 	var identID int
 	var identName string
-	err = dbpool.QueryRow(r.Context(), `select id, name from identities where pkey = $1 or hash = encode(sha256($1), 'hex')`, identPubKey).Scan(&identID, &identName)
+	var identPubKey string
+	var identHash string
+	err = dbpool.QueryRow(r.Context(), `select id, name, encode(pkey, 'hex'), hash from identities where pkey = $1 or hash ^@ encode($1, 'hex')`, identSpecifier).Scan(&identID, &identName, &identPubKey, &identHash)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
+			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "Player not found, identity in url can be hex encoded public key or it's sha256 hash"})
+			return
+		}
+		if !errors.Is(err, context.Canceled) {
 			log.Println(err)
 			basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": "request error"})
 			return
@@ -49,7 +53,8 @@ func PlayersHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("player", w, r, map[string]any{
 		"Player": map[string]any{
 			"Name":           identName,
-			"IdentityPubKey": identPubKeyHex,
+			"IdentityPubKey": identPubKey,
+			"IdentityHash":   identHash,
 		},
 	})
 
