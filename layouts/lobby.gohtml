@@ -184,9 +184,11 @@
 		document.getElementById("LiveBlob").onclick = function() {
 			if(globalThis.ws == null || globalThis.ws.readyState == 2 || globalThis.ws.readyState == 3) {
 				color("yellow")
-				document.getElementById("LiveBlob").style.background = "yellow"
+				document.getElementById("LiveBlob").style.background = "yellow";
+				globalThis.reconnectAttempts = 10;
 				connect();
 			} else {
+				globalThis.reconnectAttempts = 0;
 				globalThis.ws.close()
 				globalThis.ws = null
 				color("grey")
@@ -201,15 +203,19 @@
 			globalThis.ws.onclose = function() {
 				color("grey")
 				document.getElementById("LiveBlob").innerHTML = "&nbsp";
-				setTimeout(() => {
-					globalThis.ws = connect();
-				}, "1 second")
+				if (globalThis.reconnectAttempts > 0) {
+					globalThis.reconnectAttempts--;
+					setTimeout(() => {
+						globalThis.ws = connect();
+					}, "1 second")
+				}
 			}
 			globalThis.ws.onerror = function() {
 				color("orange")
 				document.getElementById("LiveBlob").innerHTML = "&nbsp";
 			}
 		}
+		globalThis.reconnectAttempts = 10;
 		connect();
 		</script>
 		{{end}}
