@@ -585,3 +585,97 @@
 	</body>
 </html>
 {{end}}
+{{define "modInstances"}}
+<!doctype html>
+<html translate="no">
+	<head>
+		{{template "head"}}
+		<title>Mod instances</title>
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" integrity="sha512-ZnR2wlLbSbr8/c9AgLg3jQPAattCUImNsae6NHYnS9KrIwRdcY9DxFotXhNAKIKbAXlRnujIqUWoXXwqyFOeIQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+		<link href="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.css" rel="stylesheet">
+		<link href="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.css" rel="stylesheet">
+		<link href="/static/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+	</head>
+	<body>
+		{{template "NavPanel" . }}
+		<script src="/static/bootstrap-table/bootstrap-table.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/export/bootstrap-table-export.min.js"></script>
+		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=1"></script>
+		<div class="px-4 py">
+			<h4>Instances</h4>
+
+			{{/* <div>
+				{{range $ID, $dat := .Instances}}
+					<div>
+					{{$ID}} - {{$dat}}
+					</div>
+				{{end}}
+			</div> */}}
+
+			<noscript>
+				Enable javascript to view table contents
+				<style> yes-script { display:none; } </style>
+			</noscript>
+			<yes-script>
+			<table id="table" class="smart-table table-fit">
+			</table>
+			<yes-script>
+		</div>
+		<script>
+		var $table = $('#table')
+		$(function() {
+			$table.bootstrapTable(Object.assign(defaultTableOptions, {
+				sidePagination: 'client',
+				url: '/api/instances',
+				sortName: 'ID',
+				columns: [{
+						field: 'ID',
+						title: 'inst id/state/pid',
+						sortable: true,
+						formatter: (val, row) => { return row['ID'] + '<br>' + row['state'] + ' / ' + row['pid']; }
+					}, {
+						title: 'lobby id/game id',
+						formatter: (val, row) => { return row['lobby id'] + '<br>' + row['game id']; }
+					}, {
+						title: 'map/port',
+						formatter: (val, row) => { return row['settings']['MapName'] + '<br>' + row['settings']['GamePort']; }
+					}, {
+						title: 'name',
+						formatter: (val, row) => { return instCfgsGetFirst(row['cfgs'], 'roomName'); }
+					}],
+				detailView: true,
+				detailFormatter: (index, row, element) => {
+					let r = '';
+					let adminsPolicy = instCfgsGetFirst(row['cfgs'], 'adminsPolicy');
+					r += 'Admins policy: ' + adminsPolicy + '<br>';
+					if (adminsPolicy == 'whitelist') {
+						r += '<pre>' + JSON.stringify(instCfgsGetFirst(row['cfgs'], 'admins'), null, '\t') + '</pre>';
+					}
+					r += '<pre>' + JSON.stringify(row, null, '\t') + '</pre>';
+					return r;
+				}
+			}));
+		})
+		function instCfgsGetFirst(cfgs, ...path) {
+			for (cfg in cfgs) {
+				let r = instCfgGet(cfgs[cfg], path);
+				if (r !== undefined) {
+					return r;
+				}
+			}
+			return undefined;
+		}
+		function instCfgGet(cfg, ...path) {
+			if (path.length == 1 || cfg === undefined) {
+				return cfg[path[0]];
+			}
+			let r = cfg[path.shift()];
+			return instCfgGet(r, path);
+		}
+		</script>
+	</body>
+</html>
+{{end}}

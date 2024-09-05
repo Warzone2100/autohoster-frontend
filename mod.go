@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -254,4 +256,31 @@ func modReloadConfig(w http.ResponseWriter, r *http.Request) {
 	err := cfg.SetFromFileJSON("config.json")
 	w.WriteHeader(200)
 	w.Write([]byte(fmt.Sprintf("%v\n\n", err)))
+}
+
+func APImodInstances(w http.ResponseWriter, r *http.Request) (int, any) {
+	cl := http.Client{Timeout: 2 * time.Second}
+	h, ok := cfg.GetString("multihoster", "urlBase")
+	if !ok {
+		return 500, "multihoster url base not set"
+	}
+	rsp, err := cl.Get(h + "instances")
+	if err != nil {
+		return 500, err
+	}
+	rspbb, err := io.ReadAll(rsp.Body)
+	if err != nil {
+		return 500, err
+	}
+	i := map[string]map[string]any{}
+	err = json.Unmarshal(rspbb, &i)
+	if err != nil {
+		return 500, err
+	}
+	ii := []map[string]any{}
+	for k, v := range i {
+		v["ID"] = k
+		ii = append(ii, v)
+	}
+	return 200, ii
 }

@@ -295,6 +295,9 @@ func main() {
 	router.HandleFunc("/autohoster", basicLayoutHandler("autohoster-control"))
 
 	// moderation endpoints
+	router.HandleFunc("/moderation/instances", basicSuperadminHandler("modInstances")).Methods("GET")
+	router.HandleFunc("/api/instances", APIcall(APISuperadminCheck(APImodInstances))).Methods("GET")
+
 	router.HandleFunc("/moderation/accounts", basicSuperadminHandler("modAccounts")).Methods("GET")
 	router.HandleFunc("/moderation/accounts", SuperadminCheck(modAccountsPOST)).Methods("POST")
 	router.HandleFunc("/moderation/accounts/resendEmail/{id:[0-9]+}", APIcall(APISuperadminCheck(APIresendEmailConfirm)))
