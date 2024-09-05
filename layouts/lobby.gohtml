@@ -126,11 +126,10 @@
 		function color(c) {
 			document.getElementById("LiveBlob").style.background = c
 		}
-		color("yellow")
+		color("purple")
 		lobbytable = document.getElementById("LobbyTable")
 		lobbymotd = document.getElementById("LobbyMOTD")
 		wsurl = "wss://"+window.document.domain+"/api/ws/lobby"
-		ws = new WebSocket(wsurl)
 		function parsewsmessage(event) {
 			let msg = JSON.parse(event.data);
 			if(msg.type == "LobbyUpdate") {
@@ -182,38 +181,36 @@
 				console.log(msg)
 			}
 		}
-		ws.onmessage = parsewsmessage
-		ws.onopen = function() {color("red")}
-		ws.onclose = function() {
-			color("grey")
-			document.getElementById("LiveBlob").innerHTML = "&nbsp";
-		}
-		ws.onerror = function() {
-			color("orange")
-			document.getElementById("LiveBlob").innerHTML = "&nbsp";
-		}
 		document.getElementById("LiveBlob").onclick = function() {
-			if(ws == null || ws.readyState == 2 || ws.readyState == 3) {
+			if(globalThis.ws == null || globalThis.ws.readyState == 2 || globalThis.ws.readyState == 3) {
 				color("yellow")
 				document.getElementById("LiveBlob").style.background = "yellow"
-				ws = new WebSocket(wsurl)
-				ws.onmessage = parsewsmessage
-				ws.onopen = function() {color("red")}
-				ws.onclose = function() {
-					color("grey")
-					document.getElementById("LiveBlob").innerHTML = "&nbsp";
-				}
-				ws.onerror = function() {
-					color("orange")
-					document.getElementById("LiveBlob").innerHTML = "&nbsp";
-				}
+				connect();
 			} else {
-				ws.close()
-				ws = null
+				globalThis.ws.close()
+				globalThis.ws = null
 				color("grey")
 				document.getElementById("LiveBlob").innerHTML = "&nbsp";
 			}
 		}
+		function connect() {
+			color("yellow")
+			globalThis.ws = new WebSocket(wsurl)
+			globalThis.ws.onmessage = parsewsmessage
+			globalThis.ws.onopen = function() {color("red")}
+			globalThis.ws.onclose = function() {
+				color("grey")
+				document.getElementById("LiveBlob").innerHTML = "&nbsp";
+				setTimeout(() => {
+					globalThis.ws = connect();
+				}, "1 second")
+			}
+			globalThis.ws.onerror = function() {
+				color("orange")
+				document.getElementById("LiveBlob").innerHTML = "&nbsp";
+			}
+		}
+		connect();
 		</script>
 		{{end}}
 		<script>
