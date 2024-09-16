@@ -340,7 +340,7 @@ func wzlinkHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RequestStatus() (bool, string) {
-	req, err := http.NewRequest("GET", cfg.GetDSString("http://localhost:9271/", "backendUrl")+"status", nil)
+	req, err := http.NewRequest("GET", cfg.GetDSString("http://localhost:9271/", "backendUrl")+"alive", nil)
 	if err != nil {
 		log.Print(err)
 		return false, err.Error()
