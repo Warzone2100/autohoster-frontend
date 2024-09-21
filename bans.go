@@ -20,29 +20,35 @@ func bansHandler(w http.ResponseWriter, r *http.Request) {
 		IssuedAt     string
 		ExpiresAt    string
 		IsBanned     bool
+		Forbids      string
 	}
 	ret := []viewBan{}
 
 	var (
-		banid       int
-		whenbanned  time.Time
-		whenexpires *time.Time
-		reason      string
-		ident       *int
-		identName   *string
-		identKey    *string
-		acc         *int
-		accName     *string
+		banid           int
+		whenbanned      time.Time
+		whenexpires     *time.Time
+		reason          string
+		ident           *int
+		identName       *string
+		identKey        *string
+		acc             *int
+		accName         *string
+		forbidsChatting bool
+		forbidsPlaying  bool
+		forbidsJoining  bool
 	)
 
 	_, err := dbpool.QueryFunc(r.Context(),
 		`select
-	bans.id, accounts.id, accounts.display_name, identities.id, identities.name, coalesce(encode(identities.pkey, 'hex'), identities.hash), time_issued, time_expires, reason
+	bans.id, accounts.id, accounts.display_name, identities.id, identities.name, coalesce(encode(identities.pkey, 'hex'), identities.hash),
+	time_issued, time_expires, reason, forbids_chatting, forbids_playing, forbids_joining
 from bans
 left join identities on bans.identity = identities.id
 left join accounts on bans.account = accounts.id
 order by bans.id desc;`, []any{},
-		[]any{&banid, &acc, &accName, &ident, &identName, &identKey, &whenbanned, &whenexpires, &reason},
+		[]any{&banid, &acc, &accName, &ident, &identName, &identKey,
+			&whenbanned, &whenexpires, &reason, &forbidsChatting, &forbidsPlaying, &forbidsJoining},
 		func(_ pgx.QueryFuncRow) error {
 			v := viewBan{
 				ID:           banid,
@@ -60,6 +66,15 @@ order by bans.id desc;`, []any{},
 				expiresAt := *whenexpires
 				v.ExpiresAt = expiresAt.Format(time.DateTime)
 				v.IsBanned = time.Now().Before(expiresAt)
+			}
+			if forbidsChatting {
+				v.Forbids += "chatting"
+			}
+			if forbidsPlaying {
+				v.Forbids += " playing"
+			}
+			if forbidsJoining {
+				v.Forbids += " joining"
 			}
 			ret = append(ret, v)
 			return nil
