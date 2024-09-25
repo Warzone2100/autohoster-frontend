@@ -327,7 +327,7 @@ func main() {
 	router.HandleFunc("/lobby", lobbyHandler)
 
 	router.HandleFunc("/games", DbGamesHandler)
-	router.HandleFunc("/games/{id:[0-9]+}", DbGameDetailsHandler)
+	router.HandleFunc(`/games/{id}`, DbGameDetailsHandler)
 	router.HandleFunc("/api/games", APIcall(APIgetGames)).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/players/{id:[0-9a-f]+}", PlayersHandler)

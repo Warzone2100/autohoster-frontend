@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"regexp"
@@ -63,8 +64,22 @@ type Game struct {
 }
 
 func DbGameDetailsHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	requestedIdentifier := mux.Vars(r)["id"]
+	tid := time.Now()
+	err := tid.UnmarshalText([]byte(requestedIdentifier))
 	if err != nil {
+		gid, rerr := strconv.Atoi(requestedIdentifier)
+		if rerr == nil {
+			var suggestTID time.Time
+			derr := dbpool.QueryRow(r.Context(), "select time_started from games where id = $1", gid).Scan(&suggestTID)
+			if derr == nil {
+				stid, stiderr := suggestTID.MarshalText()
+				if stiderr == nil {
+					basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msg": template.HTML(`This looks like a number and not like a game start timestamp, however, database has game with such id: <a href="/games/` + string(stid) + `">link</a>`)})
+					return
+				}
+			}
+		}
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Invalid id: " + err.Error()})
 		return
 	}
@@ -90,12 +105,12 @@ from games as g
 join players as p on p.game = g.id
 join identities as i on i.id = p.identity
 left join accounts as a on a.id = i.account
-where g.id = $1
+where g.time_started = $1
 group by g.id`
 	g := Game{}
 	g.Players = []Player{}
 	playersJSON := ""
-	err = dbpool.QueryRow(r.Context(), req, id).Scan(&g.ID, &g.Version, &g.Instance, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
+	err = dbpool.QueryRow(r.Context(), req, tid).Scan(&g.ID, &g.Version, &g.Instance, &g.TimeStarted, &g.TimeEnded, &g.GameTime,
 		&g.SettingScavs, &g.SettingAlliance, &g.SettingPower, &g.SettingBase,
 		&g.MapName, &g.MapHash, &g.Mods, &g.Deleted, &g.Hidden, &g.Calculated, &g.DebugTriggered, &g.DisplayCategory,
 		&playersJSON)
@@ -108,7 +123,7 @@ group by g.id`
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json unmarshal error: " + err.Error()})
 		return
 	}
-	g.ReplayFound = checkReplayExistsInStorage(id)
+	g.ReplayFound = checkReplayExistsInStorage(g.ID)
 	// slices.SortFunc(gmsStage[0].Players, func(a Player, b Player) int {
 	// 	return a.Position - b.Position
 	// })

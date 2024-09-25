@@ -17,7 +17,7 @@
 		<script src="/static/bootstrap-table/bootstrap-table.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
 		<script src="/static/bootstrap-table/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script>
-		<script src="/static/bootstrap-table/tablehelpers.js?v=2"></script>
+		<script src="/static/bootstrap-table/tablehelpers.js?v=3"></script>
 		<div class="px-4 py container">
 			<div id="table-toolbar">
 				<h4>Autohoster games</h4>
@@ -106,7 +106,7 @@
 		{{template "head"}}
 		<meta content="Autohosted game {{.Game.ID}}" property="og:title">
 		<meta content="Map: {{.Game.MapName}} At: {{.Game.TimeStarted}} Game time: {{GameTimeToStringI .Game.GameTime}}" property="og:description">
-		<meta content="https://wz2100-autohost.net/games/{{.Game.ID}}" property="og:url">
+		<meta content="https://wz2100-autohost.net/games/{{.Game.TimeStarted}}" property="og:url">
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
 		<script src="https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.1.1/chartjs-plugin-zoom.min.js"></script>
@@ -345,7 +345,7 @@
 						animation: {duration: 20}, responsive: true, maintainAspectRatio: false,
 						plugins: {
 							legend: {position: 'top'},
-							title: {display: true, text: 'Game {{.ID}}', position: 'top'},
+							title: {display: true, text: 'Game {{.TimeStarted}}', position: 'top'},
 							subtitle: {display: true, text: 'Research classification'},
 							zoom: {
 								pan: {enabled: true, mode: 'x'},
@@ -515,7 +515,7 @@
 						},
 						plugins: {
 							legend: {position: 'top'},
-							title: {display: true, text: 'Game {{.ID}}', position: 'top', color: fontcolor},
+							title: {display: true, text: 'Game {{.TimeStarted}}', position: 'top', color: fontcolor},
 							zoom: {
 								pan: {enabled: true, mode: 'x'},
 								zoom: {

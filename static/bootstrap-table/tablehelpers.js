@@ -68,7 +68,7 @@ function MapNameFormatter(value, row) {
 	return value;
 }
 function detailsBtn(value, row) {
-	return row.TimeEnded?`<a class="btn btn-primary text-nowrap" href="/games/${row.ID}">Results</a>`:`<a href="/games/${row.ID}" class="btn btn-primary text-nowrap" type="button"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;In game</a>`;
+	return row.TimeEnded?`<a class="btn btn-primary text-nowrap" href="/games/${row.TimeStarted}">Results</a>`:`<a href="/games/${row.TimeStarted}" class="btn btn-primary text-nowrap" type="button"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;In game</a>`;
 }
 function produceSides(row) {
 	let s1 = [];
