@@ -15,7 +15,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	mapsdatabase "github.com/maxsupermanhd/go-wz/maps-database"
+	"github.com/jackc/pgx/v4"
 	"github.com/maxsupermanhd/go-wz/packet"
 	"github.com/maxsupermanhd/go-wz/replay"
 	"golang.org/x/image/draw"
@@ -45,7 +45,13 @@ func getReplayStuffs(gid int) (rpl *replay.Replay, mapimg image.Image, err error
 		return
 	}
 	log.Println("Fetching map image...")
-	mapimg, err = mapsdatabase.FetchMapPreview(maphash)
+
+	slotcolors := make([]int, 10)
+	for _, v := range rpl.Settings.GameOptions.NetplayPlayers {
+		slotcolors[v.Position] = v.Colour
+	}
+
+	mapimg, err = getMapPreviewWithColors(maphash, [10]int(slotcolors))
 	if err != nil {
 		return
 	}
@@ -59,6 +65,24 @@ func APIgetReplayHeatmap(w http.ResponseWriter, r *http.Request) (int, any) {
 	gid, err := strconv.Atoi(gids)
 	if err != nil {
 		return 400, nil
+	}
+
+	var cachedHeatmap []byte
+	err = dbpool.QueryRow(r.Context(), `select cached_heatmap from games where id = $1`, gid).Scan(&cachedHeatmap)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return -1, nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return 500, err
+		}
+	} else {
+		if len(cachedHeatmap) != 0 {
+			w.WriteHeader(200)
+			w.Header().Set("Content-Type", "image/png")
+			w.Write(cachedHeatmap)
+			return -1, nil
+		}
 	}
 
 	rpl, mapimg, err := getReplayStuffs(gid)
@@ -213,7 +237,7 @@ func genReplayAnimatedHeatmap(ctx context.Context, rpl replay.Replay, mapimg ima
 				}
 			}
 		}
-		log.Printf("Frame %v collected %v skip %v gt %v i %v", start, collected, lastframeskip, nowgt, i)
+		log.Printf("Frame %v collected %v skip %v gt %v i %v", start, collected, lastframeskip, GameTimeToStringI(nowgt), i)
 		g.Image = append(g.Image, frame)
 		g.Delay = append(g.Delay, 5)
 	}

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"image/png"
 	"log"
 	"net/http"
 	"regexp"
@@ -127,7 +130,25 @@ group by g.id`
 	// slices.SortFunc(gmsStage[0].Players, func(a Player, b Player) int {
 	// 	return a.Position - b.Position
 	// })
-	basicLayoutLookupRespond("gamedetails2", w, r, map[string]any{"Game": g})
+
+	slotColors := [10]int{}
+	for _, v := range g.Players {
+		slotColors[v.Position] = v.Color
+	}
+	previewImage, err := getMapPreviewWithColors(g.MapHash, slotColors)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Preview rendering error: " + err.Error()})
+		return
+	}
+
+	previewImageBuf := bytes.NewBufferString("")
+	err = png.Encode(previewImageBuf, previewImage)
+	if err != nil {
+		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Encoding png err: " + err.Error()})
+		return
+	}
+
+	basicLayoutLookupRespond("gamedetails2", w, r, map[string]any{"Game": g, "Preview": base64.RawStdEncoding.EncodeToString(previewImageBuf.Bytes())})
 }
 
 func DbGamesHandler(w http.ResponseWriter, r *http.Request) {
