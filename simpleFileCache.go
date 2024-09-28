@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"image"
 	"image/png"
 	"io/fs"
+	"log"
 	"os"
 	"path"
 
@@ -18,9 +18,10 @@ func mapsdbGetTerrain(hash string) (image.Image, error) {
 	if err == nil {
 		return png.Decode(bytes.NewBuffer(b))
 	}
-	if !errors.Is(err, os.ErrNotExist) {
+	if _, ok := err.(*fs.PathError); !ok {
 		return nil, err
 	}
+	log.Printf("Fetching terrain image %v", hash)
 	out, err := mapsdatabase.FetchMapTerrain(hash)
 	if err != nil {
 		return nil, err
@@ -30,12 +31,12 @@ func mapsdbGetTerrain(hash string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	dperm := fs.FileMode(cfg.GetDInt(755, "dirPerms"))
-	err = os.MkdirAll(path.Base(p), dperm)
+	dperm := fs.FileMode(cfg.GetDInt(493, "dirPerms"))
+	err = os.MkdirAll(path.Dir(p), dperm)
 	if err != nil {
 		return nil, err
 	}
-	fperm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
+	fperm := fs.FileMode(cfg.GetDInt(420, "filePerms"))
 	err = os.WriteFile(p, ob.Bytes(), fperm)
 	if err != nil {
 		return nil, err
@@ -49,19 +50,20 @@ func mapsdbGetBlob(hash string) ([]byte, error) {
 	if err == nil {
 		return b, nil
 	}
-	if !errors.Is(err, os.ErrNotExist) {
+	if _, ok := err.(*fs.PathError); !ok {
 		return nil, err
 	}
+	log.Printf("Fetching map blob %v", hash)
 	out, err := mapsdatabase.FetchMapBlob(hash)
 	if err != nil {
 		return nil, err
 	}
-	dperm := fs.FileMode(cfg.GetDInt(755, "dirPerms"))
-	err = os.MkdirAll(path.Base(p), dperm)
+	dperm := fs.FileMode(cfg.GetDInt(493, "dirPerms"))
+	err = os.MkdirAll(path.Dir(p), dperm)
 	if err != nil {
 		return nil, err
 	}
-	fperm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
+	fperm := fs.FileMode(cfg.GetDInt(420, "filePerms"))
 	err = os.WriteFile(p, out, fperm)
 	if err != nil {
 		return nil, err

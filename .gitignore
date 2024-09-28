@@ -10,3 +10,4 @@ layouts-*
 wzbanlist.txt
 config.json
 .timetracker
+mapcache/
