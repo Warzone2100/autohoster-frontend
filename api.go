@@ -144,18 +144,16 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 			}
 		}
 		v["replayPackets"] = rplPktCount
+		v["replayPacketsP60t"] = rplPktSum
 		for i2, v2 := range rplPktCount {
 			rplPktSum[i2] += v2
 		}
 		if i-60 >= 0 {
-			oldRplPktCount, ok := frames[i-60]["replayPackets"].([]int)
-			if ok {
-				for i2, v2 := range oldRplPktCount {
-					rplPktSum[i2] -= v2
-				}
+			oldRplPktCount := frames[i-60]["replayPackets"].([]int)
+			for i2, v2 := range oldRplPktCount {
+				rplPktSum[i2] -= v2
 			}
 		}
-		v["replayPacketsP60t"] = rplPktSum
 		val := []int{}
 		v["labActivityP60t"] = val
 		if i == 0 {
