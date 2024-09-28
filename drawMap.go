@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"image"
+	"image/color"
 	"image/draw"
 	"io"
 	"strings"
@@ -325,36 +326,58 @@ func getMapPreviewWithColors(hash string, slotColors [10]int) (image.Image, erro
 	if err != nil {
 		return nil, err
 	}
-	type building struct {
+	type object struct {
 		Name     string `json:"name"`
 		Position []int  `json:"position"`
 		Rotation int    `json:"rotation"`
 		Startpos int    `json:"startpos"`
 		Player   string `json:"player"`
 	}
-	buildings := []building{}
-	for _, v := range mr.File {
-		if !strings.HasSuffix(v.Name, "struct.json") {
-			continue
-		}
+	buildings := []object{}
+	oils := []object{}
+	droids := []object{}
+	openread := func(v *zip.File, to any) error {
 		fr, err := v.Open()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		fb, err := io.ReadAll(fr)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		var fs struct {
-			Version    int
-			Structures []building
+		return json.Unmarshal(fb, &to)
+	}
+	for _, v := range mr.File {
+		if strings.HasSuffix(v.Name, "struct.json") {
+			var fs struct {
+				Structures []object `json:"structures"`
+			}
+			err := openread(v, &fs)
+			if err != nil {
+				return nil, err
+			}
+			buildings = fs.Structures
 		}
-		err = json.Unmarshal(fb, &fs)
-		if err != nil {
-			return nil, err
+		if strings.HasSuffix(v.Name, "feature.json") {
+			var fs struct {
+				Features []object `json:"features"`
+			}
+			err := openread(v, &fs)
+			if err != nil {
+				return nil, err
+			}
+			oils = fs.Features
 		}
-		buildings = fs.Structures
-		break
+		if strings.HasSuffix(v.Name, "droid.json") {
+			var fs struct {
+				Droids []object `json:"droids"`
+			}
+			err := openread(v, &fs)
+			if err != nil {
+				return nil, err
+			}
+			droids = fs.Droids
+		}
 	}
 	for _, b := range buildings {
 		bs, ok := buildingSizes[b.Name]
@@ -363,7 +386,7 @@ func getMapPreviewWithColors(hash string, slotColors [10]int) (image.Image, erro
 		}
 		cl := playerColors[slotColors[b.Startpos]]
 		if b.Player == "scavenger" {
-			cl = playerColors[10]
+			cl = color.RGBA{R: 128, A: 255}
 		}
 
 		outimg.SetRGBA(b.Position[0]/128, b.Position[1]/128, cl)
@@ -386,6 +409,19 @@ func getMapPreviewWithColors(hash string, slotColors [10]int) (image.Image, erro
 			outimg.SetRGBA(b.Position[0]/128, b.Position[1]/128-1, cl)
 			continue
 		}
+	}
+	for _, b := range oils {
+		if b.Name != "OilResource" {
+			continue
+		}
+		outimg.SetRGBA(b.Position[0]/128, b.Position[1]/128, color.RGBA{R: 200, G: 200, B: 0, A: 255})
+	}
+	for _, b := range droids {
+		cl := playerColors[slotColors[b.Startpos]]
+		if b.Player == "scavenger" {
+			cl = color.RGBA{R: 128, A: 255}
+		}
+		outimg.SetRGBA(b.Position[0]/128, b.Position[1]/128, cl)
 	}
 	return outimg, nil
 }
