@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/maxsupermanhd/go-wz/packet"
 	"github.com/maxsupermanhd/go-wz/replay"
+	"github.com/maxsupermanhd/go-wz/wznet"
 )
 
 func APIcall(c func(http.ResponseWriter, *http.Request) (int, any)) func(http.ResponseWriter, *http.Request) {
@@ -139,6 +140,9 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 							break rplcountloop
 						}
 					case packet.PkGameDroidInfo:
+						if p.SecOrder == wznet.DSO_RETURN_TO_LOC {
+							continue
+						}
 						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
 					case packet.PkGameResearchStatus:
 						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
