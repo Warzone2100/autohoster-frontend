@@ -155,15 +155,14 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 						if p.SecOrder == wznet.DSO_RETURN_TO_LOC {
 							continue
 						}
-						pos := rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position
+						pos := rpl.Settings.GameOptions.NetplayPlayers[rpl.Messages[rplPktIndex].Player].Position
 						currOrderFp := (p.CoordX ^ p.CoordY) + int32(calcDroidCs(p.Droids))
-						if prevOrderFp[pos] == currOrderFp {
-							continue
+						if prevOrderFp[pos] != currOrderFp {
+							prevOrderFp[pos] = currOrderFp
+							rplPktCount[pos]++
 						}
-						prevOrderFp[pos] = currOrderFp
-						rplPktCount[pos]++
 					case packet.PkGameResearchStatus:
-						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
+						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[rpl.Messages[rplPktIndex].Player].Position]++
 					}
 				}
 			}
