@@ -8,8 +8,6 @@ import (
 	"image/draw"
 	"io"
 	"strings"
-
-	mapsdatabase "github.com/maxsupermanhd/go-wz/maps-database"
 )
 
 func getMapPreviewWithColors(hash string, slotColors [10]int) (image.Image, error) {
@@ -312,13 +310,13 @@ func getMapPreviewWithColors(hash string, slotColors [10]int) (image.Image, erro
 	for k, v := range buildingSizesMp {
 		buildingSizes[k] = v
 	}
-	routimg, err := mapsdatabase.FetchMapTerrain(hash)
+	routimg, err := mapsdbGetTerrain(hash)
 	if err != nil {
 		return nil, err
 	}
 	outimg := imageToRGBA(routimg)
 
-	mapblob, err := mapsdatabase.FetchMapBlob(hash)
+	mapblob, err := mapsdbGetBlob(hash)
 	if err != nil {
 		return nil, err
 	}
