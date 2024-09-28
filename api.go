@@ -3,12 +3,15 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -127,6 +130,15 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	}
 	rplPktIndex := 0
 
+	prevOrderFp := make([]int32, 32)
+
+	calcDroidCs := func(droids []uint32) byte {
+		slices.Sort(droids)
+		buf := bytes.NewBufferString("")
+		binary.Write(buf, binary.NativeEndian, droids)
+		return md5.Sum(buf.Bytes())[0]
+	}
+
 	for i, v := range frames {
 		if rpl != nil {
 			rplPktCount := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
@@ -143,7 +155,13 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 						if p.SecOrder == wznet.DSO_RETURN_TO_LOC {
 							continue
 						}
-						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
+						pos := rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position
+						currOrderFp := (p.CoordX ^ p.CoordY) + int32(calcDroidCs(p.Droids))
+						if prevOrderFp[pos] == currOrderFp {
+							continue
+						}
+						prevOrderFp[pos] = currOrderFp
+						rplPktCount[pos]++
 					case packet.PkGameResearchStatus:
 						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
 					}
