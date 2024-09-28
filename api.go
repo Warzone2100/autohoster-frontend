@@ -109,52 +109,58 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	avg := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	avgw := float64(60)
 
+	var rpl *replay.Replay
 	replaycontent, err := getReplayFromStorage(gid)
 	if err != nil {
 		if err != errReplayNotFound {
 			return 500, err
 		}
-	}
-	rpl, err := replay.ReadReplay(bytes.NewBuffer(replaycontent))
-	if err != nil {
-		return 500, err
-	}
-	if rpl == nil {
-		return 500, errors.New("replay is nil")
+	} else {
+		rpl, err = replay.ReadReplay(bytes.NewBuffer(replaycontent))
+		if err != nil {
+			return 500, err
+		}
+		if rpl == nil {
+			return 500, errors.New("replay is nil")
+		}
 	}
 	rplPktIndex := 0
 
 	for i, v := range frames {
-		rplPktCount := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
-		gt, ok := v["gameTime"].(float64)
-		if ok {
-		rplcountloop:
-			for ; rplPktIndex < len(rpl.Messages); rplPktIndex++ {
-				switch p := rpl.Messages[rplPktIndex].NetPacket.(type) {
-				case packet.PkGameGameTime:
-					if p.GameTime >= uint32(gt) {
-						break rplcountloop
+		if rpl != nil {
+			rplPktCount := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
+			gt, ok := v["gameTime"].(float64)
+			if ok {
+			rplcountloop:
+				for ; rplPktIndex < len(rpl.Messages); rplPktIndex++ {
+					switch p := rpl.Messages[rplPktIndex].NetPacket.(type) {
+					case packet.PkGameGameTime:
+						if p.GameTime >= uint32(gt) {
+							break rplcountloop
+						}
+					case packet.PkGameDroidInfo:
+						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
+					case packet.PkGameResearchStatus:
+						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
 					}
-				case packet.PkGameDroidInfo:
-					rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
-				case packet.PkGameResearchStatus:
-					rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
 				}
 			}
-		}
-		v["replayPackets"] = rplPktCount
-
-		rplPktSum := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
-		for i2 := i - 60; i2 != i; i2++ {
-			if i2 < 0 {
-				continue
+			v["replayPackets"] = rplPktCount
+			rplPktSum := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
+			for i2 := i - 60; i2 != i; i2++ {
+				if i2 < 0 {
+					continue
+				}
+				oldPktCount := frames[i2]["replayPackets"].([]int)
+				for i3, v3 := range oldPktCount {
+					rplPktSum[i3] += v3
+				}
 			}
-			oldPktCount := frames[i2]["replayPackets"].([]int)
-			for i3, v3 := range oldPktCount {
-				rplPktSum[i3] += v3
-			}
+			v["replayPacketsP60t"] = rplPktSum
+		} else {
+			v["replayPackets"] = []int{}
+			v["replayPacketsP60t"] = []int{}
 		}
-		v["replayPacketsP60t"] = rplPktSum
 
 		val := []int{}
 		v["labActivityP60t"] = val
