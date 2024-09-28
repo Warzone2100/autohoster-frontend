@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +15,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
+	"github.com/maxsupermanhd/go-wz/packet"
+	"github.com/maxsupermanhd/go-wz/replay"
 )
 
 func APIcall(c func(http.ResponseWriter, *http.Request) (int, any)) func(http.ResponseWriter, *http.Request) {
@@ -70,9 +74,13 @@ func APItryReachBackend(w http.ResponseWriter, _ *http.Request) {
 
 func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
-	gid := params["gid"]
+	gids := params["gid"]
+	gid, err := strconv.Atoi(gids)
+	if err != nil {
+		return 500, err
+	}
 	var j string
-	err := dbpool.QueryRow(r.Context(), `SELECT coalesce(graphs, 'null') FROM games WHERE id = $1;`, gid).Scan(&j)
+	err = dbpool.QueryRow(r.Context(), `SELECT coalesce(graphs, 'null') FROM games WHERE id = $1;`, gid).Scan(&j)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return 204, nil
@@ -100,7 +108,39 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	})
 	avg := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	avgw := float64(60)
+
+	replaycontent, err := getReplayFromStorage(gid)
+	if err != nil {
+		if err != errReplayNotFound {
+			return 500, err
+		}
+	}
+	rpl, err := replay.ReadReplay(bytes.NewBuffer(replaycontent))
+	if err != nil {
+		return 500, err
+	}
+	if rpl == nil {
+		return 500, errors.New("replay is nil")
+	}
+	rplPktIndex := 0
+
 	for i, v := range frames {
+		rplPktCount := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
+		gt, ok := v["gameTime"].(float64)
+		if !ok {
+		rplcountloop:
+			for ; rplPktIndex < len(rpl.Messages); rplPktIndex++ {
+				switch p := rpl.Messages[rplPktIndex].NetPacket.(type) {
+				case packet.PkGameGameTime:
+					if p.GameTime >= uint32(gt) {
+						break rplcountloop
+					}
+				case packet.PkGameDroidInfo:
+					rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Index].Position]++
+				}
+			}
+		}
+		v["replayPackets"] = rplPktCount
 		val := []int{}
 		v["labActivityP60t"] = val
 		if i == 0 {
