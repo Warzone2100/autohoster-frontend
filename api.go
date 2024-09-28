@@ -123,7 +123,6 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 		return 500, errors.New("replay is nil")
 	}
 	rplPktIndex := 0
-	rplPktSum := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
 
 	for i, v := range frames {
 		rplPktCount := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
@@ -144,16 +143,18 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 			}
 		}
 		v["replayPackets"] = rplPktCount
-		v["replayPacketsP60t"] = rplPktSum
-		for i2, v2 := range rplPktCount {
-			rplPktSum[i2] += v2
-		}
+
+		rplPktSum := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
 		if i-60 >= 0 {
-			oldRplPktCount := frames[i-60]["replayPackets"].([]int)
-			for i2, v2 := range oldRplPktCount {
-				rplPktSum[i2] -= v2
+			for i2 := i - 60; i2 != i; i2++ {
+				oldPktCount := frames[i2]["replayPackets"].([]int)
+				for i3, v3 := range oldPktCount {
+					rplPktSum[i3] += v3
+				}
 			}
 		}
+		v["replayPacketsP60t"] = rplPktSum
+
 		val := []int{}
 		v["labActivityP60t"] = val
 		if i == 0 {
