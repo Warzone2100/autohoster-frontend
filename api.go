@@ -146,6 +146,7 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 			if ok {
 			rplcountloop:
 				for ; rplPktIndex < len(rpl.Messages); rplPktIndex++ {
+					pos := rpl.Settings.GameOptions.NetplayPlayers[rpl.Messages[rplPktIndex].Player].Position
 					switch p := rpl.Messages[rplPktIndex].NetPacket.(type) {
 					case packet.PkGameGameTime:
 						if p.GameTime >= uint32(gt) {
@@ -155,11 +156,13 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 						if p.SecOrder == wznet.DSO_RETURN_TO_LOC {
 							continue
 						}
-						pos := rpl.Settings.GameOptions.NetplayPlayers[rpl.Messages[rplPktIndex].Player].Position
+						if p.Order == wznet.DORDER_NONE {
+							continue
+						}
 						currOrderFp := (p.CoordX ^ p.CoordY) + int32(calcDroidCs(p.Droids))
 						if prevOrderFp[pos] != currOrderFp {
-							prevOrderFp[pos] = currOrderFp
 							rplPktCount[pos]++
+							prevOrderFp[pos] = currOrderFp
 						}
 					case packet.PkGameResearchStatus:
 						rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[rpl.Messages[rplPktIndex].Player].Position]++
