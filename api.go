@@ -136,7 +136,9 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 						break rplcountloop
 					}
 				case packet.PkGameDroidInfo:
-					rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Index].Position]++
+					rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
+				case packet.PkGameResearchStatus:
+					rplPktCount[rpl.Settings.GameOptions.NetplayPlayers[p.Player].Position]++
 				}
 			}
 		}
