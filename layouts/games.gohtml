@@ -311,8 +311,8 @@
 			var darkColorGridX = "#333";
 			var darkColorGridY = "#555";
 			var dany = {};
-			var dfields =  ['kills', 'power', 'score', 'droids', 'droidsLost', 'droidsBuilt', 'hp', 'structs', 'structuresBuilt', 'structuresLost', 'structureKills', 'summExp', 'oilRigs', 'researchComplete', 'kd', 'recentPowerLost', 'recentPowerWon', 'pwl', 'labActivity', 'labActivityP60t'];
-			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Units hp', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio', 'Power lost', 'Power won', 'Power won/lost' , 'Lab activity', 'Lab activity (past 60t)'];
+			var dfields =  ['kills', 'power', 'score', 'droids', 'droidsLost', 'droidsBuilt', 'hp', 'structs', 'structuresBuilt', 'structuresLost', 'structureKills', 'summExp', 'oilRigs', 'researchComplete', 'kd', 'recentPowerLost', 'recentPowerWon', 'pwl', 'labActivity', 'labActivityP60t', 'replayPackets'];
+			var dfieldsT = ['Kills', 'Power', 'Score', 'Units', 'Units lost', 'Units built', 'Units hp', 'Structures', 'Structures built', 'Structures lost', 'Structures destroyed', 'Exp summ', 'Oil rigs captured', 'Research count', 'Kill/Death ratio', 'Power lost', 'Power won', 'Power won/lost' , 'Lab activity', 'Lab activity (past 60t)', 'Replay packets'];
 			var chartDatasetName = dfields[0];
 			var dtempl = [{{range $k, $player := .Players}}{{if ne $player.Usertype "spectator"}}
 				{pointHitRadius: 20, label: '{{$player.Name}}', gamePosition: '{{$player.Position}}', usertype: '{{$player.Usertype}}', data: [], borderColor: borderColors[{{$player.Color}}], fill: document.getElementById("stackedSwitch").checked, backgroundColor: colors[{{$player.Color}}]},
