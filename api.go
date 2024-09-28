@@ -145,12 +145,13 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 		v["replayPackets"] = rplPktCount
 
 		rplPktSum := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
-		if i-60 >= 0 {
-			for i2 := i - 60; i2 != i; i2++ {
-				oldPktCount := frames[i2]["replayPackets"].([]int)
-				for i3, v3 := range oldPktCount {
-					rplPktSum[i3] += v3
-				}
+		for i2 := i - 60; i2 != i; i2++ {
+			if i2 < 0 {
+				continue
+			}
+			oldPktCount := frames[i2]["replayPackets"].([]int)
+			for i3, v3 := range oldPktCount {
+				rplPktSum[i3] += v3
 			}
 		}
 		v["replayPacketsP60t"] = rplPktSum
