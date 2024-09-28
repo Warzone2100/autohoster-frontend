@@ -48,7 +48,9 @@ func getReplayStuffs(gid int) (rpl *replay.Replay, mapimg image.Image, err error
 
 	slotcolors := make([]int, 10)
 	for _, v := range rpl.Settings.GameOptions.NetplayPlayers {
-		slotcolors[v.Position] = v.Colour
+		if v.Position >= 0 && v.Position <= 9 {
+			slotcolors[v.Position] = v.Colour
+		}
 	}
 
 	mapimg, err = getMapPreviewWithColors(maphash, [10]int(slotcolors))
