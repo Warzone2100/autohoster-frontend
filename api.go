@@ -127,7 +127,7 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	for i, v := range frames {
 		rplPktCount := make([]int, rpl.Settings.GameOptions.Game.MaxPlayers)
 		gt, ok := v["gameTime"].(float64)
-		if !ok {
+		if ok {
 		rplcountloop:
 			for ; rplPktIndex < len(rpl.Messages); rplPktIndex++ {
 				switch p := rpl.Messages[rplPktIndex].NetPacket.(type) {
