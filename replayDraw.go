@@ -89,15 +89,12 @@ func genReplayHeatmap(rpl replay.Replay, mapimg image.Image) ([]byte, error) {
 	img := image.NewRGBA(image.Rectangle{Max: mapimg.Bounds().Max.Mul(mapimgscale)})
 	draw.NearestNeighbor.Scale(img, img.Rect, mapimg, mapimg.Bounds(), draw.Src, nil)
 
-	dots := []draw.Image{}
-	for _, v := range rpl.Settings.GameOptions.NetplayPlayers {
-		if !v.Allocated || v.IsSpectator {
-			continue
-		}
+	dots := make([]draw.Image, len(rpl.Settings.GameOptions.NetplayPlayers))
+	for i, v := range rpl.Settings.GameOptions.NetplayPlayers {
 		if v.Colour < 0 || v.Colour >= len(playerColors) {
 			log.Printf("Color overflow: %#v", v)
 		} else {
-			dots = append(dots, mkDot(dotsize, playerColors[v.Colour]))
+			dots[i] = mkDot(dotsize, playerColors[v.Colour])
 		}
 	}
 	dotside := dots[0].Bounds().Max.X
