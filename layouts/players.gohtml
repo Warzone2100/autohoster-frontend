@@ -56,16 +56,6 @@
 			$('#table').bootstrapTable(Object.assign(defaultTableOptions, {
 				sortName: "ID",
 				url: "/api/leaderboards/",
-				columns: [{
-					field: '',
-					title: ''
-				}, {
-					field: 'name',
-					title: 'Item Name'
-				}, {
-					field: 'price',
-					title: 'Item Price'
-				}]
 				onPageChange: function (number, size) {
 					window.scrollTo({
 						top: 0, left: 0,
