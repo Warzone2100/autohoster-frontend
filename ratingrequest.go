@@ -21,7 +21,9 @@ type Ra struct {
 	Elo                   string `json:"elo"`
 	Details               string `json:"details"`
 	Name                  string `json:"name"`
+	Tag                   string `json:"tag"`
 	NameTextColorOverride [3]int `json:"nameTextColorOverride"`
+	TagTextColorOverride  [3]int `json:"tagTextColorOverride"`
 	EloTextColorOverride  [3]int `json:"eloTextColorOverride"`
 }
 
@@ -37,7 +39,7 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("{\"error\": \"Empty hash.\"}"))
 		return
 	}
-	m := ratingLookup(hash)
+	m := ratingLookup(hash, r.Header.Get("WZ-Version"))
 	j, err := json.Marshal(m)
 	if err != nil {
 		log.Println(err.Error())
@@ -46,8 +48,21 @@ func ratingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, string(j))
 }
 
-func ratingLookup(hash string) Ra {
-	m := Ra{true, false, [3]int{0, 0, 0}, 0, -1, "", "", "", [3]int{0x98, 0x98, 0x98}, [3]int{0xff, 0xff, 0xff}}
+func ratingLookup(hash string, gameVersion string) Ra {
+	m := Ra{
+		Dummy:                 false,
+		Autohoster:            false,
+		Star:                  [3]int{},
+		Medal:                 0,
+		Level:                 0,
+		Elo:                   "",
+		Details:               "",
+		Name:                  "",
+		Tag:                   "",
+		NameTextColorOverride: [3]int{0xff, 0xff, 0xff},
+		TagTextColorOverride:  [3]int{0xff, 0xff, 0xff},
+		EloTextColorOverride:  [3]int{0xff, 0xff, 0xff},
+	}
 	ohash, ok := cfg.GetString("ratingOverrides", hash)
 	if ok {
 		hash = ohash
@@ -72,18 +87,16 @@ func ratingLookup(hash string) Ra {
 		return m
 	}
 	var delo, dautoplayed, dautowon, dautolost, duuserid int
-	var dbanned, drbanned bool
+	var duterm, dallowed, dadmin bool
 	var dname string
-	// var dallowed bool
-	// var drenames []string
 	derr := dbpool.QueryRow(context.Background(), `select
-	identities.name, accounts.id, rating.elo, rating.played, rating.won, rating.lost
+	identities.name, accounts.id, accounts.terminated, accounts.allow_host_request, accounts.superadmin, rating.elo, rating.played, rating.won, rating.lost
 from identities
 left join accounts on identities.account = accounts.id
 left join rating on accounts.id = rating.account
 left join rating_categories on rating.category = rating_categories.id
 where hash = $1 and category = 2`, hash).
-		Scan(&dname, &duuserid, &delo, &dautoplayed, &dautowon, &dautolost)
+		Scan(&dname, &duuserid, &duterm, &dallowed, &dadmin, &delo, &dautoplayed, &dautowon, &dautolost)
 	if derr != nil {
 		if derr == pgx.ErrNoRows {
 			if m.Elo == "" {
@@ -110,17 +123,17 @@ where p.usertype = 'winner' and i.hash = $1`, hash).Scan(&wonCount)
 		return m
 	}
 
-	// m.Name = dname
+	if gameVersion != "" {
+		m.Name = dname
+	}
 
 	if duuserid > 0 {
-		m.Level = 8
 		m.Details += fmt.Sprintf("Rating: % 4d\n", delo)
-		m.Details = fmt.Sprintf("%s\nPlayed: % 4d\n", dname, dautoplayed)
+		m.Details = fmt.Sprintf("Played: % 4d\n", dautoplayed)
 		m.Details += fmt.Sprintf("Won: % 4d Lost: % 4d\n", dautowon, dautolost)
-		// if dallowed {
-		// 	m.Details += "Allowed to moderate and request rooms\n"
-		// 	m.NameTextColorOverride = [3]int{0x33, 0xff, 0x33}
-		// }
+		if dallowed {
+			m.Details += "Allowed to moderate and request rooms\n"
+		}
 	} else {
 		m.Details += "Not registered user.\n"
 	}
@@ -156,47 +169,75 @@ where p.usertype = 'winner' and i.hash = $1`, hash).Scan(&wonCount)
 		}
 	}
 
-	if dbanned {
-		m.NameTextColorOverride = [3]int{0xff, 0x00, 0x00}
-	} else if drbanned {
-		m.NameTextColorOverride = [3]int{0xff, 0xff, 0x00}
+	if dallowed {
+		m.Level = 7
+		if gameVersion != "" {
+			m.TagTextColorOverride = [3]int{0x11, 0xaa, 0x11}
+			m.Tag = "Moderator"
+		} else {
+			m.NameTextColorOverride = [3]int{0x11, 0xaa, 0x11}
+			m.Name = "Moderator"
+		}
+	}
+	if dadmin {
+		m.Level = 8
+		if gameVersion != "" {
+			m.Tag = "Admin"
+			m.TagTextColorOverride = [3]int{0x33, 0xff, 0x33}
+		} else {
+			m.NameTextColorOverride = [3]int{0x33, 0xff, 0x33}
+			m.Name = "Admin"
+		}
+	}
+	if duterm {
+		m.Level = 0
+		m.NameTextColorOverride = [3]int{0xff, 0x22, 0x22}
+		m.EloTextColorOverride = [3]int{0xff, 0x22, 0x22}
+		m.TagTextColorOverride = [3]int{0xff, 0x22, 0x22}
+		if gameVersion != "" {
+			m.Tag = ""
+		} else {
+			m.Name = ""
+		}
+		m.Elo = "Account terminated"
+	} else {
+		if dautoplayed < 5 || duuserid <= 0 {
+			m.Dummy = true
+		} else {
+			m.Dummy = false
+			if dautolost == 0 {
+				dautolost = 1
+			}
+			if dautowon >= 24 && float64(dautowon)/float64(dautolost) > 6.0 {
+				m.Medal = 1
+			} else if dautowon >= 12 && float64(dautowon)/float64(dautolost) > 4.0 {
+				m.Medal = 2
+			} else if dautowon >= 6 && float64(dautowon)/float64(dautolost) > 3.0 {
+				m.Medal = 3
+			}
+			if delo > 1800 {
+				m.Star[0] = 1
+			} else if delo > 1550 {
+				m.Star[0] = 2
+			} else if delo > 1400 {
+				m.Star[0] = 3
+			}
+			if dautoplayed > 60 {
+				m.Star[1] = 1
+			} else if dautoplayed > 30 {
+				m.Star[1] = 2
+			} else if dautoplayed > 10 {
+				m.Star[1] = 3
+			}
+			if dautowon > 60 {
+				m.Star[2] = 1
+			} else if dautowon > 30 {
+				m.Star[2] = 2
+			} else if dautowon > 10 {
+				m.Star[2] = 3
+			}
+		}
 	}
 
-	if dautoplayed < 5 || duuserid <= 0 {
-		m.Dummy = true
-	} else {
-		m.Dummy = false
-		if dautolost == 0 {
-			dautolost = 1
-		}
-		if dautowon >= 24 && float64(dautowon)/float64(dautolost) > 6.0 {
-			m.Medal = 1
-		} else if dautowon >= 12 && float64(dautowon)/float64(dautolost) > 4.0 {
-			m.Medal = 2
-		} else if dautowon >= 6 && float64(dautowon)/float64(dautolost) > 3.0 {
-			m.Medal = 3
-		}
-		if delo > 1800 {
-			m.Star[0] = 1
-		} else if delo > 1550 {
-			m.Star[0] = 2
-		} else if delo > 1400 {
-			m.Star[0] = 3
-		}
-		if dautoplayed > 60 {
-			m.Star[1] = 1
-		} else if dautoplayed > 30 {
-			m.Star[1] = 2
-		} else if dautoplayed > 10 {
-			m.Star[1] = 3
-		}
-		if dautowon > 60 {
-			m.Star[2] = 1
-		} else if dautowon > 30 {
-			m.Star[2] = 2
-		} else if dautowon > 10 {
-			m.Star[2] = 3
-		}
-	}
 	return m
 }
