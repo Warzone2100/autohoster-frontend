@@ -131,48 +131,13 @@
 				<style> yes-script { display:none; } </style>
 			</noscript>
 			<yes-script>
-			<table id="table" class="smart-table"
-			data-url="/api/accounts"
-			data-filter-control="true"
-			data-sort-name="id"
-			data-sort-order="desc"
-			data-show-refresh="true"
-			data-toolbar="#table-toolbar"
-			data-cache="false"
-			data-toggle="table"
-			data-id-field="ID"
-			data-pagination="true"
-			data-page-size="50"
-			data-page-number="1"
-			data-pagination-loop="false"
-			data-show-extended-pagination="true"
-			data-page-list="[10, 15, 25, 35, 50, 100, all]"
-			data-buttons-prefix="btn btn-sm btn-primary"
-			data-buttons="buttons"
-			data-classes="table table-striped table-sm"
-			data-search="true"
-			data-show-search-button="true"
-			data-search-on-enter-key="true"
-			{{/* data-side-pagination="server" */}}
-			{{/* data-search-highlight="true" */}}
-			data-show-search-clear-button="true"
-			data-escape="true"
-			data-detail-view="true"
-			data-detail-view-icon="true"
-			data-detail-formatter="detailFormatter"
-			{{/* data-card-view="true" */}}
-			data-show-filter-control-switch="true"
-			data-filter-control-visible="false"
-			data-sticky-header="true">
+			<table id="table" class="smart-table">
 				<thead>
 					<tr>
-						<th data-field="ID" data-sortable="true" data-filter-control="input" data-formatter="idFormatter">id</th>
-						<th data-field="Username" data-sortable="true" data-filter-control="input" data-formatter="usernameFormatter">username</th>
-						<th data-field="Email" data-sortable="true" data-filter-control="input" data-formatter="emailFormatter">email</th>
-						{{/* <th data-field="email_confirmed" data-sortable="true" data-filter-control="input">email confirmed</th> */}}
-						{{/* <th data-field="wzprofile2" data-sortable="true" data-filter-control="input" data-formatter="profileFormatter">profile</th> */}}
-						<th data-field="AllowHostRequest" data-sortable="true" data-filter-control="input" data-formatter="ispAllowPresetFormatter">pres</th>
-						<th data-field="BypassISPBan" data-sortable="true" data-filter-control="input" data-formatter="ispBypassFormatter">isp</th>
+						<th data-field="id" data-sortable="true" data-filter-control="input" data-formatter="idFormatter">id</th>
+						<th data-field="username" data-sortable="true" data-filter-control="input" data-formatter="usernameFormatter">username</th>
+						<th data-field="email" data-sortable="true" data-filter-control="input" data-formatter="emailFormatter">email</th>
+						<th data-field="allow_host_request" data-sortable="true" data-filter-control="input" data-formatter="allowRequestFormatter">pres</th>
 					</tr>
 				</thead>
 			</table>
@@ -181,40 +146,44 @@
 		<script>
 		var $table = $('#table')
 		$(function() {
-			$table.bootstrapTable();
+			$('#table').bootstrapTable(Object.assign(defaultTableOptions, {
+				sortName: "id",
+				url: "/api/accounts",
+				detailView: true,
+				detailViewIcon: true,
+				detailFormatter: function (index, row) {
+					let ret = "<table>";
+					for(const key in row) {
+						ret += '<tr><td><b>' + key + ': </b></td><td><code><pre>' + row[key] + '</pre></pre></td></tr>';
+					}
+					ret += `<tr><td><b>Resend activation email</b></td><td><a class="btn btn-primary btn-sm" onclick="ResendActivationEmail(${row.id})">Resend</button></td></tr>`;
+					ret += "</table>";
+					return ret;
+				},
+				onPageChange: function (number, size) {
+					window.scrollTo({
+						top: 0, left: 0,
+						behavior: 'smooth'
+					});
+				},
+				formatSearch: function () {
+					return 'Search uname/email';
+				}
+			}));
 		})
-		function detailFormatter(index, row) {
-			let ret = "<table>";
-			for(const key in row) {
-				ret += '<tr><td><b>' + key + ': </b></td><td><code>' + row[key] + '</code></td></tr>';
-			}
-			ret += `<tr><td><b>Resend activation email</b></td><td><a class="btn btn-primary btn-sm" onclick="ResendActivationEmail(${row.ID})">Resend</button></td></tr>`;
-			ret += "</table>";
-			return ret;
-		}
 		function usernameFormatter(value, row) {
-			return `<b>${value}</b><br>${row.LastSeen}`;
+			return `<b>${value}</b><br>${row.last_seen}`;
 		}
 		function emailFormatter(value, row) {
-			return value + `<br>${row.EmailConfirmed?row.EmailConfirmed:"not confirmed"}`;
-		}
-		function profileFormatter(value, row) {
-			if(value == null) {
-				return "NL";
-			}
-			return `<a href="/players/${value}">${value}</a>`;
+			return value + `<br>${row.email_confirmed?row.email_confirmed:"not confirmed"}`;
 		}
 		function idFormatter(value, row) {
-			return `${value}  <button class="btn btn-outline-${row.Terminated ? "danger" : "success"} btn-sm" data-value="${row.Terminated}" onclick="SendToggleRequest(this, 'terminated', '${row.Username}');">` +
-			`${row.Terminated ? "Yes" : "No"}</button>`;
+			return `${value}  <button class="btn btn-outline-${row.terminated ? "danger" : "success"} btn-sm" data-value="${row.terminated}" onclick="SendToggleRequest(this, 'terminated', '${row.username}');">` +
+			`${row.terminated ? "Yes" : "No"}</button>`;
 		}
-		function ispBypassFormatter(value, row) {
-			return `<button class="btn btn-outline-${row.BypassISPBan ? "success" : "danger"} btn-sm" data-value="${row.BypassISPBan}" onclick="SendToggleRequest(this, 'bypass_ispban', '${row.Username}');">` +
-			`${row.BypassISPBan ? "Yes" : "No"}</button>`;
-		}
-		function ispAllowPresetFormatter(value, row) {
-			return `<button class="btn btn-outline-${row.AllowHostRequest ? "success" : "danger"} btn-sm" data-value="${row.AllowHostRequest}" onclick="SendToggleRequest(this, 'allow_host_request', '${row.Username}');">` +
-			`${row.AllowHostRequest ? "Yes" : "No"}</button>`;
+		function allowRequestFormatter(value, row) {
+			return `<button class="btn btn-outline-${row.allow_host_request ? "success" : "danger"} btn-sm" data-value="${row.allow_host_request}" onclick="SendToggleRequest(this, 'allow_host_request', '${row.username}');">` +
+			`${row.allow_host_request ? "Yes" : "No"}</button>`;
 		}
 		</script>
 		</div>

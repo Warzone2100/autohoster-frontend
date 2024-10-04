@@ -301,7 +301,7 @@ func main() {
 	router.HandleFunc("/moderation/accounts", basicSuperadminHandler("modAccounts")).Methods("GET")
 	router.HandleFunc("/moderation/accounts", SuperadminCheck(modAccountsPOST)).Methods("POST")
 	router.HandleFunc("/moderation/accounts/resendEmail/{id:[0-9]+}", APIcall(APISuperadminCheck(APIresendEmailConfirm)))
-	router.HandleFunc("/api/accounts", APIcall(APISuperadminCheck(APIgetAccounts))).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/accounts", APIcall(APISuperadminCheck(APIgetAccounts2))).Methods("GET", "OPTIONS")
 
 	router.HandleFunc("/moderation/news", basicSuperadminHandler("modNews")).Methods("GET")
 	router.HandleFunc("/moderation/news", SuperadminCheck(modNewsPOST)).Methods("POST")

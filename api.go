@@ -7,14 +7,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"slices"
 	"sort"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
@@ -391,41 +389,4 @@ func APIgetRatingCategories(_ http.ResponseWriter, r *http.Request) (int, any) {
 		return 500, err
 	}
 	return 200, ret
-}
-
-func APIgetAccounts(_ http.ResponseWriter, r *http.Request) (int, any) {
-	type requestRow struct {
-		ID               int
-		Username         string
-		Email            string
-		AccountCreated   time.Time
-		LastSeen         *time.Time
-		Terminated       bool
-		EmailConfirmed   *time.Time
-		AllowHostRequest bool
-		DisplayName      *string
-		LastReport       time.Time
-		LastRequest      time.Time
-	}
-	ret := []requestRow{}
-	scanRow := requestRow{}
-	_, err := dbpool.QueryFunc(r.Context(), `select id, username, email, account_created, last_seen, terminated, email_confirmed, allow_host_request, display_name, last_report, last_request from accounts order by id desc`, []any{},
-		[]any{&scanRow.ID, &scanRow.Username, &scanRow.Email, &scanRow.AccountCreated, &scanRow.LastSeen, &scanRow.Terminated, &scanRow.EmailConfirmed, &scanRow.AllowHostRequest, &scanRow.DisplayName, &scanRow.LastReport, &scanRow.LastRequest}, func(qfr pgx.QueryFuncRow) error {
-			ret = append(ret, scanRow)
-			return nil
-		})
-	if err != nil {
-		return 500, err
-	}
-	return 200, ret
-}
-
-func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, any) {
-	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		return 400, nil
-	}
-	modSendWebhook(fmt.Sprintf("Administrator `%s` resent activation email for account `%v`", sessionGetUsername(r), id))
-	return 200, modResendEmailConfirm(id)
 }

@@ -9,8 +9,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -57,6 +59,51 @@ func APISuperadminCheck(next func(w http.ResponseWriter, r *http.Request) (int, 
 		}
 		return next(w, r)
 	}
+}
+
+func APIgetAccounts2(_ http.ResponseWriter, r *http.Request) (int, any) {
+	return genericViewRequest[struct {
+		ID               int        `json:"id"`
+		Username         string     `json:"username"`
+		Email            string     `json:"email"`
+		AccountCreated   time.Time  `json:"account_created"`
+		LastSeen         *time.Time `json:"last_seen"`
+		EmailConfirmed   *time.Time `json:"email_confirmed"`
+		Terminated       bool       `json:"terminated"`
+		AllowHostRequest bool       `json:"allow_host_request"`
+		DisplayName      *string    `json:"display_name"`
+		LastReport       *time.Time `json:"last_report"`
+		LastRequest      *time.Time `json:"last_request"`
+		Identities       string     `json:"identities"`
+	}](r, genericRequestParams{
+		tableName:               "accounts_view",
+		limitClamp:              1500,
+		sortDefaultOrder:        "desc",
+		sortDefaultColumn:       "id",
+		sortColumns:             []string{"id", "account_created"},
+		filterColumnsFull:       []string{"id"},
+		filterColumnsStartsWith: []string{"username", "email", "display_name"},
+		searchColumn:            "name || email || display_name",
+		searchSimilarity:        0.3,
+		columnMappings: map[string]string{
+			"id":       "id",
+			"whensent": "whensent",
+			"pkey":     "pkey",
+			"name":     "name",
+			"msgtype":  "msgtype",
+			"msg":      "msg",
+		},
+	})
+}
+
+func APIresendEmailConfirm(_ http.ResponseWriter, r *http.Request) (int, any) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		return 400, nil
+	}
+	modSendWebhook(fmt.Sprintf("Administrator `%s` resent activation email for account `%v`", sessionGetUsername(r), id))
+	return 200, modResendEmailConfirm(id)
 }
 
 func modAccountsPOST(w http.ResponseWriter, r *http.Request) {
