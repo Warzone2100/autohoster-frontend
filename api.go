@@ -112,7 +112,7 @@ func APIgetGraphData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	avgw := float64(60)
 
 	var rpl *replay.Replay
-	replaycontent, err := getReplayFromStorage(gid)
+	replaycontent, err := getReplayFromStorage(r.Context(), gid)
 	if err != nil {
 		if err != errReplayNotFound {
 			return 500, err
@@ -346,7 +346,7 @@ func APIgetReplayFile(w http.ResponseWriter, r *http.Request) (int, any) {
 	if err != nil {
 		return 400, nil
 	}
-	replaycontent, err := getReplayFromStorage(gid)
+	replaycontent, err := getReplayFromStorage(r.Context(), gid)
 	if err == nil {
 		log.Println("Serving replay from replay storage, gid ", gids)
 		w.Header().Set("Content-Disposition", "attachment; filename=\"autohoster-game-"+gids+".wzrp\"")

@@ -21,9 +21,9 @@ import (
 	"golang.org/x/image/draw"
 )
 
-func getReplayStuffs(gid int) (rpl *replay.Replay, mapimg image.Image, err error) {
+func getReplayStuffs(ctx context.Context, gid int) (rpl *replay.Replay, mapimg image.Image, err error) {
 	log.Println("Getting replay from storage...")
-	replaycontent, err := getReplayFromStorage(gid)
+	replaycontent, err := getReplayFromStorage(ctx, gid)
 	if err != nil {
 		if err == errReplayNotFound {
 			return
@@ -87,7 +87,7 @@ func APIgetReplayHeatmap(w http.ResponseWriter, r *http.Request) (int, any) {
 		}
 	}
 
-	rpl, mapimg, err := getReplayStuffs(gid)
+	rpl, mapimg, err := getReplayStuffs(r.Context(), gid)
 	if err != nil {
 		if err == errReplayNotFound {
 			return 204, nil
@@ -149,7 +149,7 @@ func APIheadAnimatedReplayHeatmap(w http.ResponseWriter, r *http.Request) (int, 
 	if err != nil {
 		return 400, nil
 	}
-	_, _, err = getReplayStuffs(gid)
+	_, _, err = getReplayStuffs(r.Context(), gid)
 	if err != nil {
 		if err == errReplayNotFound {
 			return 204, nil
@@ -168,7 +168,7 @@ func APIgetAnimatedReplayHeatmap(w http.ResponseWriter, r *http.Request) (int, a
 		return 400, nil
 	}
 
-	rpl, mapimg, err := getReplayStuffs(gid)
+	rpl, mapimg, err := getReplayStuffs(r.Context(), gid)
 	if err != nil {
 		if err == errReplayNotFound {
 			return 204, nil

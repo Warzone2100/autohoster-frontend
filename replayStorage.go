@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/DataDog/zstd"
+	"github.com/jackc/pgx/v4"
 )
 
 var replayStorageIdBase = 32
@@ -98,9 +100,16 @@ func sendReplayToStorage(replaypath string, gid int) error {
 	return os.Remove(replaypath)
 }
 
-func getReplayFromStorage(gid int) ([]byte, error) {
-	fname := getStorageReplayPath(gid)
-	a, err := os.ReadFile(fname)
+func getReplayFromStorage(ctx context.Context, gid int) ([]byte, error) {
+	var compressedReplay []byte
+	err := dbpool.QueryRow(ctx, `select replay from games where id = $1`, gid).Scan(&compressedReplay)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		log.Printf("Error fetching replay from database: %s", err.Error())
+	}
+	if len(compressedReplay) > 0 {
+		return zstd.Decompress(nil, compressedReplay)
+	}
+	a, err := os.ReadFile(getStorageReplayPath(gid))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, errReplayNotFound
 	}
