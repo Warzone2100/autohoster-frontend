@@ -331,7 +331,7 @@ select
 	g.setting_scavs, g.setting_alliance, g.setting_power, g.setting_base,
 	g.map_name, g.map_hash, g.mods, g.deleted, g.hidden, g.calculated, g.debug_triggered,
 	g.display_category,
-	jsonb_pretty(json_agg(json_build_object(
+	json_agg(json_build_object(
 		'Position', p.position,
 		'Name', i.name,
 		'Team', p.team,
@@ -342,7 +342,7 @@ select
 		'Account', a.id,
 		'DisplayName', coalesce(i.name, a.display_name),
 		'Rating', (select r from rating as r where r.category = g.display_category and r.account = i.account)
-	))::jsonb) as players
+	)) as players
 from games as g
 join players as p on p.game = g.id
 join identities as i on i.id = p.identity
