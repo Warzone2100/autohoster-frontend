@@ -170,7 +170,7 @@ func DbGamesHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 	go func() {
 		var c int
-		derr := dbpool.QueryRow(r.Context(), `select count(games) from games where hidden = false and deleted = false;`).Scan(&c)
+		derr := dbpool.QueryRow(r.Context(), `select count(*) from games where hidden = false and deleted = false;`).Scan(&c)
 		if derr != nil && derr != pgx.ErrNoRows {
 			errc <- derr
 			return
