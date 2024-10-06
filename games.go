@@ -280,9 +280,9 @@ func APIgetGames(_ http.ResponseWriter, r *http.Request) (int, any) {
 	echan := make(chan error)
 	go func() {
 		var c int
-		req := `select count(games) from games where hidden = false and deleted = false;`
+		req := `select count(*) from games where hidden = false and deleted = false;`
 		if isSuperadmin(r.Context(), sessionGetUsername(r)) {
-			req = `select count(games) from games;`
+			req = `select count(*) from games;`
 		}
 		derr := dbpool.QueryRow(r.Context(), req).Scan(&c)
 		if derr != nil {
