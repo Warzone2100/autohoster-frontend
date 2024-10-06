@@ -126,7 +126,7 @@ group by g.id`
 		basicLayoutLookupRespond("plainmsg", w, r, map[string]any{"msgred": true, "msg": "Json unmarshal error: " + err.Error()})
 		return
 	}
-	g.ReplayFound = checkReplayExistsInStorage(g.ID)
+	g.ReplayFound = checkReplayExistsInStorage(r.Context(), g.ID)
 	// slices.SortFunc(gmsStage[0].Players, func(a Player, b Player) int {
 	// 	return a.Position - b.Position
 	// })
