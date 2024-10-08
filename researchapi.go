@@ -14,39 +14,26 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func APIgetResearchlogData(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		log.Printf("Wrong method on research log api [%s]", r.Method)
-		return
-	}
+func APIgetResearchlogData(_ http.ResponseWriter, r *http.Request) (int, any) {
 	params := mux.Vars(r)
 	gid := params["gid"]
 	var j []map[string]any
-	derr := dbpool.QueryRow(context.Background(), `SELECT coalesce(research_log, '[]')::jsonb FROM games WHERE id = $1`, gid).Scan(&j)
-	if derr != nil {
-		if derr == pgx.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			return
+	err := dbpool.QueryRow(context.Background(), `SELECT coalesce(research_log, '[]')::jsonb FROM games WHERE id = $1`, gid).Scan(&j)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return http.StatusNoContent, nil
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Print(derr.Error())
-		return
+		return 500, err
 	}
 	for i := range j {
 		for k, v := range j[i] {
 			if k == "name" {
 				j[i][k] = getResearchName(v.(string))
+				j[i]["id"] = v.(string)
 			}
 		}
 	}
-	b, err := json.Marshal(j)
-	if err != nil {
-		log.Println(err)
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "https://wz2100-autohost.net https://dev.wz2100-autohost.net")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Write(b)
-	w.WriteHeader(http.StatusOK)
+	return 200, j
 }
 
 type resEntry struct {
