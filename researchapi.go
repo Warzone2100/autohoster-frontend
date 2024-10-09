@@ -415,10 +415,12 @@ GROUP BY 1, 3`, gid).Scan(&researchLog, &players, &settingAlliance)
 			}
 		}
 		ret += `</tr>`
+		resShown := 0
 		for _, r := range v[1:] {
 			if _, ok := topTimes[r]; !ok {
 				continue
 			}
+			resShown++
 			ret += fmt.Sprintf(`<tr class="rsPath%d" style="display: none;">`, i)
 			ret += `<td><a href="https://betaguide.wz2100.net/research.html?details_id=` + r + `">
 	<img src="https://betaguide.wz2100.net/img/data_icons/Research/` + getResearchName(r) + `.gif"></a></td>`
@@ -460,6 +462,9 @@ GROUP BY 1, 3`, gid).Scan(&researchLog, &players, &settingAlliance)
 				}
 			}
 			ret += `</tr>`
+		}
+		if resShown == 0 {
+			ret += `<tr><td>∅</td></tr>`
 		}
 	}
 	ret += `</table>`
