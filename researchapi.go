@@ -464,7 +464,7 @@ GROUP BY 1, 3`, gid).Scan(&researchLog, &players, &settingAlliance)
 			ret += `</tr>`
 		}
 		if resShown == 0 {
-			ret += `<tr><td>∅</td></tr>`
+			ret += fmt.Sprintf(`<tr class="rsPath%d" style="display: none;"><td>∅</td></tr>`, i)
 		}
 	}
 	ret += `</table>`
