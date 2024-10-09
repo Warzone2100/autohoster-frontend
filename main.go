@@ -347,6 +347,7 @@ func main() {
 	router.HandleFunc("/api/classify/game/{gid:[0-9]+}", APIcall(APIgetClassChartGame)).Methods("GET")
 	router.HandleFunc("/api/classify/player/{pid:[0-9]+}", APIcall(APIresearchClassification)).Methods("GET")
 	router.HandleFunc("/api/reslog/{gid:[0-9]+}", APIcall(APIgetResearchlogData)).Methods("GET")
+	router.HandleFunc("/api/researchSummary/{gid:[0-9]+}", APIcall(APIgetResearchSummary)).Methods("GET")
 	router.HandleFunc("/api/replay/{gid:[0-9]+}", APIcall(APIgetReplayFile)).Methods("GET")
 	router.HandleFunc("/api/heatmap/{gid:[0-9]+}", APIcall(APIgetReplayHeatmap)).Methods("GET")
 	router.HandleFunc("/api/animatedheatmap/{gid:[0-9]+}", APIcall(APIgetAnimatedReplayHeatmap)).Methods("GET")
