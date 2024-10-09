@@ -195,7 +195,7 @@
 							<th></th>
 						</tr><tr>
 							<th>Players</th>
-							<th>Position</th>
+							<th>Position<br>Team</th>
 							<th>Rating<br>transfer</th>
 							<th>Kills</th>
 							<th>Lost</th>
@@ -213,7 +213,7 @@
 						{{if eq $player.Usertype "winner"}}
 						<tr class="wz-color-background-{{$player.Color}}">
 							<td><div loadPlayer="{{jsonencode $player}}"></td>
-							<td>{{$player.Position}}</td>
+							<td>{{$player.Position}} - {{$player.Team}}</td>
 							<td>TODO</td>
 							<td>{{if avail "kills" $player.Props}}{{$player.Props.kills}}{{end}}</td>
 							<td>{{if avail "droidsLost" $player.Props}}{{$player.Props.droidsLost}}{{end}}</td>
@@ -236,7 +236,7 @@
 						{{if eq $player.Usertype "loser"}}
 						<tr class="wz-color-background-{{$player.Color}}">
 							<td><div loadPlayer="{{jsonencode $player}}"></td>
-							<td>{{$player.Position}}</td>
+							<td>{{$player.Position}} - {{$player.Team}}</td>
 							<td>TODO</td>
 							<td>{{if avail "kills" $player.Props}}{{$player.Props.kills}}{{end}}</td>
 							<td>{{if avail "droidsLost" $player.Props}}{{$player.Props.droidsLost}}{{end}}</td>
