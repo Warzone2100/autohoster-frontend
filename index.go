@@ -27,6 +27,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// structsBuilt := 0
 	gamesGraph := map[string]int{}
 	gamesGraphAvg := map[string]int{}
+	gamesGraphRated := map[string]int{}
+	gamesGraphRatedAvg := map[string]int{}
+	gamesGraphNonBot := map[string]int{}
+	gamesGraphNonBotAvg := map[string]int{}
 	err := RequestMultiple(func() error {
 		rows, err := dbpool.Query(r.Context(), `select title, content, when_posted, color from announcements order by when_posted desc limit 25;`)
 		if err != nil {
@@ -90,17 +94,25 @@ where g.time_started > now()-$1::interval`, timeInterval).Scan(&uniqPlayers)
 	}, func() error {
 		var date string
 		var count, average int
+		var nbcount, nbaverage int
 		_, err := dbpool.QueryFunc(r.Context(), `SELECT
-		to_char(date_trunc('day', g.time_started), 'YYYY-MM-DD') as d,
-		count(g.time_started) as c,
-		round(avg(count(g.time_started)) over(order by date_trunc('day', g.time_started) rows between 6 preceding and current row))
-	FROM games as g
-	WHERE g.time_started > now() - '1 year 7 days'::interval
-	GROUP BY date_trunc('day', g.time_started)
-	ORDER BY date_trunc('day', g.time_started)`,
-			[]any{}, []any{&date, &count, &average}, func(_ pgx.QueryFuncRow) error {
+	to_char(date_trunc('day', g.time_started), 'YYYY-MM-DD') as d,
+	count(g.time_started) as c,
+	round(avg(count(g.time_started)) over(order by date_trunc('day', g.time_started) rows between 6 preceding and current row)),
+	count(g.time_started) - sum(case when gc.category = 5 then 1 else 0 end) as nb,
+	round(avg(count(g.time_started) - sum(case when gc.category = 5 then 1 else 0 end)) over(order by date_trunc('day', g.time_started) rows between 6 preceding and current row))
+FROM games as g
+LEFT JOIN games_rating_categories as gc on gc.game = g.id
+WHERE g.time_started > now() - '1 year 7 days'::interval
+GROUP BY date_trunc('day', g.time_started)
+ORDER BY date_trunc('day', g.time_started)`,
+			[]any{}, []any{&date, &count, &average, &nbcount, &nbaverage}, func(_ pgx.QueryFuncRow) error {
 				gamesGraph[date] = count
 				gamesGraphAvg[date] = average
+				gamesGraphRated[date] = 0
+				gamesGraphRatedAvg[date] = 0
+				gamesGraphNonBot[date] = nbcount
+				gamesGraphNonBotAvg[date] = nbaverage
 				return nil
 			})
 		return err
@@ -117,7 +129,11 @@ where g.time_started > now()-$1::interval`, timeInterval).Scan(&uniqPlayers)
 		"LastGTime":          gameTime,
 		// "LastProduced":        humanize.Comma(int64(unitsProduced)), // TODO: migrate
 		// "LastBuilt":           humanize.Comma(int64(structsBuilt)),  // TODO: migrate
-		"GamesGraph":    gamesGraph,
-		"GamesGraphAvg": gamesGraphAvg,
+		"GamesGraph":          gamesGraph,
+		"GamesGraphAvg":       gamesGraphAvg,
+		"GamesGraphRated":     gamesGraphRated,
+		"GamesGraphRatedAvg":  gamesGraphRatedAvg,
+		"GamesGraphNonBot":    gamesGraphNonBot,
+		"GamesGraphNonBotAvg": gamesGraphNonBotAvg,
 	})
 }

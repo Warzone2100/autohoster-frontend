@@ -87,8 +87,10 @@
 			function PlotData() {
 				let data = {{.GamesGraph}};
 				let avgData = {{.GamesGraphAvg}};
-				let rdata = {{.RatingGamesGraph}};
-				let ravgData = {{.RatingGamesGraphAvg}};
+				let rdata = {{.GamesGraphRated}};
+				let ravgData = {{.GamesGraphRatedAvg}};
+				let nbdata = {{.GamesGraphNonBot}};
+				let nbavgData = {{.GamesGraphNonBotAvg}};
 				var ctx = document.getElementById('GraphCanvas').getContext('2d');
 				chart = new Chart(ctx, {
 					type: 'line', parsing: false, normalized: true,
@@ -115,6 +117,18 @@
 						data: ravgData,
 						borderColor: 'rgba(250, 65, 65, 1)',
 						backgroundColor: 'rgba(250, 65, 65, 1)',
+						tension: 0.4
+					},{
+						label: 'Non-bot games',
+						data: nbdata,
+						borderColor: 'rgba(65, 200, 65, 0.3)',
+						backgroundColor: 'rgba(65, 200, 65, 0.3)',
+						tension: 0.4
+					},{
+						label: 'Non-bot games 7 day average',
+						data: nbavgData,
+						borderColor: 'rgba(65, 200, 65, 1)',
+						backgroundColor: 'rgba(65, 200, 65, 1)',
 						tension: 0.4
 					}]},
 					options: {spanGaps: true, showLine: true,
