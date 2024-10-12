@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net"
@@ -210,6 +211,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		basicLayoutLookupRespond("register", w, r, map[string]any{"SuccessRegister": true})
 		log.Printf("Register attempt success: [%s] [%s]", requname, reqemail)
+		sendWebhook(cfg.GetDSString("", "webhooks", "actions"), fmt.Sprintf(`New account registered %q`, requname))
 	} else {
 		if r.Header.Get("CF-Visitor") != "{\"scheme\":\"https\"}" {
 			basicLayoutLookupRespond("register", w, r, map[string]any{"WarningUnsafe": true})
