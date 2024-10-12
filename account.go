@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/jackc/pgx/v4"
@@ -79,7 +80,58 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	basicLayoutLookupRespond("logout", w, r, map[string]any{})
 }
 
+func checkIPMatchesConfig(ip string, confpath ...string) bool {
+	clip := net.ParseIP(ip)
+	if clip == nil {
+		return false
+	}
+	ipmatchs := map[string]bool{}
+	o, ok := cfg.GetKeys(confpath...)
+	if !ok {
+		return false
+	}
+	for _, k := range o {
+		s, ok := cfg.GetBool(append(confpath, k)...)
+		if !ok {
+			return false
+		}
+		if !s {
+			delete(ipmatchs, k)
+		} else {
+			ipmatchs[k] = s
+		}
+	}
+	for kip, v := range ipmatchs {
+		if !v {
+			continue
+		}
+		_, pnt, err := net.ParseCIDR(kip)
+		if err != nil {
+			log.Printf("ipmatch ip %q is not in CIDR notation: %s", kip, err)
+			continue
+		}
+		if pnt == nil {
+			log.Printf("ipmatch ip %q has no network after parsing", kip)
+			continue
+		}
+		if pnt.Contains(clip) {
+			log.Printf("ipmatch applied to client %q with rule %q", ip, kip)
+			return true
+		}
+	}
+	return false
+}
+
 func registerHandler(w http.ResponseWriter, r *http.Request) {
+	ip := r.Header.Get("CF-Connecting-IP")
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	if checkIPMatchesConfig(ip, "ipnoreg") {
+		basicLayoutLookupRespond("register", w, r, map[string]any{"RegisterErrorMsg": "You are not allowed to create accounts. Contact administration."})
+		return
+	}
+
 	if r.Method == http.MethodPost {
 		err := r.ParseForm()
 		if err != nil {

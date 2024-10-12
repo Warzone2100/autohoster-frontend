@@ -245,6 +245,8 @@ github.com/maxsupermanhd/go-wz v0.0.0-20240928160514-19ae0799e9c2 h1:Mp91zokdG/8
 github.com/maxsupermanhd/go-wz v0.0.0-20240928160514-19ae0799e9c2/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
 github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18 h1:iRgozdiAA9zhAEC6fpcuIsT0hoVz7sQX6l0UVMZRaCM=
 github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18/go.mod h1:xQezeA7Tf0qvyr6DuOjmBJTcAyM9RS7cUKxOlnQLZKo=
+github.com/maxsupermanhd/lac v0.0.0-20240629122957-f72b94d89182 h1:haeoECVG8F0tdGrgbFtSP7LKbsxTReJ5NHywkbk5Fj0=
+github.com/maxsupermanhd/lac v0.0.0-20240629122957-f72b94d89182/go.mod h1:xQezeA7Tf0qvyr6DuOjmBJTcAyM9RS7cUKxOlnQLZKo=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/natefinch/lumberjack v2.0.0+incompatible h1:4QJd3OLAMgj7ph+yZTuX13Ld4UpgHp07nNdFX7mqFfM=

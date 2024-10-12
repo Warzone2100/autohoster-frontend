@@ -44,7 +44,7 @@ require (
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/lib/pq v1.10.6 // indirect
-	github.com/maxsupermanhd/lac v0.0.0-20230724012405-1df706e74f18
+	github.com/maxsupermanhd/lac v0.0.0-20240629122957-f72b94d89182
 	github.com/shopspring/decimal v1.3.1 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0
