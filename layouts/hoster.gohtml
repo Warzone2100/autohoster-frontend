@@ -123,11 +123,11 @@
 					<small>Note: if game will begin with non-registered player, it's category will be removed</small>
 				</div>
 				<div class="col p-3">
-					<fieldset style="max-height: 200px; overflow: scroll;">
+					<fieldset id="adminsSlector" style="max-height: 200px; overflow: scroll;">
 						<legend>Select room admins:</legend>
 						{{range $i, $j := .Admins}}
 						<div>
-							<input type="checkbox" class="form-check-input" id="additionalAdmin{{$j.ID}}" name="additionalAdmin" value="{{$j.ID}}" {{if eq $j.ID $.User.Id}}checked onclick="return false;"{{end}} />
+							<input type="checkbox" class="form-check-input" id="additionalAdmin{{$j.ID}}" name="additionalAdmin" value="{{$j.ID}}" {{if eq $j.ID $.User.Id}}checked onclick="return false;"{{else}}onclick="localStorage.setItem('adminpick'+{{$j.ID}}, this.checked);"{{end}} />
 							<label for="additionalAdmin{{$j.ID}}">{{$j.DisplayName}}</label>
 						</div>
 						{{end}}
@@ -155,6 +155,11 @@
 			DoSearch();
 		});
 		document.getElementById("MapSearchResult").innerHTML = GetHtmlMapsTable(whitelisted);
+
+		let adminpicks = document.querySelectorAll("#adminsSelector > div > input");
+		for (let i = 0; i < adminpicks.length; i++) {
+			adminpicks[i].checked = localStorage.getItem("adminpick" + adminpicks[i].value);
+		}
 	}
 	function DoSearch() {
 		const options = {
