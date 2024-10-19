@@ -158,7 +158,11 @@
 
 		let adminpicks = document.querySelectorAll("#adminsSelector > div > input");
 		for (let i = 0; i < adminpicks.length; i++) {
-			adminpicks[i].checked = localStorage.getItem("adminpick" + adminpicks[i].value);
+			if (adminpicks[i].value == {{.User.Id}}) {
+				adminpicks[i].checked = true;
+			} else {
+				adminpicks[i].checked = localStorage.getItem("adminpick" + adminpicks[i].value);
+			}
 		}
 	}
 	function DoSearch() {
