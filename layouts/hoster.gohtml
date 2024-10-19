@@ -161,7 +161,7 @@
 			if (adminpicks[i].value == {{.User.Id}}) {
 				adminpicks[i].checked = true;
 			} else {
-				adminpicks[i].checked = localStorage.getItem("adminpick" + adminpicks[i].value);
+				adminpicks[i].checked = localStorage.getItem("adminpick" + adminpicks[i].value) == "true";
 			}
 		}
 	}
